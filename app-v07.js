@@ -21,10 +21,10 @@ repairFlowV3.onload=()=>{
       customersV1.src='/app-customers-v1.js';
       customersV1.defer=true;
       customersV1.onload=()=>{
-        const customerLinkFix=document.createElement('script');
-        customerLinkFix.src='/app-customers-link-fix.js';
-        customerLinkFix.defer=true;
-        document.head.appendChild(customerLinkFix);
+        const customersV2=document.createElement('script');
+        customersV2.src='/app-customers-v2.js';
+        customersV2.defer=true;
+        document.head.appendChild(customersV2);
       };
       document.head.appendChild(customersV1);
     };
