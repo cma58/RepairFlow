@@ -16,6 +16,12 @@ repairFlowV3.onload=()=>{
     const analysisFeeUiFix=document.createElement('script');
     analysisFeeUiFix.src='/app-analysisfee-ui-fix.js';
     analysisFeeUiFix.defer=true;
+    analysisFeeUiFix.onload=()=>{
+      const customersV1=document.createElement('script');
+      customersV1.src='/app-customers-v1.js';
+      customersV1.defer=true;
+      document.head.appendChild(customersV1);
+    };
     document.head.appendChild(analysisFeeUiFix);
   };
   document.head.appendChild(analysisFeeLayer);
