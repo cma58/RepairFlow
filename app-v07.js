@@ -24,6 +24,12 @@ repairFlowV3.onload=()=>{
         const customersV2=document.createElement('script');
         customersV2.src='/app-customers-v2.js';
         customersV2.defer=true;
+        customersV2.onload=()=>{
+          const customersV21=document.createElement('script');
+          customersV21.src='/app-customers-v21-quality.js';
+          customersV21.defer=true;
+          document.head.appendChild(customersV21);
+        };
         document.head.appendChild(customersV2);
       };
       document.head.appendChild(customersV1);
