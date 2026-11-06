@@ -128,3 +128,9 @@
 - Op scherm krijgt het document een donkere groene previewachtergrond; het eigenlijke papier blijft wit voor leesbaarheid en inktbesparing.
 - Geen websiteclaims over reparatieaantallen, succespercentage, beoordelingen, garanties of doorlooptijd overgenomen: die zijn niet geverifieerd. De website toont op screenshots een ontbrekend logo en placeholdercontactadres; dit wordt niet in de kassadocumenten gekopieerd.
 - Geen origineel logo-bestand beschikbaar: typografische PHIXAR-woordmerkbenadering blijft gebruikt. JS-syntax gecontroleerd; echte print-/browsertests nog uit te voeren.
+
+## PHIXAR-bedrijfsinstellingen (2026-11-07)
+- Instellingenpagina bevat nu een formulier voor handelsnaam, juridische naam, BTW, winkeladres, telefoon, e-mail en website.
+- Reparatie-ontvangstbewijs, sticker en generieke reparatiedocumenten lezen bij openen de opgeslagen bedrijfsgegevens uit rfBusinessSettingsV1, met standaardwaarden als fallback.
+- Wijzigingen blijven uitsluitend in de lokale browseropslag en synchroniseren niet met andere apparaten. Geen automatische logo-upload of wettelijke factuurvalidatie.
+- Bestaande lokale klant- en reparatiegegevens blijven ongemoeid. JavaScript-syntax gecontroleerd; nog geen browser-/printtest.

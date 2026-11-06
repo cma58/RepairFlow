@@ -1,0 +1,12 @@
+(function(){
+'use strict';
+const KEY='rfBusinessSettingsV1';
+const defaults={tradeName:'PHIXAR',legalName:'Gihana, Marcelin',vat:'BE 0805.990.222',street:'Brusselsesteenweg 103',city:'9050 Gent',phone:'',email:'',website:'www.phixar.be'};
+const labels={tradeName:'Winkelnaam',legalName:'Juridische naam',vat:'BTW-nummer',street:'Straat en huisnummer',city:'Postcode en gemeente',phone:'Telefoon winkel',email:'E-mail winkel',website:'Website'};
+const required=['tradeName','legalName','vat','street','city'];
+const el=document.getElementById('settings');if(!el)return;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY));return v&&typeof v==='object'&&!Array.isArray(v)?{...defaults,...v}:defaults}catch{return defaults}}
+function render(){const data=load();el.innerHTML='<div class="card rf-business-settings"><h2>PHIXAR · Bedrijfsgegevens</h2><p class="muted">Deze gegevens verschijnen op de reparatiedocumenten. Ze worden voorlopig alleen op dit toestel opgeslagen; andere toestellen synchroniseren niet automatisch.</p><form id="rfBusinessForm"><div class="rf-business-fields">'+Object.keys(labels).map(k=>'<label class="rf-business-field"><span>'+esc(labels[k])+(required.includes(k)?' *':'')+'</span><input data-business-key="'+k+'" value="'+esc(data[k])+'" maxlength="160" '+(required.includes(k)?'required':'')+' autocomplete="off"></label>').join('')+'</div><div class="toolbar"><button class="btn g" type="submit">Bedrijfsgegevens opslaan</button></div><p id="rfBusinessFeedback" role="status" aria-live="polite"></p></form><p class="muted">Controleer dat de wettelijke bedrijfsgegevens overeenkomen met de KBO-registratie. Dit scherm maakt geen wettelijke facturen aan.</p></div>';const form=document.getElementById('rfBusinessForm');form.addEventListener('submit',e=>{e.preventDefault();const v={};for(const input of form.querySelectorAll('[data-business-key]'))v[input.dataset.businessKey]=input.value.trim();if(required.some(k=>!v[k])){document.getElementById('rfBusinessFeedback').textContent='Vul alle verplichte velden in.';return}try{localStorage.setItem(KEY,JSON.stringify(v));document.getElementById('rfBusinessFeedback').textContent='Opgeslagen op dit toestel. Nieuwe afdrukvoorbeelden gebruiken de aangepaste gegevens.'}catch{document.getElementById('rfBusinessFeedback').textContent='Opslaan mislukt: browseropslag niet beschikbaar.'}})}
+render();
+})();

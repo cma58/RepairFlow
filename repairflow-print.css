@@ -123,3 +123,13 @@
  body:has(#printDoc) .rf-paper-subtitle{color:#356a05!important}
  body:has(#printDoc) .rf-paper-label-head span{font-size:5.5pt!important}
 }
+
+/* PHIXAR business settings: compact responsive form */
+.rf-business-settings{max-width:960px;margin:0 auto}
+.rf-business-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0}
+.rf-business-field{display:flex;flex-direction:column;gap:7px;font-weight:600}
+.rf-business-field span{font-size:13px}
+.rf-business-field input{width:100%;box-sizing:border-box;min-width:0;padding:13px;border:1px solid #455247;border-radius:10px;background:#111713;color:#fff;font:inherit}
+.rf-business-field input:focus{outline:2px solid #78c742;outline-offset:1px}
+#rfBusinessFeedback{min-height:1.5em;color:#83d14e}
+@media(max-width:650px){.rf-business-fields{grid-template-columns:1fr}}
