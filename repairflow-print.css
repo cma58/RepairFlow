@@ -90,3 +90,15 @@
 .rf-paper-ticket-hero{background:#eef7f9;border-left-color:#167c91}
 .rf-paper-section h3{color:#17677a}
 @media print{body:has(#printDoc) .rf-paper-business-address{font-size:10pt}body:has(#printDoc) .rf-paper-business-legal{font-size:9pt}}
+
+/* PHIXAR storefront-inspired identity: black wordmark and vivid green X. */
+.rf-paper-brand,.rf-paper-label-head b{color:#14191d!important;letter-spacing:.10em}
+.rf-phixar-x{color:#78c742!important}
+.rf-paper-receipt-head{border-bottom-color:#78c742!important}
+.rf-paper-ticket-hero{border-left-color:#78c742!important;background:#f4f9ef!important}
+.rf-paper-section h3{color:#263a28!important}
+.rf-paper-label-head{border-bottom-color:#78c742!important}
+@media print{
+ body:has(#printDoc) .rf-phixar-x{color:#78c742!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body:has(#printDoc) .rf-paper-ticket-hero{background:#f4f9ef!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
