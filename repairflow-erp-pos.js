@@ -113,6 +113,7 @@
  ps.push({id:id(),name,sku,imei,price:round(price),cost:round(cost),stock,vat,active:true,createdAt:new Date().toISOString()});
  try{put(PRODUCTS,ps);render();notify('Product toegevoegd.');}catch{notify('Opslaan mislukt.');}
  },true);
- document.addEventListener('change',e=>{if(e.target.id==='rfSaleCustomer')selectedCustomer=e.target.value;},true);\n document.addEventListener('input',e=>{if(e.target.id==='rfProductSearch'){query=e.target.value;const start=e.target.selectionStart;renderSales();const input=$('rfProductSearch');input?.focus();input?.setSelectionRange(start,start);}},true);
+ document.addEventListener('change',e=>{if(e.target.id==='rfSaleCustomer')selectedCustomer=e.target.value;},true);
+ document.addEventListener('input',e=>{if(e.target.id==='rfProductSearch'){query=e.target.value;const start=e.target.selectionStart;renderSales();const input=$('rfProductSearch');input?.focus();input?.setSelectionRange(start,start);}},true);
  shell();render();
 })();
