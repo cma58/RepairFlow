@@ -110,3 +110,9 @@
 - QR-code bevat **uitsluitend het reparatieticketnummer**, geen klantgegevens, tracking-token of niet-bestaande publieke link. Scan toont het ticketnummer; een publiek klantportaal werkt nog niet.
 - QR zichtbaar in de statuspreview, op de toestelsticker en op het ontvangstbewijs. Bij ontbrekende bibliotheek verschijnt een leesbare foutmelding.
 - Geen externe QR-service, dus ticketgegevens worden niet naar een QR-provider verstuurd. JS-syntax gecontroleerd, nog geen browser-, print- of fysieke scantest uitgevoerd.
+
+## Professionele printlayouts (ticket en ontvangstbewijs)
+- Toestellabel vernieuwd met merk/model, dossiernummer, klant, IMEI/serienummer indien aanwezig, opslaglocatie, status, datum en echte QR met dossiernummer. Print-CSS begrenst het label op 60 × 40 mm.
+- Ontvangstbewijs vernieuwd met herkenbare kop, dossierstatus, klant- en toestelgegevens, gemelde klacht, offertebedrag indien aanwezig, reeds ontvangen bedrag en scanbare dossier-QR.
+- Ontvangstbewijs wordt **niet** als factuur of definitief garantiebewijs voorgesteld. Online klantstatus is nog niet actief.
+- Printlayout en preview zijn responsief. JavaScript-syntax gecontroleerd; fysieke labelprinter, PDF-paginering en QR-scans moeten nog in een echte browser getest worden.
