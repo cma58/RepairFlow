@@ -33,3 +33,10 @@
 4. Belgische facturatie, Peppol, creditnota's en boekhoudexport.
 5. Rollen/rechten, logging, retouren, garantie en leveranciers.
 6. Geautomatiseerde end-to-end tests, monitoring en releaseproces.
+
+## Integratiefase: gedeeld overzicht en back-upcontrole
+- Nieuw bestand `repairflow-erp-bridge.js` leest reparaties, klanten, refurbished, kassaproducten en kassaverkopen zonder de originele records te herschrijven.
+- Het scherm **Boekhouding** toont voorlopig een **bedrijfsoverzicht** met afzonderlijk benoemde bronnen en een expliciete waarschuwing dat dit geen officiële boekhouding is.
+- Onder **Instellingen** is een niet-destructieve bestandscontrole toegevoegd voor JSON-back-ups uit de bestaande exportfunctie. Herstellen/importeren is bewust nog niet ingeschakeld.
+- Er is **nog geen echte gedeelde database of gedeelde voorraad**. Het overzicht is de eerste veilige integratielaag, niet de definitieve datamigratie.
+- JavaScript-syntax gecontroleerd; volledige browser-/integratietests blijven vereist.
