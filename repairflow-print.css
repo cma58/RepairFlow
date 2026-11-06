@@ -17,7 +17,7 @@
 .rf-paper-label .rf-paper-row strong{overflow-wrap:anywhere}
 .rf-paper-qr{display:flex;align-items:center;flex-direction:column;gap:4px;flex-shrink:0}
 .rf-paper-qr #rfTicketQr{background:#fff;display:flex;align-items:center;justify-content:center}
-.rf-paper-qr img,.rf-paper-qr canvas{display:block!important;max-width:100%;height:auto}
+.rf-paper-qr img,.rf-paper-qr canvas{max-width:100%;height:auto}.rf-paper-qr img{display:block}.rf-paper-qr canvas{display:none}
 .rf-paper-qr span{font-size:7px;font-weight:700;letter-spacing:.05em}
 .rf-paper-label-foot{border-top:1px solid #d5dce7;padding-top:7px;font-size:10px;color:#54647d}
 .rf-paper-receipt{width:560px;padding:30px 34px}
