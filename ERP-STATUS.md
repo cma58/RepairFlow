@@ -104,3 +104,9 @@
 - IMEI-vergelijking normaliseert hoofdletters, spaties en streepjes. In de kassacatalogus geldt dezelfde normalisatie voor dubbele IMEI's.
 - Dit voorkomt veel voorkomende dubbele invoer, maar is **geen centrale voorraadtransactie**: lokale browseropslag en niet-atomische controles blijven beperkingen. Historisch verkochte/afgekeurde refurbished toestellen blokkeren geen nieuwe actieve POS-invoer.
 - JavaScript-syntax gecontroleerd; volledige browsertests en multi-device-synchronisatie ontbreken.
+
+## Echte QR-codes op reparatiedossier en printbon
+- Het eerdere schaakbord was geen QR-code. Vervangen door echte lokaal gegenereerde QR-codes via de meegeleverde MIT-gelicentieerde QRCode.js (`vendor/qrcode.min.js` en licentiebestand).
+- QR-code bevat **uitsluitend het reparatieticketnummer**, geen klantgegevens, tracking-token of niet-bestaande publieke link. Scan toont het ticketnummer; een publiek klantportaal werkt nog niet.
+- QR zichtbaar in de statuspreview, op de toestelsticker en op het ontvangstbewijs. Bij ontbrekende bibliotheek verschijnt een leesbare foutmelding.
+- Geen externe QR-service, dus ticketgegevens worden niet naar een QR-provider verstuurd. JS-syntax gecontroleerd, nog geen browser-, print- of fysieke scantest uitgevoerd.
