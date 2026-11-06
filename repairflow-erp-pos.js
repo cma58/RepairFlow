@@ -77,8 +77,9 @@
  const oldSales=sales(),number='KAS-'+new Date().getFullYear()+'-'+String(oldSales.length+1).padStart(6,'0');
  const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',source:'local-pos'};
  const nextProducts=ps.map(p=>{const l=items.find(x=>x.id===p.id);return l?{...p,stock:p.stock-l.qty}:p});
- try{put(PRODUCTS,nextProducts);put(SALES,[...oldSales,sale]);cart=[];selectedCustomer='';put(DRAFT,cart);render();receipt(sale);notify('Verkoop '+number+' geregistreerd.');}
- catch(e){notify('Opslaan mislukt. Controleer de browseropslag.');}
+ const oldProductsRaw=localStorage.getItem(PRODUCTS),oldMovementsRaw=localStorage.getItem(MOVEMENTS),oldSalesRaw=localStorage.getItem(SALES);
+ try{commitStock(nextProducts,items.map(l=>movement(nextProducts.find(p=>p.id===l.id),-l.qty,'Kassaverkoop',number)));put(SALES,[...oldSales,sale]);cart=[];selectedCustomer='';put(DRAFT,cart);render();receipt(sale);notify('Verkoop '+number+' geregistreerd.');}
+ catch(e){try{for(const [key,value] of [[PRODUCTS,oldProductsRaw],[MOVEMENTS,oldMovementsRaw],[SALES,oldSalesRaw]]){if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)}}catch{}notify('Opslaan mislukt. Controleer de browseropslag.');}
  }
  function receipt(s){
  const lines=s.items.map(l=>'<tr><td>'+esc(l.name)+'</td><td>'+l.qty+'</td><td>'+money(lineTotal(l))+'</td></tr>').join('');
