@@ -115,6 +115,7 @@
  if(!name||!positive(price)||!positive(cost)||!Number.isInteger(stock)||stock<0||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
  if(sku&&ps.some(p=>p.sku===sku&&p.active!==false)){notify('Deze SKU bestaat al.');return;}
  if(imei&&ps.some(p=>p.imei===imei&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
+ if(imei){const refurb=read('rfRefurbV1',[]),norm=v=>String(v||'').replace(/[\\s-]/g,'').toUpperCase();if(Array.isArray(refurb)&&refurb.some(r=>r&&r.imei&&norm(r.imei)===norm(imei)&&!['Verkocht','Afgekeurd','Onderdelen-donor'].includes(r.status))){notify('Dit IMEI staat al als actief refurbished toestel geregistreerd. Beheer het via Refurbished.');return;}}
  ps.push({id:id(),name,sku,imei,price:round(price),cost:round(cost),stock,vat,active:true,createdAt:new Date().toISOString()});
  try{commitStock(ps,[movement(ps[ps.length-1],stock,'Beginvoorraad')]);render();notify('Product toegevoegd.');}catch{notify('Opslaan mislukt.');}
  },true);
