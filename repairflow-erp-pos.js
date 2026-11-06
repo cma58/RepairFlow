@@ -6,9 +6,9 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=n=>new Intl.NumberFormat('nl-BE',{style:'currency',currency:'EUR'}).format(Number(n)||0);
  const read=(k,f)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??f}catch{return f}};
- const products=()=>read(PRODUCTS,[]),sales=()=>read(SALES,[]);
+ const products=()=>read(PRODUCTS,[]),sales=()=>read(SALES,[]);const customers=()=>{const x=read('rfCustomersV1',{});return (Array.isArray(x)?x:Object.values(x&&typeof x==='object'?x:{})).filter(c=>c&&c.name&&!c.archived)};
  const put=(k,v)=>{localStorage.setItem(k,JSON.stringify(v));};
- let cart=read(DRAFT,[]),page='sales',query='';
+ let cart=read(DRAFT,[]),page='sales',query='',selectedCustomer='';
  const positive=n=>Number.isFinite(n)&&n>=0;
  const qtyInt=n=>Number.isInteger(n)&&n>0;
  const id=()=>globalThis.crypto?.randomUUID?.()||('rf-'+Date.now()+'-'+Math.random().toString(36).slice(2));
@@ -32,7 +32,7 @@
  const el=$('rfPosRoot');if(!el)return;const ps=activeProducts().filter(p=>[p.name,p.sku,p.imei].some(v=>String(v||'').toLowerCase().includes(query.toLowerCase())));const count=sales().length;
  el.innerHTML=header('Kassa','Zoek een artikel, voeg het toe en registreer de betaling.')+
  '<div class="rf-pos-layout"><div class="rf-pos-catalog"><div class="rf-erp-toolbar"><input id="rfProductSearch" type="search" placeholder="Zoek op naam, SKU of IMEI" aria-label="Product zoeken" value="'+esc(query)+'"><button class="btn s" data-rf="stock-page">+ Product</button></div><div class="rf-pos-products">'+(ps.length?ps.map(p=>'<button class="rf-pos-product" data-rf="add" data-id="'+esc(p.id)+'"><strong>'+esc(p.name)+'</strong><small>'+esc(p.sku||'Geen SKU')+' · '+(p.stock||0)+' beschikbaar</small><b>'+money(p.price)+'</b></button>').join(''):'<div class="rf-erp-empty">Nog geen artikelen gevonden. Voeg eerst een product toe bij Voorraad.</div>')+'</div></div>'+
- '<div class="rf-pos-cart"><h3>Winkelmandje</h3><div class="rf-pos-lines">'+(cart.length?cart.map(l=>'<div class="rf-pos-line"><div><strong>'+esc(l.name)+'</strong><small>'+money(l.price)+' per stuk</small></div><div class="rf-pos-qty"><button data-rf="decrease" data-id="'+esc(l.id)+'" aria-label="Aantal verminderen">−</button><b>'+l.qty+'</b><button data-rf="increase" data-id="'+esc(l.id)+'" aria-label="Aantal verhogen">+</button></div><b>'+money(lineTotal(l))+'</b></div>').join(''):'<p class="muted">Nog geen artikelen geselecteerd.</p>')+'</div><div class="rf-pos-total"><span>Totaal incl. btw</span><strong>'+money(total())+'</strong></div><label class="rf-erp-label">Betaalmethode<select id="rfPaymentMethod"><option>Cash</option><option>Bancontact (extern bevestigd)</option><option>SumUp (extern bevestigd)</option><option>Overschrijving (ontvangen)</option></select></label><label class="rf-erp-label">Klantnaam (optioneel)<input id="rfSaleCustomer" placeholder="Naam klant"></label><p class="rf-erp-hint">Bevestig alleen een betaling die je daadwerkelijk hebt ontvangen. Er is geen betaalterminal gekoppeld.</p><button class="btn g rf-full" data-rf="checkout" '+(!cart.length?'disabled':'')+'>Betaling ontvangen · '+money(total())+'</button><button class="btn s rf-full" data-rf="clear" '+(!cart.length?'disabled':'')+'>Winkelmandje leegmaken</button></div></div><p class="rf-erp-hint">Geregistreerde verkopen op dit toestel: '+count+'</p>';
+ '<div class="rf-pos-cart"><h3>Winkelmandje</h3><div class="rf-pos-lines">'+(cart.length?cart.map(l=>'<div class="rf-pos-line"><div><strong>'+esc(l.name)+'</strong><small>'+money(l.price)+' per stuk</small></div><div class="rf-pos-qty"><button data-rf="decrease" data-id="'+esc(l.id)+'" aria-label="Aantal verminderen">−</button><b>'+l.qty+'</b><button data-rf="increase" data-id="'+esc(l.id)+'" aria-label="Aantal verhogen">+</button></div><b>'+money(lineTotal(l))+'</b></div>').join(''):'<p class="muted">Nog geen artikelen geselecteerd.</p>')+'</div><div class="rf-pos-total"><span>Totaal incl. btw</span><strong>'+money(total())+'</strong></div><label class="rf-erp-label">Betaalmethode<select id="rfPaymentMethod"><option>Cash</option><option>Bancontact (extern bevestigd)</option><option>SumUp (extern bevestigd)</option><option>Overschrijving (ontvangen)</option></select></label><label class="rf-erp-label">Klant (optioneel)<select id="rfSaleCustomer"><option value="">Balieverkoop zonder klant</option>'+customers().map(c=>'<option value="'+esc(c.id)+'" '+(selectedCustomer===c.id?'selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></label><p class="rf-erp-hint">Bevestig alleen een betaling die je daadwerkelijk hebt ontvangen. Er is geen betaalterminal gekoppeld.</p><button class="btn g rf-full" data-rf="checkout" '+(!cart.length?'disabled':'')+'>Betaling ontvangen · '+money(total())+'</button><button class="btn s rf-full" data-rf="clear" '+(!cart.length?'disabled':'')+'>Winkelmandje leegmaken</button></div></div><p class="rf-erp-hint">Geregistreerde verkopen op dit toestel: '+count+'</p>';
  }
  function renderStock(){
  const el=$('rfStockRoot');if(!el)return;const ps=products();
@@ -67,13 +67,13 @@
  if(!cart.length)return;
  const ps=products(),items=[];
  for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||p.stock<l.qty||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
- const method=$('rfPaymentMethod')?.value||'Cash',customer=$('rfSaleCustomer')?.value.trim()||'';
+ const method=$('rfPaymentMethod')?.value||'Cash',customerId=$('rfSaleCustomer')?.value||'',customerRecord=customers().find(c=>c.id===customerId),customer=customerRecord?.name||'';
  const amount=total();if(!positive(amount)||amount<=0){notify('Een verkoop moet een positief totaal hebben.');return;}
  if(!confirm('Bevestig dat '+money(amount)+' daadwerkelijk ontvangen is via '+method+'?'))return;
  const oldSales=sales(),number='KAS-'+new Date().getFullYear()+'-'+String(oldSales.length+1).padStart(6,'0');
- const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,status:'paid',source:'local-pos'};
+ const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',source:'local-pos'};
  const nextProducts=ps.map(p=>{const l=items.find(x=>x.id===p.id);return l?{...p,stock:p.stock-l.qty}:p});
- try{put(PRODUCTS,nextProducts);put(SALES,[...oldSales,sale]);cart=[];put(DRAFT,cart);render();receipt(sale);notify('Verkoop '+number+' geregistreerd.');}
+ try{put(PRODUCTS,nextProducts);put(SALES,[...oldSales,sale]);cart=[];selectedCustomer='';put(DRAFT,cart);render();receipt(sale);notify('Verkoop '+number+' geregistreerd.');}
  catch(e){notify('Opslaan mislukt. Controleer de browseropslag.');}
  }
  function receipt(s){
@@ -113,6 +113,6 @@
  ps.push({id:id(),name,sku,imei,price:round(price),cost:round(cost),stock,vat,active:true,createdAt:new Date().toISOString()});
  try{put(PRODUCTS,ps);render();notify('Product toegevoegd.');}catch{notify('Opslaan mislukt.');}
  },true);
- document.addEventListener('input',e=>{if(e.target.id==='rfProductSearch'){query=e.target.value;const start=e.target.selectionStart;renderSales();const input=$('rfProductSearch');input?.focus();input?.setSelectionRange(start,start);}},true);
+ document.addEventListener('change',e=>{if(e.target.id==='rfSaleCustomer')selectedCustomer=e.target.value;},true);\n document.addEventListener('input',e=>{if(e.target.id==='rfProductSearch'){query=e.target.value;const start=e.target.selectionStart;renderSales();const input=$('rfProductSearch');input?.focus();input?.setSelectionRange(start,start);}},true);
  shell();render();
 })();
