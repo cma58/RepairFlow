@@ -80,3 +80,13 @@
  body:has(#printDoc) .rf-paper-qr img{display:block!important}
  body:has(#printDoc) .rf-paper-qr canvas{display:none!important}
 }
+
+/* PHIXAR identity on customer-facing documents */
+.rf-paper-brand{font-weight:900;letter-spacing:.12em;color:#102f46;font-size:29px}
+.rf-paper-business-address{font-size:11px;font-weight:700;color:#283e50;margin-top:8px}
+.rf-paper-business-legal{font-size:10px;color:#536777;margin-top:3px}
+.rf-paper-document-title{font-size:13px;font-weight:800;color:#102f46;margin-top:12px}
+.rf-paper-label-head b{color:#102f46;font-size:16px;letter-spacing:.12em}
+.rf-paper-ticket-hero{background:#eef7f9;border-left-color:#167c91}
+.rf-paper-section h3{color:#17677a}
+@media print{body:has(#printDoc) .rf-paper-business-address{font-size:10pt}body:has(#printDoc) .rf-paper-business-legal{font-size:9pt}}
