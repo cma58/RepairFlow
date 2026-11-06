@@ -79,9 +79,9 @@
  function receipt(s){
  const lines=s.items.map(l=>'<tr><td>'+esc(l.name)+'</td><td>'+l.qty+'</td><td>'+money(lineTotal(l))+'</td></tr>').join('');
  const html='<div class="rf-receipt"><h2>RepairFlow · Verkoopbewijs</h2><p>'+esc(s.number)+' · '+esc(new Date(s.at).toLocaleString('nl-BE'))+'</p><p>Klant: '+esc(s.customer||'Balieverkoop')+'</p><table><thead><tr><th>Artikel</th><th>Aantal</th><th>Totaal</th></tr></thead><tbody>'+lines+'</tbody></table><h2>Totaal: '+money(s.total)+'</h2><p>Betaling: '+esc(s.method)+'</p><p>Dit document is een verkoopbewijs, geen btw-factuur.</p><button class="btn g" data-rf="print">Afdrukken</button></div>';
- const box=document.createElement('div');box.className='rf-receipt-overlay';box.id='rfReceiptOverlay';box.innerHTML='<div class="rf-receipt-card"><button class="btn s" data-rf="close-receipt">Sluiten</button>'+html+'</div>';document.body.appendChild(box);
+ $('rfReceiptOverlay')?.remove();const box=document.createElement('div');box.className='rf-receipt-overlay';box.id='rfReceiptOverlay';box.innerHTML='<div class="rf-receipt-card"><button class="btn s" data-rf="close-receipt">Sluiten</button>'+html+'</div>';document.body.appendChild(box);
  }
- function csv(){const ss=sales(),rows=[['Nummer','Datum','Klant','Betaalmethode','Totaal EUR','Artikelen']];ss.forEach(s=>rows.push([s.number,s.at,s.customer,s.method,s.total.toFixed(2),s.items.map(l=>l.name+' x'+l.qty).join('; ')]));download('repairflow-kassaverkopen.csv','\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n'),'text/csv;charset=utf-8');}
+ function csv(){const ss=sales(),rows=[['Nummer','Datum','Klant','Betaalmethode','Totaal EUR','Artikelen']];ss.forEach(s=>rows.push([s.number,s.at,s.customer,s.method,s.total.toFixed(2),s.items.map(l=>l.name+' x'+l.qty).join('; ')]));download('repairflow-kassaverkopen.csv','\uFEFF'+rows.map(r=>r.map(v=>{let x=String(v??'');if(/^[=+@\\-]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'}).join(';')).join('\r\n'),'text/csv;charset=utf-8');}
  function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  function backup(){const data={format:'RepairFlow-browser-backup',version:1,exportedAt:new Date().toISOString(),keys:{}};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(/^(rf|repairflow)/i).test(k))data.keys[k]=localStorage.getItem(k);}download('repairflow-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(data,null,2),'application/json');}
  document.addEventListener('click',e=>{
@@ -107,7 +107,7 @@
  },true);
  document.addEventListener('submit',e=>{
  if(e.target.id!=='rfProductForm')return;e.preventDefault();const f=new FormData(e.target),name=String(f.get('name')||'').trim(),sku=String(f.get('sku')||'').trim(),imei=String(f.get('imei')||'').trim(),price=Number(f.get('price')),cost=Number(f.get('cost')),stock=Number(f.get('stock')),vat=Number(f.get('vat')),ps=products();
- if(!name||!positive(price)||!positive(cost)||!Number.isInteger(stock)||stock<0||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
+ if(!name||!positive(price)||!positive(cost)||!Number.isInteger(stock)||stock<0||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
  if(sku&&ps.some(p=>p.sku===sku&&p.active!==false)){notify('Deze SKU bestaat al.');return;}
  if(imei&&ps.some(p=>p.imei===imei&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
  ps.push({id:id(),name,sku,imei,price:round(price),cost:round(cost),stock,vat,active:true,createdAt:new Date().toISOString()});
