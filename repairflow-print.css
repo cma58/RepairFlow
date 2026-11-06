@@ -1,0 +1,66 @@
+/* RepairFlow professional printable intake documents */
+.rf-paper-preview{background:#101724;border:1px solid #354057;border-radius:16px;padding:26px 12px;display:flex;justify-content:center;overflow:auto}
+.rf-paper-preview-inner{max-width:100%;overflow:auto}
+.rf-paper{box-sizing:border-box;background:#fff!important;color:#172033!important;font-family:Arial,Helvetica,sans-serif;box-shadow:0 14px 36px #0005}
+.rf-paper *{box-sizing:border-box}
+.rf-paper-label{width:420px;min-height:280px;padding:17px 19px;display:flex;flex-direction:column;gap:13px;border:1px solid #d5dce7}
+.rf-paper-label-head,.rf-paper-label-foot{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.rf-paper-label-head{padding-bottom:9px;border-bottom:2px solid #152b54;font-size:14px;letter-spacing:.07em}
+.rf-paper-label-head span{font-size:10px;color:#60718c;font-weight:700}
+.rf-paper-label-main{display:flex;justify-content:space-between;align-items:center;gap:14px;flex:1}
+.rf-paper-label-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:6px}
+.rf-paper-device{font-size:23px;line-height:1.15;overflow-wrap:anywhere}
+.rf-paper-ticket{font-size:15px;letter-spacing:.025em}
+.rf-paper-label-name{font-size:12px;overflow-wrap:anywhere}
+.rf-paper-label .rf-paper-row{font-size:10px;display:flex;gap:6px;flex-wrap:wrap}
+.rf-paper-label .rf-paper-row span{color:#66758c}
+.rf-paper-label .rf-paper-row strong{overflow-wrap:anywhere}
+.rf-paper-qr{display:flex;align-items:center;flex-direction:column;gap:4px;flex-shrink:0}
+.rf-paper-qr #rfTicketQr{background:#fff;display:flex;align-items:center;justify-content:center}
+.rf-paper-qr img,.rf-paper-qr canvas{display:block!important;max-width:100%;height:auto}
+.rf-paper-qr span{font-size:7px;font-weight:700;letter-spacing:.05em}
+.rf-paper-label-foot{border-top:1px solid #d5dce7;padding-top:7px;font-size:10px;color:#54647d}
+.rf-paper-receipt{width:560px;padding:30px 34px}
+.rf-paper-receipt-head{display:flex;justify-content:space-between;gap:15px;border-bottom:2px solid #193e80;padding-bottom:18px}
+.rf-paper-brand{font-size:25px;font-weight:900;letter-spacing:.06em;color:#153978}
+.rf-paper-subtitle{font-size:13px;color:#65748b;margin-top:4px}
+.rf-paper-date{font-size:12px;color:#65748b;white-space:nowrap}
+.rf-paper-ticket-hero{background:#eff4fc;padding:18px 20px;margin:20px 0;display:flex;flex-direction:column;gap:7px;border-left:4px solid #1648a2}
+.rf-paper-ticket-hero span{font-size:10px;font-weight:700;letter-spacing:.08em;color:#586b87}
+.rf-paper-ticket-hero strong{font-size:24px;overflow-wrap:anywhere}
+.rf-paper-ticket-hero small{font-size:12px;color:#586b87}
+.rf-paper-section{padding:14px 0;border-bottom:1px solid #e2e7f0}
+.rf-paper-section h3{margin:0 0 12px;font-size:14px;color:#163a79}
+.rf-paper-row{display:flex;justify-content:space-between;gap:18px;font-size:12px;padding:5px 0}
+.rf-paper-row span{color:#5b6c82}
+.rf-paper-row strong{text-align:right;overflow-wrap:anywhere}
+.rf-paper-problem{margin-top:10px;background:#f4f6fa;border-radius:8px;padding:11px}
+.rf-paper-problem span{font-size:11px;color:#5b6c82}
+.rf-paper-problem p{font-size:13px;margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.rf-paper-note{font-size:10px;line-height:1.5;color:#586b87;margin:12px 0 0}
+.rf-paper-receipt-qr{display:flex;align-items:center;gap:24px;padding:20px 0}
+.rf-paper-receipt-qr>div:last-child{flex:1}
+.rf-paper-receipt-qr b{font-size:13px}
+.rf-paper-receipt-qr p{font-size:11px;line-height:1.5;color:#5b6c82}
+.rf-paper-footer{border-top:1px solid #e2e7f0;padding-top:10px;text-align:center;font-size:10px;color:#718097}
+.rf-paper-actions{margin-top:16px;justify-content:center}
+@media(max-width:600px){.rf-paper-preview{padding:12px 4px}.rf-paper-preview-inner{transform-origin:top center;max-width:100%}.rf-paper-label{width:360px}.rf-paper-receipt{width:360px;padding:22px 18px}.rf-paper-row{gap:9px}}
+@media print{
+ @page{size:auto;margin:0}
+ body:has(#printDoc) *{visibility:hidden!important}
+ body:has(#printDoc) #printDoc,body:has(#printDoc) #printDoc *{visibility:visible!important}
+ body:has(#printDoc) #printDoc{position:fixed!important;top:0!important;left:0!important;box-shadow:none!important;margin:0!important;border:0!important}
+ body:has(#printDoc) #printDoc.rf-paper-label{width:60mm!important;height:40mm!important;min-height:40mm!important;padding:2mm!important;gap:1mm!important;overflow:hidden!important}
+ body:has(#printDoc) .rf-paper-label-head{font-size:8pt;padding-bottom:1mm}
+ body:has(#printDoc) .rf-paper-label-head span{font-size:6pt}
+ body:has(#printDoc) .rf-paper-label-main{gap:2mm}
+ body:has(#printDoc) .rf-paper-device{font-size:12pt}
+ body:has(#printDoc) .rf-paper-ticket{font-size:8pt}
+ body:has(#printDoc) .rf-paper-label-name{font-size:7pt}
+ body:has(#printDoc) .rf-paper-label .rf-paper-row{font-size:6pt;padding:0}
+ body:has(#printDoc) .rf-paper-label-foot{font-size:6pt;padding-top:1mm}
+ body:has(#printDoc) .rf-paper-label .rf-paper-qr img{width:19mm!important;height:19mm!important}
+ body:has(#printDoc) .rf-paper-label .rf-paper-qr span{font-size:5pt}
+ body:has(#printDoc) #printDoc.rf-paper-receipt{width:190mm!important;padding:12mm!important}
+ body:has(#printDoc) .rf-paper-preview,body:has(#printDoc) .rf-paper-preview-inner{overflow:visible!important;transform:none!important}
+}
