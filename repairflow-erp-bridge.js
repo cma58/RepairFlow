@@ -12,16 +12,33 @@
  const legacyStock=legacyParts&&typeof legacyParts==='object'&&!Array.isArray(legacyParts)?Object.keys(legacyParts).length:0;
  return {repairs,customers:validArray(customers),refurb:validArray(refurb),products:validArray(products),sales:validArray(sales),legacyStock};
  };
+ const amount=v=>Number.isFinite(Number(v))?Number(v):0;
+ const aggregate=d=>{
+  const pos=d.sales.filter(s=>s&&s.status==='paid').map(s=>({key:'pos:'+s.id,source:'Kassa',reference:s.number||s.id,at:s.at,amount:amount(s.total),customer:s.customer||'Balieverkoop',method:s.method||'Onbekend'}));
+  const refurbished=d.refurb.filter(r=>r&&r.status==='Verkocht'&&r.sale).map(r=>({key:'refurb:'+r.id,source:'Refurbished',reference:r.id,at:r.sale.at,amount:amount(r.sale.amount),customer:r.sale.customerName||'Onbekend',method:'Niet vastgelegd'}));
+  const repairs=d.repairs.flatMap(r=>(Array.isArray(r?.payments)?r.payments:[]).filter(p=>p&&p.status==='confirmed').map(p=>({key:'repair:'+r.ticket+':'+p.id,source:'Reparatie',reference:r.ticket||r.id||'Reparatie',at:p.at,amount:amount(p.amount),customer:r.name||'Onbekend',method:p.method||'Onbekend'})));
+  return [...pos,...refurb,...repairs].filter(x=>Number.isFinite(x.amount)&&x.amount>0).sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+ };
+ const total=rows=>Math.round(rows.reduce((n,x)=>n+x.amount,0)*100)/100;
  function render(){
- const el=$('accounting');if(!el)return;const d=all(),open=d.repairs.filter(r=>r&&!['Afgehaald','Geannuleerd'].includes(r.status)).length;
- const available=d.refurb.filter(r=>r&&r.status==='Verkoopklaar').length;
- const active=d.products.filter(p=>p.active!==false);
- const low=active.filter(p=>Number(p.stock)<=2).length;
- const revenue=d.sales.reduce((n,s)=>n+(Number(s.total)||0),0);
- el.innerHTML='<div class="rf-erp-heading"><div><h2>Bedrijfsoverzicht</h2><p>Reparaties, klanten, refurbished en kassa op één plaats.</p></div><span class="rf-local-pill">Alleen deze browser</span></div>'+
- '<div class="rf-erp-stats"><div><span>Open reparaties</span><strong>'+open+'</strong></div><div><span>Refurbished verkoopklaar</span><strong>'+available+'</strong></div><div><span>Kassaomzet totaal</span><strong>'+euro(revenue)+'</strong></div></div>'+
- '<div class="rf-erp-panel" style="margin-top:18px"><h3>Gegevensbronnen</h3><div class="rf-erp-stock-row"><span>Reparatiedossiers</span><strong>'+d.repairs.length+'</strong></div><div class="rf-erp-stock-row"><span>Klanten in klantenmodule</span><strong>'+d.customers.length+'</strong></div><div class="rf-erp-stock-row"><span>Refurbished toestellen</span><strong>'+d.refurb.length+'</strong></div><div class="rf-erp-stock-row"><span>Kassa-artikelen</span><strong>'+active.length+'</strong></div><div class="rf-erp-stock-row"><span>Artikelen met lage voorraad (0–2)</span><strong>'+low+'</strong></div><div class="rf-erp-stock-row"><span>Legacy onderdelenreferenties</span><strong>'+d.legacyStock+'</strong></div><div class="rf-erp-stock-row"><span>Geregistreerde kassaverkopen</span><strong>'+d.sales.length+'</strong></div></div>'+
- '<div class="rf-erp-panel" style="margin-top:18px"><h3>Wat is nog niet gekoppeld?</h3><p>De reparatievoorraad, refurbished voorraad en kassavoorraad worden afzonderlijk bewaard. Er wordt nog geen voorraad tussen modules overgedragen. Klantrecords kunnen in meerdere modules voorkomen zonder automatische samenvoeging.</p><p>De getoonde kassaomzet omvat geen reparatiebetalingen of refurbished verkopen. Dit scherm is geen officiële boekhouding of btw-rapportage.</p><button class="btn s" data-rf-bridge="refresh">Cijfers vernieuwen</button></div>';
+ const el=$('accounting');if(!el)return;const d=all(),rows=aggregate(d);
+ const open=d.repairs.filter(r=>r&&!['Afgehaald','Geannuleerd'].includes(r.status)).length;
+ const ready=d.refurb.filter(r=>r&&r.status==='Verkoopklaar').length;
+ const active=d.products.filter(p=>p.active!==false),low=active.filter(p=>Number(p.stock)<=2).length;
+ const pos=rows.filter(x=>x.source==='Kassa'),refurb=rows.filter(x=>x.source==='Refurbished'),repair=rows.filter(x=>x.source==='Reparatie');
+ const rowHtml=rows.slice(0,40).map(x=>'<div class="rf-erp-history"><div><strong>'+esc(x.reference)+'</strong><small>'+esc(x.source)+' · '+esc(x.customer)+' · '+esc(x.at?new Date(x.at).toLocaleString('nl-BE'):'Datum onbekend')+'</small></div><b>'+euro(x.amount)+'</b></div>').join('');
+ el.innerHTML='<div class="rf-erp-heading"><div><h2>Bedrijfsoverzicht</h2><p>Verkoop- en ontvangstregistraties uit de bestaande modules, zonder dubbele invoer.</p></div><span class="rf-local-pill">Alleen deze browser</span></div>'+
+ '<div class="rf-erp-stats"><div><span>Kassa-ontvangsten</span><strong>'+euro(total(pos))+'</strong></div><div><span>Refurbished verkopen</span><strong>'+euro(total(refurb))+'</strong></div><div><span>Reparatiebetalingen</span><strong>'+euro(total(repair))+'</strong></div></div>'+
+ '<div class="rf-erp-panel" style="margin-top:18px"><h3>Samengevoegd overzicht van registraties</h3><div class="rf-erp-stock-row"><span>Totaal geregistreerde bedragen</span><strong>'+euro(total(rows))+'</strong></div><p class="rf-erp-hint">Let op: dit totaal combineert verkoopbedragen en ontvangen reparatiebetalingen, waaronder eventuele voorschotten. Het is geen boekhoudkundige omzet of btw-aangifte. Een refurbished verkoop wordt maar één keer geteld in de eigen module.</p><button class="btn s" data-rf-bridge="export">Overzicht exporteren (CSV)</button></div>'+
+ '<div class="rf-erp-panel" style="margin-top:18px"><h3>Recente registraties</h3>'+(rowHtml||'<p class="muted">Nog geen verkopen of betalingen geregistreerd.</p>')+'</div>'+
+ '<div class="rf-erp-panel" style="margin-top:18px"><h3>Operationele status</h3><div class="rf-erp-stock-row"><span>Open reparaties</span><strong>'+open+'</strong></div><div class="rf-erp-stock-row"><span>Verkoopklare refurbished toestellen</span><strong>'+ready+'</strong></div><div class="rf-erp-stock-row"><span>Klanten in klantenmodule</span><strong>'+d.customers.length+'</strong></div><div class="rf-erp-stock-row"><span>Actieve kassaproducten</span><strong>'+active.length+'</strong></div><div class="rf-erp-stock-row"><span>Artikelen met lage voorraad</span><strong>'+low+'</strong></div><div class="rf-erp-stock-row"><span>Legacy onderdelenreferenties</span><strong>'+d.legacyStock+'</strong></div></div>'+
+ '<div class="rf-erp-panel" style="margin-top:18px"><h3>Belangrijke beperkingen</h3><p>Refurbished toestellen worden nog niet via de kassa afgerekend en hebben geen gedeelde voorraad met kassaproducten. De refurbished module registreert geen bevestigde betaalmethode. Reparatievoorschotten zijn ontvangsten, niet noodzakelijk gerealiseerde omzet.</p><p>Er is geen centrale database, echte betaalprovider of wettelijke facturatie. Dit overzicht leest alleen gegevens op dit toestel.</p><button class="btn s" data-rf-bridge="refresh">Cijfers vernieuwen</button></div>';
+ }
+ function exportCsv(){
+  const rows=aggregate(all()),header=['Bron','Referentie','Datum','Klant','Betaalmethode','Bedrag EUR'];
+  const data=[header,...rows.map(x=>[x.source,x.reference,x.at||'',x.customer,x.method,x.amount.toFixed(2)])];
+  const csv='\uFEFF'+data.map(row=>row.map(v=>{let t=String(v??'');if(/^[=+@\\-]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';}).join(';')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='repairflow-overzicht.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
  function backupCheck(file){
  if(file.size>12*1024*1024)throw Error('Bestand is te groot (max. 12 MB).');
@@ -41,7 +58,7 @@
  }
  render();
  }
- document.addEventListener('click',e=>{if(e.target.closest('[data-rf-bridge="refresh"]'))render();const nav=e.target.closest('[data-page]');if(nav&&nav.dataset.page==='accounting')queueMicrotask(render);});
+ document.addEventListener('click',e=>{if(e.target.closest('[data-rf-bridge="refresh"]'))render();if(e.target.closest('[data-rf-bridge="export"]'))exportCsv();const nav=e.target.closest('[data-page]');if(nav&&nav.dataset.page==='accounting')queueMicrotask(render);});
  document.addEventListener('change',async e=>{if(e.target.id!=='rfBackupFile')return;const out=$('rfBackupResult');if(!out)return;try{const file=e.target.files?.[0];if(!file)return;const result=await backupCheck(file);out.textContent='Back-up van '+result.date+'. '+result.keys.map(([k,v])=>k+': '+v).join(' · ')+'. Geen gegevens gewijzigd.';}catch(err){out.textContent='Controle mislukt: '+err.message;}});
  init();
 })();
