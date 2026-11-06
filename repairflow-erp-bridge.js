@@ -7,7 +7,7 @@
  const euro=n=>new Intl.NumberFormat('nl-BE',{style:'currency',currency:'EUR'}).format(Number(n)||0);
  const all=()=>{
  const rawRepairs=read('rf07v3',{}),repairs=rawRepairs&&typeof rawRepairs==='object'&&!Array.isArray(rawRepairs)?Object.values(rawRepairs):[];
- const customers=read('rfCustomersV1',[]),refurb=read('rfRefurbV1',[]),products=read('rfPosProductsV1',[]),sales=read('rfPosSalesV1',[]),legacyParts=read('rfInventoryV3',{});
+ const customersRaw=read('rfCustomersV1',{}),customers=Array.isArray(customersRaw)?customersRaw:Object.values(customersRaw&&typeof customersRaw==='object'?customersRaw:{}),refurb=read('rfRefurbV1',[]),products=read('rfPosProductsV1',[]),sales=read('rfPosSalesV1',[]),legacyParts=read('rfInventoryV3',{});
  const validArray=a=>Array.isArray(a)?a:[];
  const legacyStock=legacyParts&&typeof legacyParts==='object'&&!Array.isArray(legacyParts)?Object.keys(legacyParts).length:0;
  return {repairs,customers:validArray(customers),refurb:validArray(refurb),products:validArray(products),sales:validArray(sales),legacyStock};
