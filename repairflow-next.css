@@ -85,3 +85,23 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-ser
 .rf-intake-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:16px;border-top:1px solid #e7edf5}
 .rf-intake-count{font-size:12px;color:#8290a5}
 @media(max-width:600px){.rf-intake{border-radius:16px;margin:0}.rf-intake-head{padding:22px 20px 18px}.rf-intake-steps{padding:0 20px 18px}.rf-intake-step{font-size:11px;gap:5px}.rf-intake-step span{width:25px;height:25px}.rf-intake-body{padding:22px 20px}.rf-intake-two{grid-template-columns:1fr;gap:0}}
+
+/* Guided repair dossier */
+.rf-repair-journey{display:flex;gap:7px;overflow-x:auto;padding:18px 0;margin:8px 0 14px;border-bottom:1px solid var(--l)}
+.rf-repair-journey span{flex:1;min-width:105px;text-align:center;padding:12px 9px;border-radius:12px;background:#f1f4f9;color:#708098;font-size:12px;font-weight:700}
+.rf-repair-journey span.complete{background:#e4f7f0;color:#117655}
+.rf-repair-journey span.current{background:#315cf5;color:#fff}
+.rf-repair-nav{display:flex;gap:7px;overflow-x:auto;padding:4px 0 18px}
+.rf-repair-nav .btn{white-space:nowrap;flex:1;min-width:105px}
+.rf-repair-more{border-top:1px solid var(--l);margin-top:25px;padding-top:15px}
+.rf-repair-more summary{cursor:pointer;color:var(--m);font-weight:650}
+.rf-repair-more .toolbar{margin-top:14px}
+.rf-stage-section{border:1px solid var(--l);background:#fbfcff;border-radius:15px;padding:18px;margin:20px 0}
+.rf-stage-section h3{margin-top:0}
+.rf-stage-next{display:flex;justify-content:flex-end;margin-top:20px}
+.rf-photo-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+.rf-photo-item{overflow:hidden;border:1px solid var(--l);border-radius:12px;background:#fff}
+.rf-photo-item img{width:100%;height:130px;object-fit:cover;display:block}
+.rf-photo-item span{display:block;padding:8px;font-size:12px;color:var(--m)}
+.rf-photo-upload{display:inline-flex;align-items:center;cursor:pointer}
+@media(max-width:650px){.rf-repair-journey span{min-width:96px}.rf-repair-nav .btn{min-width:95px;font-size:12px;padding:10px 8px}.rf-photo-grid{grid-template-columns:repeat(2,1fr)}.rf-stage-section{padding:13px}}
