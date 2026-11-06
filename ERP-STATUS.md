@@ -116,3 +116,9 @@
 - Ontvangstbewijs vernieuwd met herkenbare kop, dossierstatus, klant- en toestelgegevens, gemelde klacht, offertebedrag indien aanwezig, reeds ontvangen bedrag en scanbare dossier-QR.
 - Ontvangstbewijs wordt **niet** als factuur of definitief garantiebewijs voorgesteld. Online klantstatus is nog niet actief.
 - Printlayout en preview zijn responsief. JavaScript-syntax gecontroleerd; fysieke labelprinter, PDF-paginering en QR-scans moeten nog in een echte browser getest worden.
+
+## PHIXAR-documentidentiteit
+- Toestellabel, ontvangstbewijs en generieke reparatiedocumentpreview tonen PHIXAR als winkelnaam. Ontvangstbewijs vermeldt Brusselsesteenweg 103, 9050 Gent; juridische naam Gihana, Marcelin; BTW BE 0805.990.222.
+- De ondernemer heeft aangegeven dat dit het huidige winkeladres is, maar de aangeleverde KBO-screenshot toont nog Stapelplein 5. De ondernemer moet de KBO-registratie bijwerken; deze documenten zijn geen wettelijk gevalideerde facturen.
+- Telefoon/e-mail van de winkel zijn nog onbekend en worden niet verzonnen. Het RepairFlow-softwaremerk blijft behouden in de applicatie zelf.
+- JavaScript-syntax gecontroleerd; browser- en printtests nog niet uitgevoerd.
