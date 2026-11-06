@@ -1,0 +1,49 @@
+/* RepairFlow Next: presentation only; existing domain logic and storage untouched. */
+:root{--bg:#f4f7fb;--p:#ffffff;--p2:#eef3fb;--l:#e1e8f1;--t:#16243b;--m:#62738b;--b:#315cf5;--g:#19b88c;--r:#f16e76}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.01em}
+.app{grid-template-columns:236px minmax(0,1fr)}
+.side{background:#101a31;border-right:0;padding:22px 12px}
+.brand{font-size:22px;letter-spacing:-.04em;padding:12px 14px 22px;color:#fff}
+.nav button{color:#b4c2da;border-radius:12px;font-size:14px;padding:13px 14px;margin:2px 0}
+.nav button.active,.nav button:hover{background:#273858;color:#fff}
+.main{padding:clamp(18px,3vw,42px);min-width:0}
+.top{padding-bottom:16px;border-bottom:1px solid var(--l);margin-bottom:24px}
+.top h1{font-size:clamp(24px,3vw,32px);letter-spacing:-.04em}
+.card{box-shadow:0 4px 22px rgba(28,51,89,.035);border-radius:18px}
+.btn{border-radius:12px;min-height:42px;padding:11px 16px}
+.btn.g{background:#315cf5;color:#fff}
+.btn.s{background:#fff;color:#233551;border:1px solid var(--l)}
+.btn:focus-visible,.nav button:focus-visible{outline:3px solid #94b7ff;outline-offset:2px}
+.muted,.small.muted{color:var(--m)}
+.badge{background:#eaf0ff;color:#2441a3}
+.demo-card{background:#f7f9fd;border-color:#e3e9f3}
+.rf-home{max-width:1150px;margin:auto}
+.rf-home-intro{margin-bottom:24px}
+.rf-home-intro h2{font-size:clamp(24px,3.4vw,38px);letter-spacing:-.045em;margin:0 0 7px}
+.rf-home-intro p{color:var(--m);font-size:15px;margin:0}
+.rf-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.rf-action{background:#fff;border:1px solid var(--l);border-radius:20px;padding:22px;text-align:left;min-height:178px;color:var(--t);display:flex;flex-direction:column;align-items:flex-start;gap:10px;transition:transform .15s,border-color .15s;box-shadow:0 6px 24px rgba(28,51,89,.035)}
+.rf-action:hover{transform:translateY(-2px);border-color:#a8bbf9}
+.rf-action .rf-emoji{font-size:27px;background:#eef3ff;border-radius:14px;width:52px;height:52px;display:grid;place-items:center}
+.rf-action strong{font-size:17px}
+.rf-action small{font-size:13px;color:var(--m);line-height:1.45}
+.rf-home-lower{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:24px}
+.rf-panel{background:#fff;border:1px solid var(--l);border-radius:18px;padding:22px}
+.rf-panel h3{margin:0 0 12px;font-size:17px}
+.rf-status-line{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--l);gap:10px}
+.rf-status-line:last-child{border-bottom:0}
+.rf-status-line b{font-size:20px}
+.rf-nav-more{margin-top:10px;border-top:1px solid #33445f;padding-top:12px;color:#c8d3e7}
+.rf-nav-more summary{cursor:pointer;padding:12px 14px;font-weight:700;list-style:none;border-radius:12px}
+.rf-nav-more summary::before{content:"☰";margin-right:10px}
+.rf-nav-more[open] summary{background:#273858}
+.rf-nav-more button{display:block}
+.rf-search{width:min(360px,100%);min-height:42px;border:1px solid var(--l);border-radius:12px;background:#fff;color:var(--t);padding:10px 14px}
+.rf-search-results{display:none;margin-top:12px;max-height:260px;overflow:auto}
+.rf-search-results:not(:empty){display:block}
+.rf-search-hit{display:block;width:100%;text-align:left;background:#f7f9ff;border:0;border-radius:10px;padding:11px;margin:5px 0;color:var(--t)}
+.rf-search-hit:hover{background:#eaf0ff}
+.rf-muted{font-size:12px;color:var(--m)}
+@media(max-width:1100px){.rf-actions{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.app{grid-template-columns:1fr}.side{position:relative;height:auto;padding:10px 14px}.brand{padding:8px 12px}.nav{display:flex;flex-wrap:wrap;gap:5px}.nav button{width:auto}.rf-nav-more{width:100%}.rf-nav-more button{display:inline-block}.rf-home-lower{grid-template-columns:1fr}}
+@media(max-width:550px){.rf-actions{grid-template-columns:1fr 1fr;gap:9px}.rf-action{min-height:150px;padding:15px}.rf-action .rf-emoji{width:42px;height:42px;font-size:22px}.rf-action strong{font-size:15px}.rf-action small{font-size:12px}.top{align-items:stretch}.top .toolbar{width:100%}.rf-panel{padding:16px}}
