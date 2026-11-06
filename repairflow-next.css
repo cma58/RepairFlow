@@ -115,3 +115,53 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-ser
 .rf-guided-next p{margin:0;color:#566b88;line-height:1.5}
 .rf-guided-notice{background:#fff7e8;border:1px solid #f4d7a1;border-radius:12px;padding:14px;color:#835c18}
 @media(max-width:650px){.rf-guided-heading{padding:16px}.rf-guided-next{flex-direction:column;align-items:stretch}.rf-guided-next button{width:100%}}
+
+/* RepairFlow ERP / POS */
+.rf-erp-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 22px}
+.rf-erp-heading h2{margin:0 0 5px;font-size:27px;letter-spacing:-.04em}
+.rf-erp-heading p{margin:0;color:var(--m)}
+.rf-local-pill{white-space:nowrap;border:1px solid var(--l);border-radius:99px;padding:8px 12px;color:var(--m);font-size:12px}
+.rf-erp-message{background:#eaf6ff;border:1px solid #c5dffb;color:#174d79;padding:12px;border-radius:12px}
+.rf-pos-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:18px;align-items:start}
+.rf-pos-catalog,.rf-pos-cart,.rf-erp-panel{border:1px solid var(--l);background:var(--p);border-radius:19px;padding:20px;min-width:0}
+.rf-pos-cart{position:sticky;top:18px}
+.rf-pos-cart h3,.rf-erp-panel h3{margin:0 0 16px;font-size:18px}
+.rf-erp-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.rf-erp-toolbar input{flex:1;min-width:0;padding:13px;border-radius:12px;border:1px solid var(--l);background:var(--p2);color:var(--t)}
+.rf-pos-products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rf-pos-product{display:flex;flex-direction:column;gap:12px;text-align:left;padding:18px;min-height:135px;background:var(--p2);border:1px solid var(--l);border-radius:15px;color:var(--t)}
+.rf-pos-product:hover{border-color:#6489f9}
+.rf-pos-product strong{font-size:15px;overflow-wrap:anywhere}
+.rf-pos-product small,.rf-pos-line small,.rf-erp-stock-row small,.rf-erp-history small{display:block;color:var(--m);font-size:12px;line-height:1.5}
+.rf-pos-product b{margin-top:auto;font-size:17px}
+.rf-pos-lines{min-height:95px}
+.rf-pos-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;border-bottom:1px solid var(--l);padding:13px 0}
+.rf-pos-qty{display:flex;align-items:center;gap:8px}
+.rf-pos-qty button{border:1px solid var(--l);border-radius:9px;background:var(--p2);color:var(--t);width:32px;height:32px}
+.rf-pos-total{display:flex;align-items:center;justify-content:space-between;padding:24px 0;border-top:1px solid var(--l);margin-top:18px}
+.rf-pos-total strong{font-size:25px}
+.rf-erp-label,.rf-erp-panel form label,.rf-erp-panel label{display:block;font-size:13px;font-weight:700;margin:12px 0;color:var(--t)}
+.rf-erp-label input,.rf-erp-label select,.rf-erp-panel input,.rf-erp-panel select{display:block;width:100%;padding:12px;margin-top:7px;background:var(--p2);border:1px solid var(--l);border-radius:11px;color:var(--t)}
+.rf-erp-hint{color:var(--m);font-size:12px;line-height:1.55}
+.rf-full{width:100%;margin:8px 0;min-height:46px}
+.rf-erp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:18px}
+.rf-erp-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rf-erp-stock-row,.rf-erp-history{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--l);padding:14px 0}
+.rf-erp-stock-row>div:first-child,.rf-erp-history>div:first-child{min-width:0}
+.rf-erp-stock-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.rf-erp-stock-actions .btn{font-size:12px;padding:8px}
+.rf-erp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.rf-erp-stats>div{background:var(--p);border:1px solid var(--l);border-radius:15px;padding:22px}
+.rf-erp-stats span{display:block;color:var(--m)}
+.rf-erp-stats strong{font-size:24px;display:block;margin-top:8px}
+.rf-erp-empty{grid-column:1/-1;padding:25px;background:var(--p2);border-radius:13px;color:var(--m)}
+.rf-receipt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;overflow:auto;padding:24px}
+.rf-receipt-card{max-width:650px;margin:auto;background:#fff;color:#1b293d;border-radius:16px;padding:25px}
+.rf-receipt{padding:18px}
+.rf-receipt table{width:100%;border-collapse:collapse}
+.rf-receipt th,.rf-receipt td{text-align:left;border-bottom:1px solid #ddd;padding:12px 5px}
+.rf-erp-backup{margin-top:18px}
+@media(max-width:1050px){.rf-pos-products{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:850px){.rf-pos-layout,.rf-erp-grid{grid-template-columns:1fr}.rf-pos-cart{position:static}}
+@media(max-width:550px){.rf-pos-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.rf-pos-product{padding:12px}.rf-erp-stats{grid-template-columns:1fr}.rf-erp-heading{align-items:flex-start}.rf-erp-two{grid-template-columns:1fr}.rf-pos-line{grid-template-columns:1fr auto}.rf-pos-line>b{grid-column:2}}
+@media print{body>*:not(.rf-receipt-overlay){display:none!important}.rf-receipt-overlay{position:static;background:#fff;padding:0}.rf-receipt-card{box-shadow:none;padding:0}.rf-receipt-card>.btn,.rf-receipt .btn{display:none}}
