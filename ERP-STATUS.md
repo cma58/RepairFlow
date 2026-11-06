@@ -61,3 +61,10 @@
 - Onvoldoende voorraad wordt als `ordered` in het dossier gezet; de medewerker moet de levering eerst handmatig inboeken in Voorraad voordat `received` voorraad kan reserveren.
 - Verwijderen van een ongebruikt gereserveerd onderdeel boekt voorraad terug. Een als `used` gemarkeerd onderdeel kan niet via de gewone verwijderknop worden teruggeboekt.
 - **Nog niet af:** refurbished is niet geïntegreerd; er is geen leveranciersbestelling, centraal transactiebeheer of echte synchronisatie. Browser-/E2E-tests en foutscenario's moeten nog worden uitgevoerd.
+
+## Gecombineerd bedrijfsrapport (november 2026)
+- Bedrijfsoverzicht leest nu **apart** kassaverkopen (`rfPosSalesV1`), refurbished verkopen (`rfRefurbV1` met `sale`) en bevestigde reparatiebetalingen (`rf07v3.payments`).
+- Toont per bron bedragen en een gezamenlijke lijst met bron en referentie; CSV-export beschikbaar. Geen verkooprecord wordt automatisch in een andere module gekopieerd.
+- **Niet verwarren met omzet:** reparatiebetalingen kunnen voorschotten bevatten; refurbished module registreert verkoop maar bevestigt geen betaalprovider. Het totaal is uitsluitend een operationeel overzicht van registraties.
+- Refurbished voorraad is nog niet gedeeld met de kassa. Geen btw-aangifte, formele facturatie of serverdatabase.
+- JavaScript-syntax gecontroleerd; end-to-end tests in echte browser nog nodig.
