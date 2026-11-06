@@ -138,7 +138,22 @@ function moduleDemo(type){overlay(MODULES[type]||'Demo',`<div class="oc"><h2>${e
 function kiosk(){overlay('RepairFlow Intake · veilige kiosk','<h1 style="text-align:center">Welkom 👋</h1><p style="text-align:center">Hoe wilt u zich registreren?</p><div class="choices"><button class="choice" data-action="kiosk-form" data-type="Particulier">👤<br>Particulier</button><button class="choice" data-action="kiosk-form" data-type="Bedrijf">🏢<br>Bedrijf</button><button class="choice" data-action="existing">🔁<br>Bestaande klant</button></div>');}
 function kioskForm(type){overlay('Nieuwe reparatie · '+type,`<div class="oc">${type==='Bedrijf'?'<label>BTW-/ondernemingsnummer *</label><div class="row"><input id="vat" value="BE 0123.456.789"><button class="btn" data-action="lookup">Gegevens ophalen</button></div><div id="company"></div>':''}<label>${type==='Bedrijf'?'Contactpersoon':'Naam'} *</label><input id="nm"><label>Telefoon</label><input id="ph"><label>E-mail</label><input id="em"><label>Type toestel</label><select id="kt"><option>Smartphone</option><option>Laptop</option><option>Tablet</option><option>Console</option></select><label>Merk & model *</label><input id="dv"><label>IMEI / serienummer</label><input id="sr"><label>Probleemomschrijving *</label><textarea id="pr"></textarea><label><input id="cf" class="check" type="checkbox"> Ik bevestig dat dit mijn probleemomschrijving is.</label><br><button class="btn g" data-action="submit">Intake bevestigen</button></div>`);}
 document.addEventListener('input',e=>{if(e.target.id==='repairSearch')renderRepairList();if(e.target.id==='auditFilter'){const r=repairs[selected];if($('auditRows'))$('auditRows').innerHTML=auditHtml(r,e.target.value);}});
-document.addEventListener('change',e=>{if(e.target.id==='repairFilter')renderRepairList();const a=e.target.closest('[data-action="repair-part-status"]');if(a){const r=repairs[a.dataset.ticket],p=r.parts[+a.dataset.index],old=p.status;p.status=a.value;log(r,'Onderdeelstatus gewijzigd',old,p.status);if(p.status==='received'&&r.status==='Wachten op onderdeel')setStatus(r,'In reparatie');save();detail(a.dataset.ticket,'parts');}});
+document.addEventListener('change',e=>{if(e.target.id==='repairFilter')renderRepairList();const a=e.target.closest('[data-action="repair-part-status"]');if(a){
+ const r=repairs[a.dataset.ticket],p=r?.parts[Number(a.dataset.index)];if(!p)return;
+ const old=p.status,requested=a.value;
+ if(p.productId&&!p.reserved&&['received','reserved','used'].includes(requested)){
+  if(!rfStockChange(p.productId,-p.qty,'Onderdeel ontvangen / gereserveerd',a.dataset.ticket)){toast('Onvoldoende voorraad. Boek eerst de levering in onder Voorraad.');detail(a.dataset.ticket,'quote');return}
+  p.reserved=true;
+ }
+ if(p.productId&&p.reserved&&requested==='ordered'){
+  if(!rfStockChange(p.productId,p.qty,'Onderdeelreservering vrijgegeven',a.dataset.ticket)){toast('Voorraad kon niet worden teruggeboekt.');detail(a.dataset.ticket,'quote');return}
+  p.reserved=false;
+ }
+ p.status=requested;log(r,'Onderdeelstatus gewijzigd',old,p.status);
+ if(p.status==='received'&&r.status==='Wachten op onderdeel')setStatus(r,'In reparatie');
+ try{save()}catch(e){toast('Onderdeelstatus kon niet worden opgeslagen.');return}
+ detail(a.dataset.ticket,'quote');
+}});
 document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav){go(nav.dataset.page);return}const a=e.target.closest('[data-action]');if(!a)return;const x=a.dataset.action;
 if(x==='repair-view'){repairView=a.dataset.view;renderRepairList();}
 else if(x==='repair-select'){selected=a.dataset.ticket;renderRepairList();}
@@ -167,7 +182,7 @@ else if(x==='repair-part-save'){
 }
 else if(x==='repair-remove-part'){
  const r=repairs[a.dataset.ticket],index=Number(a.dataset.index),p=r?.parts[index];if(!p)return;
- if(p.reserved&&p.productId&&!rfStockChange(p.productId,p.qty,'Reservering vrijgegeven',a.dataset.ticket)){toast('Voorraad terugboeken mislukt.');return}
+ if(p.reserved&&p.status==='used'){toast('Gebruikt onderdeel kan niet zonder correctie worden verwijderd.');return}if(p.reserved&&p.productId&&!rfStockChange(p.productId,p.qty,'Reservering vrijgegeven',a.dataset.ticket)){toast('Voorraad terugboeken mislukt.');return}
  if(p.reserved&&!p.productId&&inventory[p.name])inventory[p.name].stock+=p.qty;
  r.parts.splice(index,1);log(r,'Onderdeel verwijderd',p.name,'');
  try{save()}catch(e){r.parts.splice(index,0,p);if(p.reserved&&p.productId)rfStockChange(p.productId,-p.qty,'Herstel verwijdering',a.dataset.ticket);toast('Dossier kon niet worden opgeslagen.');return}
