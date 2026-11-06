@@ -85,3 +85,10 @@
 - Betalingsregistratie controleert geldige bedragen, onbekende tickets en probeert een mislukte browseropslag terug te draaien.
 - Standaard audit-actor is `Medewerker` in plaats van een vaste persoonsnaam. Echte gebruikersaccounts/actoridentiteit ontbreken nog.
 - JS-syntax gecontroleerd, geen browser- of betaalproviderintegratietests uitgevoerd.
+
+## Handmatige klantbeslissingen en fotobevestiging
+- De knop in het Track & Trace-overzicht claimt geen automatische online klantgoedkeuring meer. Een medewerker moet nu expliciet het contactkanaal en een bewijsnotitie registreren voordat een offerte als goedgekeurd of geweigerd wordt opgeslagen.
+- Offertebeslissingen leggen datum, kanaal, toelichting en registrerende rol vast. Bij akkoord vanuit `Wachten op klant` wordt de bestaande statusovergang gebruikt.
+- Intakefoto-bevestiging vraagt eveneens om een kanaal en bewijsnotitie; de auditlog zegt nu expliciet dat dit **handmatig geregistreerd** is, niet dat een klant digitaal heeft getekend.
+- Dit is **geen** verifieerbare elektronische handtekening of klantauthenticatie. Een klantportaal met eigen toegangscontrole en echte notificaties ontbreekt nog.
+- JavaScript-syntax gecontroleerd; browser-/E2E-tests en audit op alle oude klantbevestigingspaden blijven noodzakelijk.
