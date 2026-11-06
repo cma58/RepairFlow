@@ -122,3 +122,9 @@
 - De ondernemer heeft aangegeven dat dit het huidige winkeladres is, maar de aangeleverde KBO-screenshot toont nog Stapelplein 5. De ondernemer moet de KBO-registratie bijwerken; deze documenten zijn geen wettelijk gevalideerde facturen.
 - Telefoon/e-mail van de winkel zijn nog onbekend en worden niet verzonnen. Het RepairFlow-softwaremerk blijft behouden in de applicatie zelf.
 - JavaScript-syntax gecontroleerd; browser- en printtests nog niet uitgevoerd.
+
+## PHIXAR-website-afstemming (2026-11-07)
+- Op basis van aangeleverde screenshots: slogan REVIVE · REPAIR · RESTORE, donkerzwart/groene website-identiteit, www.phixar.be en herstel-/accessoiresfocus verwerkt in ontvangstbewijs en toestelsticker.
+- Op scherm krijgt het document een donkere groene previewachtergrond; het eigenlijke papier blijft wit voor leesbaarheid en inktbesparing.
+- Geen websiteclaims over reparatieaantallen, succespercentage, beoordelingen, garanties of doorlooptijd overgenomen: die zijn niet geverifieerd. De website toont op screenshots een ontbrekend logo en placeholdercontactadres; dit wordt niet in de kassadocumenten gekopieerd.
+- Geen origineel logo-bestand beschikbaar: typografische PHIXAR-woordmerkbenadering blijft gebruikt. JS-syntax gecontroleerd; echte print-/browsertests nog uit te voeren.
