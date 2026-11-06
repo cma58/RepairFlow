@@ -54,3 +54,10 @@
 - Bij schrijffouten wordt een herstelpoging gedaan met de oorspronkelijke browsergegevens. Dit is **geen** transactionele serverdatabase: crash, gelijktijdige tabbladen en volle browseropslag blijven risico's.
 - Reparatieonderdelen en refurbished toestellen zijn nog **niet** opgenomen in dit journaal. Eén fysieke voorraad over alle modules is dus nog niet gerealiseerd.
 - JavaScript syntax gecontroleerd; browsertest en kassatransactietest nog noodzakelijk.
+
+## Gedeelde onderdelenvoorraad (volgende fase)
+- Reparatiedossiers kiezen nieuwe onderdelen uit dezelfde `rfPosProductsV1`-catalogus als de kassa; bestaande `rfInventoryV3`-gegevens blijven alleen voor legacy dossiers behouden.
+- Reparatie-reserveringen verlagen de beschikbare kassavoorraad en schrijven een beweging naar `rfPosStockMovementsV1` met reparatieticket.
+- Onvoldoende voorraad wordt als `ordered` in het dossier gezet; de medewerker moet de levering eerst handmatig inboeken in Voorraad voordat `received` voorraad kan reserveren.
+- Verwijderen van een ongebruikt gereserveerd onderdeel boekt voorraad terug. Een als `used` gemarkeerd onderdeel kan niet via de gewone verwijderknop worden teruggeboekt.
+- **Nog niet af:** refurbished is niet geïntegreerd; er is geen leveranciersbestelling, centraal transactiebeheer of echte synchronisatie. Browser-/E2E-tests en foutscenario's moeten nog worden uitgevoerd.
