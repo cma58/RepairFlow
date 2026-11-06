@@ -1,13 +1,17 @@
 'use strict';
 /* RepairFlow POS foundation — local-only. Never simulates payment-provider confirmation. */
 (()=>{
- const PRODUCTS='rfPosProductsV1',SALES='rfPosSalesV1',DRAFT='rfPosCartV1';
+ const PRODUCTS='rfPosProductsV1',SALES='rfPosSalesV1',DRAFT='rfPosCartV1',MOVEMENTS='rfPosStockMovementsV1';
  const $=id=>document.getElementById(id);
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=n=>new Intl.NumberFormat('nl-BE',{style:'currency',currency:'EUR'}).format(Number(n)||0);
  const read=(k,f)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??f}catch{return f}};
  const products=()=>read(PRODUCTS,[]),sales=()=>read(SALES,[]);const customers=()=>{const x=read('rfCustomersV1',{});return (Array.isArray(x)?x:Object.values(x&&typeof x==='object'?x:{})).filter(c=>c&&c.name&&!c.archived)};
  const put=(k,v)=>{localStorage.setItem(k,JSON.stringify(v));};
+ const movements=()=>read(MOVEMENTS,[]);
+ const movement=(p,delta,reason,reference)=>({id:id(),at:new Date().toISOString(),productId:p.id,productName:p.name,delta,balance:p.stock,reason,reference:reference||null});
+ function commitStock(ps,entries){const beforeProducts=localStorage.getItem(PRODUCTS),beforeMovements=localStorage.getItem(MOVEMENTS);try{put(MOVEMENTS,[...movements(),...entries]);put(PRODUCTS,ps);}catch(e){try{if(beforeProducts===null)localStorage.removeItem(PRODUCTS);else localStorage.setItem(PRODUCTS,beforeProducts);if(beforeMovements===null)localStorage.removeItem(MOVEMENTS);else localStorage.setItem(MOVEMENTS,beforeMovements)}catch{}throw e;}}
+
  let cart=read(DRAFT,[]),page='sales',query='',selectedCustomer='';
  const positive=n=>Number.isFinite(n)&&n>=0;
  const qtyInt=n=>Number.isInteger(n)&&n>0;
@@ -38,7 +42,7 @@
  const el=$('rfStockRoot');if(!el)return;const ps=products();
  el.innerHTML=header('Producten & voorraad','Beheer verkoopartikelen. Reparatieonderdelen blijven voorlopig in de bestaande reparatiemodule.')+
  '<div class="rf-erp-grid"><form id="rfProductForm" class="rf-erp-panel"><h3>Nieuw artikel</h3><label>Naam *<input name="name" required maxlength="120" placeholder="Bijv. USB-C kabel"></label><label>SKU / barcode<input name="sku" maxlength="80"></label><label>IMEI / serienummer (indien uniek)<input name="imei" maxlength="80"></label><div class="rf-erp-two"><label>Verkoopprijs incl. btw (€) *<input name="price" type="number" min="0" step="0.01" required></label><label>Aankoopkost (€)<input name="cost" type="number" min="0" step="0.01" value="0"></label></div><div class="rf-erp-two"><label>Voorraad *<input name="stock" type="number" min="0" step="1" value="1" required></label><label>BTW-tarief<select name="vat"><option value="21">21%</option><option value="12">12%</option><option value="6">6%</option><option value="0">0%</option></select></label></div><p class="rf-erp-hint">Gebruik dit niet voor margeregeling of bijzondere btw-regimes zonder aparte configuratie.</p><button class="btn g rf-full" type="submit">Artikel bewaren</button></form>'+
- '<div class="rf-erp-panel"><h3>Voorraadlijst ('+ps.filter(p=>p.active!==false).length+')</h3><div class="rf-erp-stock-list">'+(ps.filter(p=>p.active!==false).map(p=>'<div class="rf-erp-stock-row"><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.sku||'Geen SKU')+' · '+money(p.price)+' · btw '+esc(p.vat)+'%</small></div><div><b>'+p.stock+' st.</b><div class="rf-erp-stock-actions"><button class="btn s" data-rf="stock-minus" data-id="'+esc(p.id)+'">−1</button><button class="btn s" data-rf="stock-plus" data-id="'+esc(p.id)+'">+1</button><button class="btn s" data-rf="archive" data-id="'+esc(p.id)+'">Archiveren</button></div></div></div>').join('')||'<p class="muted">Nog geen producten. Begin links.</p>')+'</div></div></div>';
+ '<div class="rf-erp-panel"><h3>Voorraadlijst ('+ps.filter(p=>p.active!==false).length+')</h3><div class="rf-erp-stock-list">'+(ps.filter(p=>p.active!==false).map(p=>'<div class="rf-erp-stock-row"><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.sku||'Geen SKU')+' · '+money(p.price)+' · btw '+esc(p.vat)+'%</small></div><div><b>'+p.stock+' st.</b><div class="rf-erp-stock-actions"><button class="btn s" data-rf="stock-minus" data-id="'+esc(p.id)+'">−1</button><button class="btn s" data-rf="stock-plus" data-id="'+esc(p.id)+'">+1</button><button class="btn s" data-rf="archive" data-id="'+esc(p.id)+'">Archiveren</button></div></div></div>').join('')||'<p class="muted">Nog geen producten. Begin links.</p>')+'</div></div></div><div class="rf-erp-panel" style="margin-top:18px"><h3>Laatste voorraadbewegingen</h3>'+ (movements().length?movements().slice(-15).reverse().map(m=>'<div class="rf-erp-stock-row"><div><strong>'+esc(m.productName)+'</strong><small>'+esc(new Date(m.at).toLocaleString('nl-BE'))+' · '+esc(m.reason)+(m.reference?' · '+esc(m.reference):'')+'</small></div><b>'+(m.delta>0?'+':'')+m.delta+' → '+m.balance+'</b></div>').join(''):'<p class="muted">Nog geen voorraadbewegingen.</p>')+'</div>';
  }
  function renderHistory(){
  const el=$('rfPaymentsRoot');if(!el)return;const ss=sales().slice().reverse();
@@ -73,8 +77,9 @@
  const oldSales=sales(),number='KAS-'+new Date().getFullYear()+'-'+String(oldSales.length+1).padStart(6,'0');
  const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',source:'local-pos'};
  const nextProducts=ps.map(p=>{const l=items.find(x=>x.id===p.id);return l?{...p,stock:p.stock-l.qty}:p});
- try{put(PRODUCTS,nextProducts);put(SALES,[...oldSales,sale]);cart=[];selectedCustomer='';put(DRAFT,cart);render();receipt(sale);notify('Verkoop '+number+' geregistreerd.');}
- catch(e){notify('Opslaan mislukt. Controleer de browseropslag.');}
+ const oldProductsRaw=localStorage.getItem(PRODUCTS),oldMovementsRaw=localStorage.getItem(MOVEMENTS),oldSalesRaw=localStorage.getItem(SALES);
+ try{commitStock(nextProducts,items.map(l=>movement(nextProducts.find(p=>p.id===l.id),-l.qty,'Kassaverkoop',number)));put(SALES,[...oldSales,sale]);cart=[];selectedCustomer='';put(DRAFT,cart);render();receipt(sale);notify('Verkoop '+number+' geregistreerd.');}
+ catch(e){try{for(const [key,value] of [[PRODUCTS,oldProductsRaw],[MOVEMENTS,oldMovementsRaw],[SALES,oldSalesRaw]]){if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)}}catch{}notify('Opslaan mislukt. Controleer de browseropslag.');}
  }
  function receipt(s){
  const lines=s.items.map(l=>'<tr><td>'+esc(l.name)+'</td><td>'+l.qty+'</td><td>'+money(lineTotal(l))+'</td></tr>').join('');
@@ -94,10 +99,10 @@
  else if(action==='stock-page'){document.querySelector('[data-page="parts"]')?.click();}
  else if(action==='history-page'){document.querySelector('[data-page="payments"]')?.click();}
  else if(action==='stock-plus'||action==='stock-minus'||action==='archive'){
- const ps=products(),p=ps.find(x=>x.id===pid);if(!p)return;
+ const ps=products(),p=ps.find(x=>x.id===pid);if(!p)return;const oldStock=p.stock;
  if(action==='archive'){if(!confirm('Artikel archiveren? Bestaande verkopen blijven behouden.'))return;p.active=false;}
- else p.stock=Math.max(0,p.stock+(action==='stock-plus'?1:-1));
- put(PRODUCTS,ps);render();
+ else {if(action==='stock-minus'&&p.stock<=0){notify('Voorraad kan niet negatief worden.');return;}p.stock+=action==='stock-plus'?1:-1;}
+ try{commitStock(ps,action==='archive'?[]:[movement(p,p.stock-oldStock,'Handmatige voorraadcorrectie')]);render();}catch{notify('Voorraad kon niet worden opgeslagen.');}
  }
  else if(action==='receipt'){const sale=sales().find(s=>s.id===pid);if(sale)receipt(sale);}
  else if(action==='close-receipt')$('rfReceiptOverlay')?.remove();
@@ -111,7 +116,7 @@
  if(sku&&ps.some(p=>p.sku===sku&&p.active!==false)){notify('Deze SKU bestaat al.');return;}
  if(imei&&ps.some(p=>p.imei===imei&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
  ps.push({id:id(),name,sku,imei,price:round(price),cost:round(cost),stock,vat,active:true,createdAt:new Date().toISOString()});
- try{put(PRODUCTS,ps);render();notify('Product toegevoegd.');}catch{notify('Opslaan mislukt.');}
+ try{commitStock(ps,[movement(ps[ps.length-1],stock,'Beginvoorraad')]);render();notify('Product toegevoegd.');}catch{notify('Opslaan mislukt.');}
  },true);
  document.addEventListener('change',e=>{if(e.target.id==='rfSaleCustomer')selectedCustomer=e.target.value;},true);
  document.addEventListener('input',e=>{if(e.target.id==='rfProductSearch'){query=e.target.value;const start=e.target.selectionStart;renderSales();const input=$('rfProductSearch');input?.focus();input?.setSelectionRange(start,start);}},true);

@@ -47,3 +47,10 @@
 - Resetmarkering `rfDemoDatasetReset20261106` voorkomt dat nieuwe gegevens bij volgende bezoeken opnieuw worden gewist. Let op: per browser/opslagprofiel geldt een eigen markering; andere apparaten hebben hun eigen opslag.
 - POS-verkoop kan voortaan aan een bestaande klant-ID uit de klantenmodule worden gekoppeld. Er worden geen nieuwe dubbele klantrecords aangemaakt bij de verkoop.
 - Geen serverdatabase of veilige transactiemigratie; voor echte ingebruikname blijven E2E-tests en beveiliging vereist.
+
+## Voorraadbewegingen (volgende bouwfase)
+- Kassaproducten krijgen een lokaal voorraadjournaal `rfPosStockMovementsV1` met datum, artikel-ID, mutatie, nieuwe voorraadstand, reden en eventuele kassareferentie.
+- Beginvoorraad, handmatige +1/-1-correcties en kassaverkopen worden gelogd; negatieve handmatige voorraad wordt geblokkeerd.
+- Bij schrijffouten wordt een herstelpoging gedaan met de oorspronkelijke browsergegevens. Dit is **geen** transactionele serverdatabase: crash, gelijktijdige tabbladen en volle browseropslag blijven risico's.
+- Reparatieonderdelen en refurbished toestellen zijn nog **niet** opgenomen in dit journaal. Eén fysieke voorraad over alle modules is dus nog niet gerealiseerd.
+- JavaScript syntax gecontroleerd; browsertest en kassatransactietest nog noodzakelijk.
