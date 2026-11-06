@@ -105,3 +105,13 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-ser
 .rf-photo-item span{display:block;padding:8px;font-size:12px;color:var(--m)}
 .rf-photo-upload{display:inline-flex;align-items:center;cursor:pointer}
 @media(max-width:650px){.rf-repair-journey span{min-width:96px}.rf-repair-nav .btn{min-width:95px;font-size:12px;padding:10px 8px}.rf-photo-grid{grid-template-columns:repeat(2,1fr)}.rf-stage-section{padding:13px}}
+
+/* Simple step-oriented technician forms */
+.rf-guided-heading{padding:18px 22px;margin:6px 0 20px;background:linear-gradient(110deg,#f1f5ff,#fbfdff);border:1px solid #e1e9fa;border-radius:16px}
+.rf-guided-heading span{display:block;font-size:11px;letter-spacing:.11em;font-weight:800;color:#4564bf;margin-bottom:8px}
+.rf-guided-heading h3{font-size:23px;letter-spacing:-.03em;margin:0 0 7px;color:#16243b}
+.rf-guided-heading p{margin:0;color:#687990;line-height:1.5}
+.rf-guided-next{margin:18px 0;padding:17px 20px;background:#f6f9ff;border:1px solid #e3eaf8;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:15px}
+.rf-guided-next p{margin:0;color:#566b88;line-height:1.5}
+.rf-guided-notice{background:#fff7e8;border:1px solid #f4d7a1;border-radius:12px;padding:14px;color:#835c18}
+@media(max-width:650px){.rf-guided-heading{padding:16px}.rf-guided-next{flex-direction:column;align-items:stretch}.rf-guided-next button{width:100%}}
