@@ -92,3 +92,9 @@
 - Intakefoto-bevestiging vraagt eveneens om een kanaal en bewijsnotitie; de auditlog zegt nu expliciet dat dit **handmatig geregistreerd** is, niet dat een klant digitaal heeft getekend.
 - Dit is **geen** verifieerbare elektronische handtekening of klantauthenticatie. Een klantportaal met eigen toegangscontrole en echte notificaties ontbreekt nog.
 - JavaScript-syntax gecontroleerd; browser-/E2E-tests en audit op alle oude klantbevestigingspaden blijven noodzakelijk.
+
+## Veiligheidscorrecties voor winkelgegevens
+- Het eerdere destructieve demo-reset-script wordt **niet meer automatisch geladen**. De eenmalige reset is al uitgerold; een browser die later voor het eerst opent, mag niet alsnog nieuwe echte gegevens wissen. Het script blijft historisch in de repository, maar is niet actief.
+- Reparatieticket bij kiosk-intake gebruikt nu het actuele jaar. Een offerte probeert alleen een statusovergang naar `Wachten op klant` als die volgens de transitieregels toegestaan is.
+- De kassa bewaart nu ook een snapshot van winkelmand en draft bij checkout; bij opslagfouten probeert ze voorraad, journaal, verkoop, draft en interne cartstatus te herstellen.
+- **Nog steeds risico:** localStorage heeft geen ACID-transacties of serverback-up; een mislukte rollback bij volle/uitgeschakelde opslag blijft mogelijk. Echte end-to-end tests ontbreken.
