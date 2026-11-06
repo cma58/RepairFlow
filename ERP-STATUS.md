@@ -68,3 +68,12 @@
 - **Niet verwarren met omzet:** reparatiebetalingen kunnen voorschotten bevatten; refurbished module registreert verkoop maar bevestigt geen betaalprovider. Het totaal is uitsluitend een operationeel overzicht van registraties.
 - Refurbished voorraad is nog niet gedeeld met de kassa. Geen btw-aangifte, formele facturatie of serverdatabase.
 - JavaScript-syntax gecontroleerd; end-to-end tests in echte browser nog nodig.
+
+## Demo-interface en gegevens opgeschoond
+- Alle hardcoded voorbeeld-KPI's, fictieve tabellen, voorbeeldtoestellen en demonstratieknoppen uit `index.html` verwijderd. Functionele modules vullen hun eigen scherm in; anders verschijnt een lege status.
+- Destructieve knop **Demo resetten** en handler verwijderd. Niet-geïmplementeerde garantie-, medewerker- en algemene auditnavigatie verborgen (dossier-audit blijft beschikbaar).
+- Fictieve KBO-opzoekresultaten en terugkerende voorbeeldklant verwijderd. De bedrijfskiosk heeft geen werkende KBO-koppeling; het btw-nummer wordt alleen handmatig ingevuld.
+- Fake SumUp-kaartbevestiging verwijderd: kaartbetalingen kunnen niet als bevestigd worden gemarkeerd via een gesimuleerde terminal. Overschrijving en andere handmatige ontvangsten vragen expliciete bevestiging.
+- Op verzoek éénmalige schone start met nieuwe resetmarkering, inclusief kassavoorraadjournaal. **Alle momenteel lokaal opgeslagen registraties uit deze bekende datasleutels worden bij de eerste laadbeurt van deze versie gewist.** Daarna worden nieuwe registraties niet automatisch gewist. Instellingen blijven behouden.
+- Bestaande interne CSS-klassenaam `demo-card` is uitsluitend presentatiecode en bevat geen demodata.
+- Geen echte browser-/E2E-test uitgevoerd; niet productiegeschikt zonder verdere controle.
