@@ -77,3 +77,11 @@
 - Op verzoek éénmalige schone start met nieuwe resetmarkering, inclusief kassavoorraadjournaal. **Alle momenteel lokaal opgeslagen registraties uit deze bekende datasleutels worden bij de eerste laadbeurt van deze versie gewist.** Daarna worden nieuwe registraties niet automatisch gewist. Instellingen blijven behouden.
 - Bestaande interne CSS-klassenaam `demo-card` is uitsluitend presentatiecode en bevat geen demodata.
 - Geen echte browser-/E2E-test uitgevoerd; niet productiegeschikt zonder verdere controle.
+
+## Betrouwbaardere reparatieflow
+- Na nieuwe intake verschijnt nu een gewone bevestiging op hetzelfde scherm, geen claim over een melding naar een medewerkerstelefoon.
+- Nieuwe ticket- en betaalreferenties gebruiken het actuele jaar, niet langer hardcoded 2026.
+- Bij het registreren van een reparatiebetaling wordt **geen factuur meer aangemaakt of geclaimd**: een ontvangstregistratie is niet hetzelfde als een Belgische rechtsgeldige factuur.
+- Betalingsregistratie controleert geldige bedragen, onbekende tickets en probeert een mislukte browseropslag terug te draaien.
+- Standaard audit-actor is `Medewerker` in plaats van een vaste persoonsnaam. Echte gebruikersaccounts/actoridentiteit ontbreken nog.
+- JS-syntax gecontroleerd, geen browser- of betaalproviderintegratietests uitgevoerd.
