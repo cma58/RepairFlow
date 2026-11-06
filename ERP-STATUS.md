@@ -98,3 +98,9 @@
 - Reparatieticket bij kiosk-intake gebruikt nu het actuele jaar. Een offerte probeert alleen een statusovergang naar `Wachten op klant` als die volgens de transitieregels toegestaan is.
 - De kassa bewaart nu ook een snapshot van winkelmand en draft bij checkout; bij opslagfouten probeert ze voorraad, journaal, verkoop, draft en interne cartstatus te herstellen.
 - **Nog steeds risico:** localStorage heeft geen ACID-transacties of serverback-up; een mislukte rollback bij volle/uitgeschakelde opslag blijft mogelijk. Echte end-to-end tests ontbreken.
+
+## Cross-module IMEI-bescherming
+- Bij het toevoegen van een kassaproduct met IMEI wordt gecontroleerd of dat IMEI al bij een actief refurbished toestel bestaat. Bij refurbished inkoop wordt omgekeerd de actieve kassavoorraad gecontroleerd.
+- IMEI-vergelijking normaliseert hoofdletters, spaties en streepjes. In de kassacatalogus geldt dezelfde normalisatie voor dubbele IMEI's.
+- Dit voorkomt veel voorkomende dubbele invoer, maar is **geen centrale voorraadtransactie**: lokale browseropslag en niet-atomische controles blijven beperkingen. Historisch verkochte/afgekeurde refurbished toestellen blokkeren geen nieuwe actieve POS-invoer.
+- JavaScript-syntax gecontroleerd; volledige browsertests en multi-device-synchronisatie ontbreken.
