@@ -2,11 +2,11 @@
 /* RepairFlow: user-confirmed demonstration dataset cleanup.
    Runs BEFORE legacy modules initialize, never touches app preferences. */
 (()=>{
- const MARKER='rfDemoDatasetReset20261106';
+ const MARKER='rfDemoDatasetReset20261106CleanStart';
  const DATA_KEYS=[
   'rf07v3','rf07v2','rfInventoryV3',
   'rfCustomersV1','rfRefurbV1',
-  'rfPosProductsV1','rfPosSalesV1','rfPosCartV1'
+  'rfPosProductsV1','rfPosSalesV1','rfPosCartV1','rfPosStockMovementsV1'
  ];
  const SETTINGS_KEYS=[
   'rfAnalysisFeeV31','rfCustomersViewV1','rfRefurbViewV1'
