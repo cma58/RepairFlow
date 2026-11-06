@@ -102,3 +102,24 @@
  body:has(#printDoc) .rf-phixar-x{color:#78c742!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
  body:has(#printDoc) .rf-paper-ticket-hero{background:#f4f9ef!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* PHIXAR website visual language: dark screen preview, paper-first output. */
+.rf-paper-preview{background:radial-gradient(ellipse at 50% 0%,#172417 0%,#0a0c0a 72%)!important;border-color:#253525!important}
+.rf-paper-preview .rf-paper{border-top:4px solid #438500}
+.rf-paper-brand{color:#141414!important}
+.rf-paper-subtitle{color:#438500!important;font-size:12px!important;font-weight:800!important;letter-spacing:.12em!important}
+.rf-paper-business-service{color:#5b655a;font-size:11px;margin-top:5px}
+.rf-paper-document-title{color:#181e18!important}
+.rf-paper-section h3{color:#376a06!important}
+.rf-paper-receipt-head{border-bottom:2px solid #438500!important}
+.rf-paper-label-head{border-bottom:2px solid #438500!important}
+.rf-paper-label-head span{color:#438500!important;letter-spacing:.02em!important;text-align:right}
+.rf-paper-ticket-hero{background:#f5f9f0!important;border-left-color:#438500!important}
+.rf-paper-qr{color:#111!important}
+.rf-paper-footer{color:#596657!important}
+@media print{
+ body:has(#printDoc) .rf-paper-preview{background:#fff!important}
+ body:has(#printDoc) #printDoc{border-top:0!important}
+ body:has(#printDoc) .rf-paper-subtitle{color:#356a05!important}
+ body:has(#printDoc) .rf-paper-label-head span{font-size:5.5pt!important}
+}
