@@ -4,9 +4,10 @@ export default function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  res.setHeader('X-Content-Type-Options','nosniff');
  if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({error:'Method not allowed'});}
+ const loginEnabled=process.env.REPAIRFLOW_AUTH_LOGIN_ENABLED==='true';
  return res.status(200).json({
   service:'RepairFlow',
-  authentication:{emailDelivery:'configured',sessionValidation:'not_implemented',authorization:'disabled'},
+  authentication:{emailDelivery:'configured',sessionValidation:loginEnabled?'exchange_available':'not_implemented',authorization:'disabled',loginEnabled},
   canAccessCustomerData:false,
   message:'Login via e-mail is nog niet gekoppeld aan een gecontroleerde RepairFlow-sessie.'
  });
