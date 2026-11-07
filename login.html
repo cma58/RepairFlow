@@ -34,10 +34,10 @@ async function loadReadiness(){
   const response=await fetch('/api/auth/status',{cache:'no-store'});
   if(!response.ok)throw new Error('readiness unavailable');
   const data=await response.json();
-  if(data.authentication?.sessionValidation!=='ready'||data.authentication?.authorization!=='ready'){
+  if(data.authentication?.loginEnabled!==true){
    form.hidden=true;
    status.textContent='Aanmelden tijdelijk gepauzeerd. De verificatiemail werkt, maar de beveiligde sessie en toegangscontrole worden nog afgewerkt. Je hoeft geen nieuwe e-mail aan te vragen.';
-  }
+  }else{form.hidden=false;status.textContent='Vul je uitgenodigde e-mailadres in om een beveiligde inloglink aan te vragen.'}
  }catch(error){
   form.hidden=true;
   status.textContent='Aanmelden tijdelijk niet beschikbaar. De beveiligingscontrole kon niet worden uitgevoerd.';
@@ -49,7 +49,16 @@ if(params.has('auth_return')){history.replaceState(null,'',location.pathname);fo
 else if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Meld dit aan de beheerder.';history.replaceState(null,'',location.pathname)}
 else if(params.has('token')||params.has('code')){history.replaceState(null,'',location.pathname);checkSession()}
 else if(params.has('callback')){history.replaceState(null,'',location.pathname);checkSession()}
-// Login is intentionally disabled until server-side session exchange and RLS are verified.
-status.textContent='Aanmelden tijdelijk gepauzeerd. De beveiligde sessiekoppeling wordt nog afgewerkt. Je hoeft geen nieuwe verificatiemail aan te vragen.';
-form.hidden=true;
+// Server-side feature flag controls availability; no access is granted from this form.
+form.addEventListener('submit',async event=>{
+ event.preventDefault();
+ button.disabled=true;
+ status.textContent='Aanvraag verwerken…';
+ try{
+  const response=await fetch('/api/auth/request-link',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:emailField.value.trim()})});
+  if(!response.ok)throw Error('request_failed');
+  status.textContent='De inloglink is aangevraagd. Controleer je mailbox en ongewenste e-mail.';
+ }catch(e){status.textContent='Aanmelden is nog niet beschikbaar. Vraag geen extra links aan en neem contact op met de beheerder.'}
+ finally{button.disabled=false}
+});
 </script></body></html>
