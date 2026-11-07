@@ -46,6 +46,26 @@ Status: **Living specification**. Owner-confirmed decisions are distinguished fr
 12. Covered warranty claim: repair without customer charge, with parts and work recorded. Not covered: new quote requiring approval, then reservation, repair, test and checkout as normal.
 13. On quote cancellation/change, reservations must be safely released or adjusted. All stock/payment operations must be auditable and not double-applied.
 
+### Additional repair & warranty decisions — owner-confirmed 2026-11-07
+1. Diagnosis is **free if customer proceeds with the repair**, otherwise charge the diagnostic fee. Exact price and special exceptions await owner decision; ensure any conditional fee is disclosed before diagnosis.
+2. Quotation acceptance can occur through customer portal or email; staff may record oral acceptance with timestamp, identity, scope and evidence/notes. Approval must be auditable.
+3. Declined quotation: keep dossier, set **Niet hersteld**, charge diagnosis where applicable, allow pickup.
+4. Unrepairable: set **Niet herstelbaar**, retain diagnostic report and notify customer; do not delete history.
+5. Unexpected extra damage/cost: **pause repair** and seek approval of supplementary quotation before proceeding.
+6. Final test UX: **one 'Test geslaagd' button**; do not force a device-specific checklist. Record staff member and timestamp, and prevent false-ready status after a failed test.
+7. Failed final test: return to repair or re-diagnosis, never mark ready for pickup.
+8. Automatic email notification when ready; manually log telephone calls. SMS is a future option, not a confirmed live integration.
+9. Pickup: receipt/QR plus further verification when needed; authorized third-party collection is supported with proper authorization and privacy controls.
+10. Uncollected device: separate **Wacht op afhaling** status and automatic reminders; exact reminder cadence and retention/uncollected-device policy remain open.
+11. Warranty return: new linked intake and diagnosis; staff records reasoned determination whether claim is covered. In-period != automatically covered.
+12. Repeated warranty failure: each attempt linked to original dossier, preserving complete history and escalation.
+
+### Repair-specific implementation notes
+- Quotation and additional approval must be tied to the specific scope and price; do not treat an email sent as accepted without proof of customer approval.
+- Ensure diagnosis-fee waiver on accepted repair does not cause double charge or inconsistent invoice.
+- Free warranty repair and no-balance-due checkout must still settle stock and pickup correctly.
+- Customer identity and authorized pickup must not rely on possession of a QR code alone.
+
 ## C. POS — confirmed
 - Single cart may combine retail items, refurbished devices and repair services.
 - Checkout can originate directly from repair dossier; support deposits, outstanding balances and no double collection.
@@ -118,6 +138,7 @@ These are questions, not approved implementation requirements.
 When user approves a module, append the exact decisions here. Keep a changelog and distinguish **CONFIRMED**, **PROPOSED**, **OPEN**, **LEGAL REVIEW**. Never silently rewrite previous owner-confirmed rules. No production code changes are authorized by this document alone.
 
 ## Changelog
+- 2026-11-07: Added 12 owner-confirmed repair/warranty exception rules, including conditional diagnosis fee, quote approvals, single-button final test and repeat-warranty traceability.
 - 2026-11-07: Added 12 owner-confirmed iPad/intake choices; flagged bundled marketing checkbox as legally unsafe and pending compliant redesign.
 - 2026-11-07: Consolidated owner-confirmed intake, repair, POS and refurbished decisions; parts inventory queued for questionnaire.
 - 2026-11-07: Recorded ten owner-approved parts-inventory decisions; flagged critical edge cases for follow-up.
