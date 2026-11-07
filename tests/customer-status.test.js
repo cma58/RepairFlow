@@ -30,3 +30,13 @@ test('repository uses parameterized digest and expiry/revocation checks',async()
  assert.equal(args.sql,SQL);assert.match(SQL,/revoked_at IS NULL/);assert.match(SQL,/expires_at > now\(\)/);
  assert.deepEqual(args.values,[Buffer.alloc(32)]);
 });
+
+test('incomplete or corrupt public status fails closed without fabricated values',()=>{
+ const valid={reference:'PHX-001',status:'Diagnose',updated_at:'2026-11-07T12:00:00Z'};
+ for(const reference of [undefined,null,'', ' '.repeat(3),'X'.repeat(81)]){
+  assert.throws(()=>publicStatus({...valid,reference}),/Ongeldige reparatiereferentie/);
+ }
+ for(const updated_at of [undefined,null,'','not-a-date']){
+  assert.throws(()=>publicStatus({...valid,updated_at}),/Ongeldige statusdatum/);
+ }
+});
