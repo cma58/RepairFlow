@@ -4,7 +4,7 @@ export default function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  res.setHeader('X-Content-Type-Options','nosniff');
  if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({error:'Method not allowed'});}
- const loginEnabled=process.env.REPAIRFLOW_AUTH_LOGIN_ENABLED==='true' && process.env.REPAIRFLOW_AUTH_EXCHANGE_VERIFIED==='true';
+ const loginEnabled=process.env.REPAIRFLOW_AUTH_LOGIN_ENABLED==='true' && process.env.REPAIRFLOW_AUTH_EXCHANGE_VERIFIED==='true' && process.env.REPAIRFLOW_STAFF_AUTHORIZATION_VERIFIED==='true';
  return res.status(200).json({
   service:'RepairFlow',
   authentication:{emailDelivery:'configured',sessionValidation:loginEnabled?'exchange_available':'not_implemented',authorization:'disabled',loginEnabled},
