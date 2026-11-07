@@ -33,3 +33,13 @@ Geen productie-uitrol uitgevoerd.
 - De aangemaakte rol heeft een eigen credential; **niet** in GitHub, logs of browser opgeslagen. Nog niet aan Vercel gekoppeld.
 - De applicatie gebruikt deze rol nog niet. `/api/staff-session` blijft fail-closed omdat `REPAIRFLOW_RUNTIME_DATABASE_URL` en tenant-/vestigingsinstellingen ontbreken.
 - Bestaande auth-gebruikers kunnen door verplichte e-mailverificatie opnieuw verificatie nodig hebben; nieuwe self-signup is bewust geblokkeerd.
+
+
+## PHIXAR bootstrap bevestigd (2026-11-07)
+- `rf_organizations`: PHIXAR — `b7c7eeac-d1cc-42a3-bd09-d25a2280f474`
+- `rf_branches`: PHIXAR Gent — `cd8c7cb9-66c1-40d5-b049-fa324d99607a`
+- Vestiging: Brusselsesteenweg 103, 9050 Gent.
+- `neon_auth.user` bevat 0 gebruikers; `rf_staff` bevat 0 medewerkers. Er is bewust geen nep-eigenaar aangemaakt.
+- Na bootstrap gecontroleerd met `repairflow_runtime_reader`: 0 zichtbare organisaties. RLS blijft fail-closed.
+- Configuratiewaarden voor toekomstige veilige serverruntime: `REPAIRFLOW_ORGANIZATION_ID=b7c7eeac-d1cc-42a3-bd09-d25a2280f474` en `REPAIRFLOW_BRANCH_ID=cd8c7cb9-66c1-40d5-b049-fa324d99607a`. Dit zijn niet-geheime identifiers, **geen authenticatie**.
+- Eerst echte geverifieerde Neon Auth-gebruiker, JWT-claims en veilige RLS-policies testen; geen runtime toegang of POS-API openen.
