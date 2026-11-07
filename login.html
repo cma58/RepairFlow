@@ -8,12 +8,16 @@
 const authBase='https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
 const form=document.getElementById('login'),status=document.getElementById('status'),button=document.getElementById('send');
 const params=new URLSearchParams(location.search);
+const allowedEmail='gihanamarcelin@hotmail.com';
+const emailField=document.getElementById('email');
+emailField.value='Gihanamarcelin@hotmail.com';
 if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Vraag hieronder een nieuwe link aan.';history.replaceState(null,'',location.pathname)}
-else if(params.has('token')||params.has('code')){status.textContent='De verificatielink is geopend. De toegang tot het kassasysteem is nog niet geactiveerd.';history.replaceState(null,'',location.pathname)}
+else if(params.has('token')||params.has('code')){status.textContent='De link is geopend, maar de sessie is nog niet bevestigd. Je hebt nog geen toegang tot het kassasysteem.';history.replaceState(null,'',location.pathname)}
 else if(params.has('callback')){status.textContent='Je e-maillink is geopend. De beheerder moet je account nog activeren.';history.replaceState(null,'',location.pathname)}
 form.addEventListener('submit',async event=>{
  event.preventDefault();button.disabled=true;status.textContent='Aanvraag wordt verstuurd…';
- const email=document.getElementById('email').value.trim();
+ const email=emailField.value.trim();
+ if(email.toLowerCase()!==allowedEmail){status.textContent='Dit account is nog niet uitgenodigd. Neem contact op met PHIXAR.';button.disabled=false;return;}
  try{
   const response=await fetch(authBase+'/sign-in/magic-link',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,callbackURL:location.origin+'/login.html'})});
   if(!response.ok)throw Error('Aanmelding momenteel niet beschikbaar');
