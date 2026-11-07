@@ -6,16 +6,18 @@
 <script>
 'use strict';
 const authBase='https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
+// When login is enabled, Neon redirects its one-time verifier to our first-party callback.
+const verifiedCallbackURL=location.origin+'/api/auth/callback';
 const form=document.getElementById('login'),status=document.getElementById('status'),button=document.getElementById('send');
 const params=new URLSearchParams(location.search);
 const callbackReturn=params.has('auth_return')||params.has('callback')||params.has('token')||params.has('code')||params.has('error');
 async function checkSession(){
  status.textContent='Aanmeldsessie controleren…';
  try{
-  const response=await fetch(authBase+'/get-session',{method:'GET',credentials:'include',headers:{'Accept':'application/json'},cache:'no-store'});
+  const response=await fetch('/api/auth/session',{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json'},cache:'no-store'});
   if(!response.ok)throw new Error('session unavailable');
   const data=await response.json();
-  if(data&&data.user&&data.session){
+  if(data&&data.authenticated){
    status.textContent='Je e-maillink is bevestigd. Je account is nog niet geactiveerd voor het kassasysteem; er wordt geen toegang tot klantgegevens verleend.';
   }else{
    status.textContent='De verificatielink is verwerkt, maar er is geen sessie beschikbaar op deze website. Het probleem zit in de sessiekoppeling; vraag geen nieuwe link aan.';
