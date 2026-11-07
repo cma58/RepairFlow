@@ -86,7 +86,7 @@
  checkoutInProgress=true;
  const oldSales=sales(),year=new Date().getFullYear(),prefix='KAS-'+year+'-';
  const usedNumbers=new Set(oldSales.map(s=>s?.number).filter(n=>typeof n==='string'));
- const highest=oldSales.reduce((max,s)=>{const n=s?.number;if(typeof n!=='string'||!n.startsWith(prefix))return max;const suffix=n.slice(prefix.length);return /^\\d+$/.test(suffix)?Math.max(max,Number(suffix)):max;},0);
+ const highest=oldSales.reduce((max,s)=>{const n=s?.number;if(typeof n!=='string'||!n.startsWith(prefix))return max;const suffix=n.slice(prefix.length);return /^\d+$/.test(suffix)&&Number.isSafeInteger(Number(suffix))?Math.max(max,Number(suffix)):max;},0);
  if(!Number.isSafeInteger(highest)||highest>=Number.MAX_SAFE_INTEGER){notify('Verkoopnummer kan niet veilig worden aangemaakt.');return;}
  const number=prefix+String(highest+1).padStart(6,'0');
  if(usedNumbers.has(number)){notify('Dubbel verkoopnummer gedetecteerd.');return;}
