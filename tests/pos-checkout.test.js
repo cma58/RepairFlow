@@ -41,3 +41,12 @@ test('insufficient stock rolls back with no sale',async()=>{
  assert.equal(calls.at(-1).sql,'ROLLBACK');
  assert.equal(calls.filter(c=>c.sql.includes('INSERT INTO rf_sales')).length,0);
 });
+
+test('invalid database stock balance fails closed and rolls back',async()=>{
+ for(const stock of [null,'invalid',-1,1.5,Number.MAX_SAFE_INTEGER+1]){
+  const {client,calls}=mock({stock});
+  await assert.rejects(()=>checkout(client,request),/INVALID_STOCK/);
+  assert.equal(calls.at(-1).sql,'ROLLBACK');
+  assert.equal(calls.filter(c=>c.sql.includes('INSERT INTO rf_sales')).length,0);
+ }
+});
