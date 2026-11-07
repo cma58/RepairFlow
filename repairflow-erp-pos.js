@@ -72,6 +72,8 @@
  function checkout(){
  if(checkoutInProgress||!cart.length)return;
  const ps=products(),items=[];
+ const cartIds=new Set();
+ if(!Array.isArray(cart)||cart.some(l=>!l||typeof l!=='object'||typeof l.id!=='string'||cartIds.has(l.id)||!cartIds.add(l.id))){notify('Winkelmandje bevat dubbele of ongeldige artikelen. Maak het winkelmandje opnieuw.');return;}
  for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||!stockInt(p.stock)||p.stock<l.qty||!Number.isFinite(p.price)||p.price<0||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
  const method=$('rfPaymentMethod')?.value||'Cash',customerId=$('rfSaleCustomer')?.value||'';
  const customerMatches=customerId?customers().filter(c=>c.id===customerId):[];
@@ -80,7 +82,12 @@
  const amount=total();if(!positive(amount)||amount<=0){notify('Een verkoop moet een positief totaal hebben.');return;}
  if(!confirm('Bevestig dat '+money(amount)+' daadwerkelijk ontvangen is via '+method+'?'))return;
  checkoutInProgress=true;
- const oldSales=sales(),number='KAS-'+new Date().getFullYear()+'-'+String(oldSales.length+1).padStart(6,'0');
+ const oldSales=sales(),year=new Date().getFullYear(),prefix='KAS-'+year+'-';
+ const usedNumbers=new Set(oldSales.map(s=>s?.number).filter(n=>typeof n==='string'));
+ const highest=oldSales.reduce((max,s)=>{const n=s?.number;if(typeof n!=='string'||!n.startsWith(prefix))return max;const suffix=n.slice(prefix.length);return /^\\d+$/.test(suffix)?Math.max(max,Number(suffix)):max;},0);
+ if(!Number.isSafeInteger(highest)||highest>=Number.MAX_SAFE_INTEGER){notify('Verkoopnummer kan niet veilig worden aangemaakt.');return;}
+ const number=prefix+String(highest+1).padStart(6,'0');
+ if(usedNumbers.has(number)){notify('Dubbel verkoopnummer gedetecteerd.');return;}
  const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',source:'local-pos'};
  const nextProducts=ps.map(p=>{const l=items.find(x=>x.id===p.id);return l?{...p,stock:p.stock-l.qty}:p});
  const oldProductsRaw=localStorage.getItem(PRODUCTS),oldMovementsRaw=localStorage.getItem(MOVEMENTS),oldSalesRaw=localStorage.getItem(SALES),oldDraftRaw=localStorage.getItem(DRAFT),previousCart=cart.slice(),previousCustomer=selectedCustomer;
