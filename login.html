@@ -43,9 +43,11 @@ async function loadReadiness(){
   status.textContent='Aanmelden tijdelijk niet beschikbaar. De beveiligingscontrole kon niet worden uitgevoerd.';
  }
 }
-loadReadiness();
 emailField.value='';
-if(params.has('auth_return')){history.replaceState(null,'',location.pathname);form.hidden=true;checkSession()}
+const returningFromAuth=params.has('auth_return')||params.has('error')||params.has('neon_auth_session_verifier');
+if(!returningFromAuth)loadReadiness();
+if(params.has('neon_auth_session_verifier')){const verifier=params.get('neon_auth_session_verifier');if(/^ml-[A-Za-z0-9_.-]{10,512}$/.test(verifier)){location.replace('/api/auth/callback?neon_auth_session_verifier='+encodeURIComponent(verifier))}else{history.replaceState(null,'',location.pathname);status.textContent='Ongeldige verificatielink.'}}
+else if(params.has('auth_return')){history.replaceState(null,'',location.pathname);form.hidden=true;checkSession()}
 else if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Meld dit aan de beheerder.';history.replaceState(null,'',location.pathname)}
 else if(params.has('token')||params.has('code')){history.replaceState(null,'',location.pathname);checkSession()}
 else if(params.has('callback')){history.replaceState(null,'',location.pathname);checkSession()}
