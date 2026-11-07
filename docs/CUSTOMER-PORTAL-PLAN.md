@@ -44,3 +44,14 @@ Een klant scant de QR-code op zijn PHIXAR-ontvangstbewijs en raadpleegt veilig d
 
 ## Publicatiebeleid
 Werk op featurebranch; geen merge naar main en geen Vercel-publicatie vóór expliciete gezamenlijke vrijgave. Bundel wijzigingen, voer controles uit, publiceer daarna één keer.
+
+## B2B-herstellingen en externe herstelpartners — bevestigde werkwijze
+- Een andere herstelzaak heeft twee vestigingen en meerdere medewerkers. Toestellen worden door een medewerker naar de broer van de zaak gebracht, door hem hersteld en teruggebracht.
+- De gebruiker herstelt soms ook toestellen voor deze zaak: een medewerker brengt toestel én vervangonderdeel, de gebruiker herstelt, verwittigt telefonisch of per bericht en de medewerker haalt het toestel op.
+- **Beide herstellers gebruiken voor deze opdrachten geen onderdelen uit eigen voorraad.** De opdrachtgever levert de onderdelen.
+- Onderscheid in het gegevensmodel: opdrachtgevende onderneming, aanleverende vestiging, uitvoerende hersteller, huidige bewaarder, meegeleverd onderdeel, overdrachtsgeschiedenis, contactpersoon en afhaalbevestiging.
+- Voor B2B-werk met meegeleverd onderdeel: `part_source=customer_supplied`, `inventory_deduction=false`, `part_purchase_cost=0` voor de uitvoerende hersteller. Een meegeleverd onderdeel is geen gratis onderdeel uit eigen voorraad en mag niet als eigen verkoop worden geboekt.
+- Registreer arbeidsvergoeding los van onderdelen. Extra kosten uitsluitend als expliciet toegevoegd; factuur- en betaalafspraken zijn nog niet bevestigd.
+- Overdrachtsmomenten: aangenomen, overgedragen aan hersteller, in behandeling, klaar, opdrachtgever verwittigd, teruggebracht/afgehaald. Bewaar wie, wanneer en via welk kanaal.
+- Externe hersteller heeft in fase 1 geen eigen account nodig; een bevoegde medewerker registreert de status.
+- Belangrijk voor multi-tenant ontwerp: een externe hersteller mag niet impliciet toegang krijgen tot alle klanten van de opdrachtgevende zaak. Later uitsluitend expliciet gedeelde werkopdrachten.
