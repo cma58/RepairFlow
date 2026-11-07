@@ -159,3 +159,12 @@
 - Verkoopopslag en afdrukvoorbeeld zijn nu gescheiden: fouten in het renderen van het bewijs veroorzaken geen rollback van reeds opgeslagen verkopen.
 - **Beperking:** localStorage is geen echte database-transactie; cross-tab en cross-device races zijn hiermee niet opgelost. Hiervoor blijft een centrale transactionele backend noodzakelijk.
 - Syntaxcheck uitgevoerd; nog geen bevestigde browser-E2E-test of deployment.
+
+
+## Neon integratiecontrole (2026-11-07)
+- Neon project `repairflow-db` (Frankfurt), gekoppeld aan Vercel `repair-flow`; 15 `public.rf_*` tabellen geïnstalleerd en alle 15 met ENABLE+FORCE RLS.
+- Live schema van `rf_sales`, `rf_products`, `rf_stock_balances`, `rf_staff` vergeleken met de POS-code; `rf_sales.request_id` bestaat.
+- Nog **0 RLS policies** op de 15 tabellen; er is **geen geautoriseerde gebruikersroute**. De database is bewust niet vrijgegeven voor POS/klantportaal.
+- `api/db-health.js` is een read-only verbindingsprobe; status blijft HTTP 503 (`schema_installed_access_disabled`) tot gebruikersauthenticatie en tenantbeleid veilig zijn aangesloten. Dit is geen 'ready' endpoint.
+- Vercel previewdeployment blijft door gratis API-deploymentlimiet (402) geblokkeerd; geen productie-uitrol.
+- Bestaande browserdata blijft lokaal; er is geen automatische migratie uitgevoerd.
