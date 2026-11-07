@@ -55,3 +55,11 @@ Werk op featurebranch; geen merge naar main en geen Vercel-publicatie vóór exp
 - Overdrachtsmomenten: aangenomen, overgedragen aan hersteller, in behandeling, klaar, opdrachtgever verwittigd, teruggebracht/afgehaald. Bewaar wie, wanneer en via welk kanaal.
 - Externe hersteller heeft in fase 1 geen eigen account nodig; een bevoegde medewerker registreert de status.
 - Belangrijk voor multi-tenant ontwerp: een externe hersteller mag niet impliciet toegang krijgen tot alle klanten van de opdrachtgevende zaak. Later uitsluitend expliciet gedeelde werkopdrachten.
+
+## B2B-arbeidsvergoeding — bevestigde prijspraktijk
+- De uitvoerende hersteller ontvangt doorgaans rechtstreeks contant een vergoeding, meestal tussen **€15 en €30 per herstelling**, afhankelijk van de moeilijkheid.
+- Het bedrag is **vrij invulbaar per werkopdracht**; €15–€30 is een gebruikelijke indicatie, geen minimum, maximum of verplicht tarief.
+- De opdrachtgever levert toestel én onderdeel aan. Er vindt geen voorraadvermindering of onderdelenverkoop plaats bij de uitvoerende hersteller.
+- Datamodel: `labor_fee_amount` (decimaal in EUR), `payment_method` (o.a. contant), `payment_received_at`, `payment_recorded_by`, `payment_status`, `invoice_reference` (optioneel) en `parts_source=customer_supplied`.
+- Een ontvangen contante vergoeding moet in de administratie verantwoord kunnen worden; het systeem mag niet aannemen dat contante betaling belastingvrij of buiten de boekhouding is.
+- Houd B2B-arbeidsinkomsten in rapportage gescheiden van winkelverkoop en onderdelenmarge. Juridische facturatie-, btw- en arbeidsrelatie moeten nog worden vastgesteld voordat echte boekhoudautomatisering wordt gebouwd.
