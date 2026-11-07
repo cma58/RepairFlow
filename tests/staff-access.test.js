@@ -23,3 +23,7 @@ test('sales cannot assume owner role',()=>{
  assert.throws(()=>requireRole({role:'sales'},['owner','manager']),/ACCESS_DENIED/);
  assert.equal(requireRole({role:'sales'},['sales']).role,'sales');
 });
+
+test('malformed staff identity from database is rejected',async()=>{
+ await assert.rejects(resolveStaff({verifiedSubject:'verified-neon-subject',organizationId:org,branchId:branch,query:async()=>({rows:[{...row,id:'not-a-uuid'}]})}),/ACCESS_DENIED/);
+});
