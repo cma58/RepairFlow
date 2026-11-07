@@ -60,7 +60,7 @@ function rfStockChange(productId,delta,reason,reference){
 }
 let selected='',activeRepairTab='overview',repairView='board';
 let next=Math.max(0,...Object.keys(repairs).map(k=>Number(k.split('-').pop())||0));
-function save(){localStorage.setItem('rf07v3',JSON.stringify(repairs));localStorage.setItem('rfInventoryV3',JSON.stringify(inventory));}
+function save(){const inventoryJSON=JSON.stringify(inventory),repairsJSON=JSON.stringify(repairs);localStorage.setItem('rfInventoryV3',inventoryJSON);localStorage.setItem('rf07v3',repairsJSON);}
 function exportRepairBackup(){
  if(!confirm('Deze back-up bevat persoonsgegevens, toestelgegevens en mogelijk toestelcodes. Bewaar het bestand veilig en deel het niet onbeveiligd. Back-up downloaden?'))return;
  const payload={format:'repairflow-local-backup',version:1,exportedAt:new Date().toISOString(),repairs:JSON.parse(localStorage.getItem('rf07v3')||'{}'),inventory:JSON.parse(localStorage.getItem('rfInventoryV3')||'{}')};
