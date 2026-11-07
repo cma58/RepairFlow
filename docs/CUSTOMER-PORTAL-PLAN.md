@@ -63,3 +63,13 @@ Werk op featurebranch; geen merge naar main en geen Vercel-publicatie vóór exp
 - Datamodel: `labor_fee_amount` (decimaal in EUR), `payment_method` (o.a. contant), `payment_received_at`, `payment_recorded_by`, `payment_status`, `invoice_reference` (optioneel) en `parts_source=customer_supplied`.
 - Een ontvangen contante vergoeding moet in de administratie verantwoord kunnen worden; het systeem mag niet aannemen dat contante betaling belastingvrij of buiten de boekhouding is.
 - Houd B2B-arbeidsinkomsten in rapportage gescheiden van winkelverkoop en onderdelenmarge. Juridische facturatie-, btw- en arbeidsrelatie moeten nog worden vastgesteld voordat echte boekhoudautomatisering wordt gebouwd.
+
+## Verduidelijking werkelijke externe-herstellerrelatie (2026-11-07)
+- De **eindklant betaalt de volledige afgesproken herstelprijs aan de opdrachtgevende winkel** (bijvoorbeeld €100).
+- De winkel levert toestel en onderdeel aan de gebruiker, die de technische herstelling uitvoert.
+- De winkel betaalt de gebruiker een onderling afgesproken deel van de herstelprijs (meestal circa €15–€30, afhankelijk van de moeilijkheid); momenteel gebeurt dat rechtstreeks en zonder factuur tussen hen.
+- **Niet** twee klantverkopen registreren. Eén eindklantorder bij de winkel, met gekoppelde externe werkopdracht en afzonderlijke interne vergoeding/kost.
+- De klant ziet uitsluitend de klantprijs en publieksstatus; vergoeding van de externe hersteller is uitsluitend voor bevoegde medewerkers.
+- De eventuele resterende opbrengst van de winkel is geen nettowinst zonder aftrek van andere kosten.
+- Het ontbreken van een factuur in de huidige praktijk is geen instructie om inkomsten of kosten buiten de boekhouding te houden. Bouw geen verborgen of niet-auditeerbare betalingsstroom; de juiste administratieve verwerking moet vóór productie worden afgestemd.
+- **Onbekend:** hoe de broer van de winkeleigenaar wordt vergoed. Geen aannames of vaste regels voor hem toepassen.
