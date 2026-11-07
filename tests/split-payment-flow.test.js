@@ -22,7 +22,7 @@ test('split Bancontact and cash payments stay in same payment flow',()=>{
 });
 test('payment exceeding balance is rejected and not saved',()=>{
  const h=harness();h.context.confirmPayment('R1',689,'Betaling','Cash');
- assert.equal(h.saved,0);assert.equal(h.repairs.R1.payments.length,0);assert.match(h.message,/groter dan open saldo/);
+ assert.equal(h.saved,0);assert.equal(h.repairs.R1.payments.length,0);assert.match(h.message,/groter zijn dan open saldo/);
 });
 test('payment form returns to same repair ticket',()=>{
  const h=harness();h.context.paymentForm('R1');
