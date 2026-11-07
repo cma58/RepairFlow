@@ -23,5 +23,5 @@ test('declining sensitive data warning prevents download',()=>{
  const x=run({allow:false});assert.equal(x.clicked,0);assert.equal(x.blobContent,null);
 });
 test('corrupted local data does not produce partial backup',()=>{
- assert.throws(()=>run({repairs:'{bad-json'}),SyntaxError);
+ assert.throws(()=>run({repairs:'{bad-json'}),error=>error.name==='SyntaxError');
 });
