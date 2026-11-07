@@ -14,7 +14,7 @@ test('requires configured HTTPS trusted issuer and matching JWKS origin',()=>{
 });
 test('passes strict verification options and only returns subject',async()=>{
  let captured;
- const identity=await verifyStaffIdentity('Bearer abc.def.sig',{env,jwksFactory:()=>({}),verify:async(token,key,opts)=>{captured=opts;return {payload:{sub:'user-1',email:'private@example.test'}};}});
+ const identity=await verifyStaffIdentity('Bearer abc.def.sig',{env,jwksFactory:()=>({}),verify:async(token,key,opts)=>{captured=opts;return {payload:{sub:'user-1',email:'private@example.test',email_verified:true}};}});
  assert.deepEqual(identity,{subject:'user-1'});
  assert.equal(captured.issuer,env.NEON_AUTH_ISSUER);
  assert.equal(captured.audience,'repairflow');
@@ -23,4 +23,10 @@ test('passes strict verification options and only returns subject',async()=>{
 test('rejects invalid signature and absent subject',async()=>{
  await assert.rejects(verifyStaffIdentity('Bearer abc.def.sig',{env,verify:async()=>{throw Error('signature')} ,jwksFactory:()=>({})}),/UNAUTHORIZED/);
  await assert.rejects(verifyStaffIdentity('Bearer abc.def.sig',{env,verify:async()=>({payload:{}}),jwksFactory:()=>({})}),/UNAUTHORIZED/);
+});
+
+test('rejects unverified or missing email verification claim',async()=>{
+ for(const value of [false,undefined,'true']){
+  await assert.rejects(verifyStaffIdentity('Bearer abc.def.sig',{env,jwksFactory:()=>({}),verify:async()=>({payload:{sub:'user-1',email_verified:value}})}),/UNAUTHORIZED/);
+ }
 });
