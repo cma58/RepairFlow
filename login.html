@@ -2,7 +2,7 @@
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PHIXAR · Beveiligde aanmelding</title>
 <style>body{background:#0b1020;color:#eef4ff;font:16px system-ui;min-height:100vh;display:grid;place-items:center;margin:0;padding:20px;box-sizing:border-box}main{background:#121a2d;border:1px solid #283451;border-radius:18px;padding:28px;width:min(440px,100%)}h1{margin:0 0 8px}p{color:#b3bfd8;line-height:1.5}label{display:block;margin:20px 0 8px}input{width:100%;box-sizing:border-box;padding:13px;border-radius:9px;border:1px solid #71809d;background:#080d18;color:white;font:inherit}button{margin-top:16px;width:100%;border:0;border-radius:9px;padding:13px;background:#6ea8fe;color:#0b1020;font-weight:700;font:inherit;cursor:pointer}button:disabled{opacity:.6;cursor:wait}#status{min-height:24px}small{color:#aebbd2}</style></head>
-<body><main><h1>PHIXAR</h1><p>Beveiligde medewerkerslogin</p><form id="login"><label for="email">E-mailadres</label><input id="email" type="email" autocomplete="email" required placeholder="naam@voorbeeld.be"><button id="send" type="submit">Stuur mij een inloglink</button></form><p id="status" role="status" aria-live="polite"></p><small>Gebruik alleen je eigen mailbox. Een inloglink is persoonlijk en maximaal 10 minuten geldig. De toegang tot klantdossiers wordt pas geactiveerd nadat je account is goedgekeurd. De inlogpagina geeft op zichzelf geen toegang.</small></main>
+<body><main><h1>PHIXAR</h1><p>Beveiligde medewerkerslogin</p><form id="login" hidden><label for="email">E-mailadres</label><input id="email" type="email" autocomplete="email" required placeholder="naam@voorbeeld.be"><button id="send" type="submit">Stuur mij een inloglink</button></form><p id="status" role="status" aria-live="polite"></p><small>Gebruik alleen je eigen mailbox. Een inloglink is persoonlijk en maximaal 10 minuten geldig. De toegang tot klantdossiers wordt pas geactiveerd nadat je account is goedgekeurd. De inlogpagina geeft op zichzelf geen toegang.</small></main>
 <script>
 'use strict';
 const authBase='https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
@@ -47,15 +47,7 @@ if(params.has('auth_return')){history.replaceState(null,'',location.pathname);fo
 else if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Meld dit aan de beheerder.';history.replaceState(null,'',location.pathname)}
 else if(params.has('token')||params.has('code')){history.replaceState(null,'',location.pathname);checkSession()}
 else if(params.has('callback')){history.replaceState(null,'',location.pathname);checkSession()}
-form.addEventListener('submit',async event=>{
- event.preventDefault();button.disabled=true;status.textContent='Aanvraag wordt verstuurd…';
- const email=emailField.value.trim();
- if(!invitedEmails.has(email.toLowerCase())){status.textContent='Dit account is nog niet uitgenodigd. Neem contact op met PHIXAR.';button.disabled=false;return;}
- try{
-  const response=await fetch(authBase+'/sign-in/magic-link',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,callbackURL:location.origin+'/login.html?auth_return=1'})});
-  if(!response.ok)throw Error('Aanmelding momenteel niet beschikbaar');
-  status.textContent='Als dit adres toegang heeft, ontvang je een persoonlijke inloglink. Controleer ook je ongewenste e-mail.';
- }catch(error){status.textContent='De inloglink kon niet worden aangevraagd. Probeer later opnieuw of contacteer de beheerder.'}
- finally{button.disabled=false}
-});
+// Login is intentionally disabled until server-side session exchange and RLS are verified.
+status.textContent='Aanmelden tijdelijk gepauzeerd. De beveiligde sessiekoppeling wordt nog afgewerkt. Je hoeft geen nieuwe verificatiemail aan te vragen.';
+form.hidden=true;
 </script></body></html>
