@@ -85,3 +85,12 @@ Werk op featurebranch; geen merge naar main en geen Vercel-publicatie vóór exp
 - Onderdeel wordt met toestel meegeleverd; deze route verlaagt geen eigen voorraad.
 - Eerdere ontwerpnotities over B2B-vergoedingen en aparte externe-herstellerfacturen zijn **niet leidend voor deze workflow**. Geen financiële verplichtingen of betaalstromen uit die notities implementeren.
 - Boekhoudkundige verplichtingen blijven onafhankelijk bestaan, maar worden niet vermengd met het operationele toesteltrackingproces.
+
+## Strikte scheiding publieke status en interne locatie (expliciete klantvereiste)
+- **Publieke reparatiestatussen blijven exact de bestaande statussen.** Een interne verplaatsing naar een andere vestiging, broer of andere hersteller verandert de klantstatus niet automatisch.
+- **Interne locatie is uitsluitend voor bevoegde medewerkers in het ERP.** Nooit publiek tonen: actuele interne locatie, naam van uitvoerende hersteller, overgedragen-aan, vestigingswissels, route, transport, interne notities of overdrachtsgeschiedenis.
+- Datamodel: `repair.status` blijft bestaande publieksstatus; `repair_location.current_location` en `repair_transfer_events` zijn aparte ERP-entiteiten. Geen nieuwe publieke statussen zoals 'onderweg naar hersteller' of 'bij broer'.
+- Publieke API retourneert uitsluitend expliciet toegestane publieke velden. Geen complete reparatieobjecten doorsturen en vervolgens client-side verbergen.
+- Toesteloverdracht mag uitsluitend interne locatievelden en de interne auditgeschiedenis wijzigen, **nooit** `repair.status`. De status mag alleen via de bestaande expliciete reparatieworkflow worden aangepast.
+- Autorisatietest: klant A met geldig token ziet alleen eigen publieke status, niet `current_location`, `assigned_repairer`, `transfer_events`, interne notities of kosten; ook niet in netwerkrespons of broncode.
+- Privacy: het portaal mag niet suggereren dat het toestel in de winkel ligt wanneer dit niet zo is. Toon enkel de werkelijke reparatiefase zonder uitspraken over fysieke locatie.
