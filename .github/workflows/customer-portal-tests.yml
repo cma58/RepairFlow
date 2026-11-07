@@ -11,6 +11,8 @@ on:
       - 'tests/backup-preflight.test.js'
       - 'lib/pos-checkout.js'
       - 'tests/pos-checkout.test.js'
+      - 'lib/staff-access.js'
+      - 'tests/staff-access.test.js'
       - '.github/workflows/customer-portal-tests.yml'
 permissions:
   contents: read
@@ -23,4 +25,4 @@ jobs:
         with:
           node-version: '22'
       - name: Customer portal unit tests
-        run: node --test tests/customer-status.test.js tests/customer-status-handler.test.js tests/backup-preflight.test.js tests/pos-checkout.test.js
+        run: node --test tests/*.test.js
