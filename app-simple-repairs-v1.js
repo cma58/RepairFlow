@@ -3,7 +3,7 @@
 (()=>{
  const KEY='rf07v3', $=id=>document.getElementById(id);
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const labels={'Binnengebracht':['Nieuw','Start de controle'],'Diagnose':['Controleren','Bekijk wat er mis is'],'Wachten op klant':['Wacht op klant','Klant moet beslissen'],'Wachten op onderdeel':['Wacht op onderdeel','Onderdeel nog niet binnen'],'In reparatie':['Herstellen','Voer de reparatie uit'],'Kwaliteitscontrole':['Testen','Controleer of alles werkt'],'Klaar':['Klaar','Klant mag afhalen'],'Afgehaald':['Afgehaald','Reparatie afgerond'],'Geannuleerd':['Geannuleerd','Dossier afgesloten']};
+ const labels={'Binnengebracht':['Nieuw','Start de controle'],'Diagnose':['Controleren','Bekijk wat er mis is'],'Wachten op klant':['Wacht op klant','Klant moet beslissen'],'Wachten op onderdeel':['Wacht op onderdeel','Onderdeel nog niet binnen'],'In reparatie':['Herstellen','Voer de reparatie uit'],'Kwaliteitscontrole':['Testen','Controleer of alles werkt'],'Klaar':['Klaar','Klant mag afhalen'],'Klaar zonder reparatie':['Klaar voor retour','Toestel teruggeven zonder herstelling'],'Afgehaald':['Afgehaald','Reparatie afgerond'],'Geannuleerd':['Geannuleerd','Dossier afgesloten']};
  let lastSignature='';
  const css=document.createElement('style');
  css.textContent=`
@@ -18,13 +18,14 @@
  @media(max-width:650px){.rf-easy-repairs{grid-template-columns:1fr}}
  `;
  document.head.appendChild(css);
- function read(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch{return {}}}
+ function read(){try{const data=JSON.parse(localStorage.getItem(KEY));return data&&typeof data==='object'&&!Array.isArray(data)?data:{}}catch{return {}}}
  function update(){
   const w=$('repairWorkspace'),page=$('repairs');if(!w||!page?.classList.contains('active'))return;
   // Never replace a full dossier: only the existing list/table view.
   if(!w.querySelector('#repairCards')&&!w.querySelector('.table')&&!w.dataset.rfEasy)return;
   const q=($('repairSearch')?.value||'').trim().toLowerCase(),f=$('repairFilter')?.value||'';
   const rows=Object.entries(read()).filter(([id,r])=>{
+   if(!r||typeof r!=='object'||Array.isArray(r))return false;
    const text=[id,r.name,r.phone,r.device,r.serial,r.customerStatementOriginal,r.location].join(' ').toLowerCase();
    return(!q||text.includes(q))&&(!f||r.status===f);
   }).sort((a,b)=>b[0].localeCompare(a[0]));

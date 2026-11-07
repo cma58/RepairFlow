@@ -37,17 +37,32 @@
  function exportCsv(){
   const rows=aggregate(all()),header=['Bron','Referentie','Datum','Klant','Betaalmethode','Bedrag EUR'];
   const data=[header,...rows.map(x=>[x.source,x.reference,x.at||'',x.customer,x.method,x.amount.toFixed(2)])];
-  const csv='\uFEFF'+data.map(row=>row.map(v=>{let t=String(v??'');if(/^[=+@\\-]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';}).join(';')).join('\r\n');
+  const csv='\uFEFF'+data.map(row=>row.map(v=>{let t=String(v??'');if(/^[\\s\\u0000-\\u001f]*[=+@-]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';}).join(';')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='repairflow-overzicht.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
  function backupCheck(file){
  if(file.size>12*1024*1024)throw Error('Bestand is te groot (max. 12 MB).');
  return file.text().then(text=>{
- const d=JSON.parse(text);if(d.format!=='RepairFlow-browser-backup'||d.version!==1||!d.keys||typeof d.keys!=='object'||Array.isArray(d.keys))throw Error('Dit is geen herkenbare RepairFlow-back-up.');
+ const d=JSON.parse(text);
+ if(!d||d.format!=='RepairFlow-browser-backup'||d.version!==1||!d.keys||typeof d.keys!=='object'||Array.isArray(d.keys))throw Error('Dit is geen herkenbare RepairFlow-back-up.');
  const keys=Object.keys(d.keys);if(keys.length>150)throw Error('Te veel gegevensvelden.');
- if(keys.some(k=>!/^rf[a-zA-Z0-9_-]*$|^repairflow[a-zA-Z0-9_-]*$/i.test(k)||typeof d.keys[k]!=='string'))throw Error('Back-up bevat ongeldige velden.');
- const relevant=['rf07v3','rfInventoryV3','rfCustomersV1','rfRefurbV1','rfPosProductsV1','rfPosSalesV1'];const result=relevant.map(k=>[k,keys.includes(k)?'aanwezig':'ontbreekt']);
- return {date:d.exportedAt||'onbekend',keys:result};
+ if(keys.some(k=>!(/^(rf|repairflow)[a-zA-Z0-9_-]*$/i.test(k))||typeof d.keys[k]!=='string'))throw Error('Back-up bevat ongeldige velden.');
+ const relevant=[
+ ['rf07v3','Reparaties'],['rfInventoryV3','Onderdelen'],['rfCustomersV1','Klanten'],
+ ['rfRefurbV1','Refurbished'],['rfPosProductsV1','Kassaproducten'],
+ ['rfPosSalesV1','Kassaverkopen'],['rfPosStockMovementsV1','Voorraadmutaties']
+ ];
+ const summary=relevant.map(([key,label])=>{
+  if(!Object.prototype.hasOwnProperty.call(d.keys,key))return label+': ontbreekt';
+  try{
+   const value=JSON.parse(d.keys[key]);
+   const count=Array.isArray(value)?value.length:value&&typeof value==='object'?Object.keys(value).length:null;
+   return label+': '+(count===null?'formaat na te kijken':count+' records');
+  }catch{return label+': beschadigd (ongeldige JSON)'}
+ });
+ const unexpected=keys.filter(k=>!relevant.some(([known])=>known===k)).length;
+ if(unexpected)summary.push('Andere instellingen/modules: '+unexpected+' (niet geïmporteerd)');
+ return {summary};
  });
  }
  function init(){
@@ -59,6 +74,6 @@
  render();
  }
  document.addEventListener('click',e=>{if(e.target.closest('[data-rf-bridge="refresh"]'))render();if(e.target.closest('[data-rf-bridge="export"]'))exportCsv();const nav=e.target.closest('[data-page]');if(nav&&nav.dataset.page==='accounting')queueMicrotask(render);});
- document.addEventListener('change',async e=>{if(e.target.id!=='rfBackupFile')return;const out=$('rfBackupResult');if(!out)return;try{const file=e.target.files?.[0];if(!file)return;const result=await backupCheck(file);out.textContent='Back-up van '+result.date+'. '+result.keys.map(([k,v])=>k+': '+v).join(' · ')+'. Geen gegevens gewijzigd.';}catch(err){out.textContent='Controle mislukt: '+err.message;}});
+ document.addEventListener('change',async e=>{if(e.target.id!=='rfBackupFile')return;const out=$('rfBackupResult');if(!out)return;try{const file=e.target.files?.[0];if(!file)return;const result=await backupCheck(file);out.textContent='Controle voltooid. '+result.summary.join(' · ')+'. Geen gegevens gewijzigd of verstuurd.';}catch(err){out.textContent='Controle mislukt: '+err.message;}});
  init();
 })();

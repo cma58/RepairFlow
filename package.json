@@ -1,0 +1,13 @@
+{
+  "name": "repairflow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "RepairFlow PHIXAR web application",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0",
+    "jose": "^6.0.0"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}

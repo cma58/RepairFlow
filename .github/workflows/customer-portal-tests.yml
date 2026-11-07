@@ -1,0 +1,32 @@
+name: RepairFlow customer portal unit tests
+on:
+  push:
+    branches:
+      - feature/customer-portal-ipad-batch-20261107
+  pull_request:
+    paths:
+      - 'lib/customer-status*.js'
+      - 'tests/customer-status*.test.js'
+      - 'lib/backup-preflight.js'
+      - 'tests/backup-preflight.test.js'
+      - 'lib/pos-checkout.js'
+      - 'tests/pos-checkout.test.js'
+      - 'lib/staff-access.js'
+      - 'tests/staff-access.test.js'
+      - 'lib/neon-auth-identity.js'
+      - 'tests/neon-auth-identity.test.js'
+      - '.github/workflows/customer-portal-tests.yml'
+permissions:
+  contents: read
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Customer portal unit tests
+        run: node --test tests/*.test.js

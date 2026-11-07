@@ -134,3 +134,37 @@
 - Reparatie-ontvangstbewijs, sticker en generieke reparatiedocumenten lezen bij openen de opgeslagen bedrijfsgegevens uit rfBusinessSettingsV1, met standaardwaarden als fallback.
 - Wijzigingen blijven uitsluitend in de lokale browseropslag en synchroniseren niet met andere apparaten. Geen automatische logo-upload of wettelijke factuurvalidatie.
 - Bestaande lokale klant- en reparatiegegevens blijven ongemoeid. JavaScript-syntax gecontroleerd; nog geen browser-/printtest.
+
+
+## PHIXAR klantportaal — ontwikkelbranch, niet live (2026-11-07)
+- Toegevoegd: `klant/index.html`, `kiosk/index.html`, `customer-portal.css`, `customer-portal.js`. Beide schermen geven expliciet aan dat online toegang nog niet geactiveerd is.
+- Publieke `api/customer-status.js` weigert toegang met HTTP 503 totdat veilige databasekoppeling, rollen en rate limiting zijn gerealiseerd.
+- PostgreSQL-conceptschema in `db/schema-v0.1.sql`; nog niet uitgevoerd of gekoppeld.
+- `lib/customer-status.js`: cryptografische 256-bit toegangscode, SHA-256 digest en strikte publieke statusprojectie zonder IMEI, locatie, hersteller of interne notities.
+- `lib/customer-status-repository.js`: geparameteriseerde SQL voor geldige, niet-ingetrokken toegang. Nog niet aan de publieke API gekoppeld; runtime-RLS-rollen en throttling ontbreken.
+- `tests/customer-status.test.js`: Node-testgevallen voor toegangscode, scheiding van gegevens en SQL. JavaScript-syntax gecontroleerd; tests zijn nog niet in CI uitgevoerd.
+- PHIXAR is eerste testklant; multi-bedrijf is architecturale voorbereiding. Geen merge, deployment, gegevensmigratie of live database uitgevoerd.
+
+
+## PHIXAR veilige migratievoorbereiding (2026-11-07)
+- `lib/backup-preflight.js`: analyseert bestaande `RepairFlow-browser-backup` v1 zonder gegevens te wijzigen, telt bekende modules, detecteert kapotte JSON en extra modules. Geeft geen persoonsgegevens terug.
+- `tests/backup-preflight.test.js`: tests voor tellingen, privacy, ongeldig formaat en ontbrekende mapping.
+- GitHub Actions workflow uitgebreid om preflighttests mee te draaien.
+- `lib/customer-status-handler.js`: testbare, fail-closed HTTP-laag; **niet aangesloten op publieke route** wegens ontbrekende centrale database en rate limiting.
+- Geen echte import, databaseverbinding, login, merge of deploy. Huidige PHIXAR-browsergegevens blijven ongewijzigd.
+
+
+## PHIXAR kassa-betrouwbaarheid (featurebranch)
+- `repairflow-erp-pos.js`: `checkoutInProgress` blokkeert herhaalde checkout-aanroepen binnen één browsercontext.
+- Verkoopopslag en afdrukvoorbeeld zijn nu gescheiden: fouten in het renderen van het bewijs veroorzaken geen rollback van reeds opgeslagen verkopen.
+- **Beperking:** localStorage is geen echte database-transactie; cross-tab en cross-device races zijn hiermee niet opgelost. Hiervoor blijft een centrale transactionele backend noodzakelijk.
+- Syntaxcheck uitgevoerd; nog geen bevestigde browser-E2E-test of deployment.
+
+
+## Neon integratiecontrole (2026-11-07)
+- Neon project `repairflow-db` (Frankfurt), gekoppeld aan Vercel `repair-flow`; 15 `public.rf_*` tabellen geïnstalleerd en alle 15 met ENABLE+FORCE RLS.
+- Live schema van `rf_sales`, `rf_products`, `rf_stock_balances`, `rf_staff` vergeleken met de POS-code; `rf_sales.request_id` bestaat.
+- Nog **0 RLS policies** op de 15 tabellen; er is **geen geautoriseerde gebruikersroute**. De database is bewust niet vrijgegeven voor POS/klantportaal.
+- `api/db-health.js` is een read-only verbindingsprobe; status blijft HTTP 503 (`schema_installed_access_disabled`) tot gebruikersauthenticatie en tenantbeleid veilig zijn aangesloten. Dit is geen 'ready' endpoint.
+- Vercel previewdeployment blijft door gratis API-deploymentlimiet (402) geblokkeerd; geen productie-uitrol.
+- Bestaande browserdata blijft lokaal; er is geen automatische migratie uitgevoerd.

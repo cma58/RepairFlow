@@ -14,7 +14,8 @@
 
  let cart=read(DRAFT,[]),page='sales',query='',selectedCustomer='';
  const positive=n=>Number.isFinite(n)&&n>=0;
- const qtyInt=n=>Number.isInteger(n)&&n>0;
+ const qtyInt=n=>Number.isSafeInteger(n)&&n>0;
+ const stockInt=n=>Number.isSafeInteger(n)&&n>=0;
  const id=()=>globalThis.crypto?.randomUUID?.()||('rf-'+Date.now()+'-'+Math.random().toString(36).slice(2));
  const round=n=>Math.round((n+Number.EPSILON)*100)/100;
  const activeProducts=()=>products().filter(p=>p.active!==false);
@@ -61,25 +62,42 @@
  function add(productId,change){
  const p=products().find(p=>p.id===productId&&p.active!==false);if(!p)return;
  const existing=cart.find(l=>l.id===p.id),next=(existing?.qty||0)+change;
- if(next>p.stock){notify('Niet voldoende voorraad.');return;}
+ if(!stockInt(p.stock)||!qtyInt(next)&&next!==0||next>p.stock){notify('Ongeldige of onvoldoende voorraad. Controleer het artikel.');return;}
  if(next<=0)cart=cart.filter(l=>l.id!==p.id);
  else if(existing)existing.qty=next;
  else cart.push({id:p.id,name:p.name,sku:p.sku,imei:p.imei,price:p.price,vat:p.vat,qty:next});
  saveCart();
  }
+ let checkoutInProgress=false;
  function checkout(){
- if(!cart.length)return;
+ if(checkoutInProgress||!cart.length)return;
  const ps=products(),items=[];
- for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||p.stock<l.qty||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
- const method=$('rfPaymentMethod')?.value||'Cash',customerId=$('rfSaleCustomer')?.value||'',customerRecord=customers().find(c=>c.id===customerId),customer=customerRecord?.name||'';
+ const cartIds=new Set();
+ if(!Array.isArray(cart)||cart.some(l=>!l||typeof l!=='object'||typeof l.id!=='string'||cartIds.has(l.id)||!cartIds.add(l.id))){notify('Winkelmandje bevat dubbele of ongeldige artikelen. Maak het winkelmandje opnieuw.');return;}
+ for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||!stockInt(p.stock)||p.stock<l.qty||!Number.isFinite(p.price)||p.price<0||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
+ const method=$('rfPaymentMethod')?.value,customerId=$('rfSaleCustomer')?.value||'';
+ const allowedMethods=new Set(['Cash','Bancontact (extern bevestigd)','SumUp (extern bevestigd)','Overschrijving (ontvangen)']);
+ if(!allowedMethods.has(method)){notify('Kies een geldige betaalmethode voordat je de betaling registreert.');return;}
+ const customerMatches=customerId?customers().filter(c=>c.id===customerId):[];
+ if(customerId&&customerMatches.length!==1){notify('De geselecteerde klant bestaat niet meer of is dubbel geregistreerd. Kies opnieuw een klant.');return;}
+ const customerRecord=customerMatches[0],customer=customerRecord?.name||'';
  const amount=total();if(!positive(amount)||amount<=0){notify('Een verkoop moet een positief totaal hebben.');return;}
  if(!confirm('Bevestig dat '+money(amount)+' daadwerkelijk ontvangen is via '+method+'?'))return;
- const oldSales=sales(),number='KAS-'+new Date().getFullYear()+'-'+String(oldSales.length+1).padStart(6,'0');
- const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',source:'local-pos'};
+ checkoutInProgress=true;
+ const oldSales=sales(),year=new Date().getFullYear(),prefix='KAS-'+year+'-';
+ const usedNumbers=new Set(oldSales.map(s=>s?.number).filter(n=>typeof n==='string'));
+ const highest=oldSales.reduce((max,s)=>{const n=s?.number;if(typeof n!=='string'||!n.startsWith(prefix))return max;const suffix=n.slice(prefix.length);return /^\d+$/.test(suffix)&&Number.isSafeInteger(Number(suffix))?Math.max(max,Number(suffix)):max;},0);
+ if(!Number.isSafeInteger(highest)||highest>=Number.MAX_SAFE_INTEGER){notify('Verkoopnummer kan niet veilig worden aangemaakt.');return;}
+ const number=prefix+String(highest+1).padStart(6,'0');
+ if(usedNumbers.has(number)){notify('Dubbel verkoopnummer gedetecteerd.');return;}
+ const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',paymentConfirmation:'manual-staff-confirmation',providerTransactionId:null,source:'local-pos'};
  const nextProducts=ps.map(p=>{const l=items.find(x=>x.id===p.id);return l?{...p,stock:p.stock-l.qty}:p});
  const oldProductsRaw=localStorage.getItem(PRODUCTS),oldMovementsRaw=localStorage.getItem(MOVEMENTS),oldSalesRaw=localStorage.getItem(SALES),oldDraftRaw=localStorage.getItem(DRAFT),previousCart=cart.slice(),previousCustomer=selectedCustomer;
- try{commitStock(nextProducts,items.map(l=>movement(nextProducts.find(p=>p.id===l.id),-l.qty,'Kassaverkoop',number)));put(SALES,[...oldSales,sale]);cart=[];selectedCustomer='';put(DRAFT,cart);render();receipt(sale);notify('Verkoop '+number+' geregistreerd.');}
+ let saved=false;
+ try{commitStock(nextProducts,items.map(l=>movement(nextProducts.find(p=>p.id===l.id),-l.qty,'Kassaverkoop',number)));put(SALES,[...oldSales,sale]);cart=[];selectedCustomer='';put(DRAFT,cart);saved=true;}
  catch(e){cart=previousCart;selectedCustomer=previousCustomer;try{for(const [key,value] of [[PRODUCTS,oldProductsRaw],[MOVEMENTS,oldMovementsRaw],[SALES,oldSalesRaw],[DRAFT,oldDraftRaw]]){if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)}}catch{}notify('Opslaan mislukt. Controleer de browseropslag.');}
+ finally{checkoutInProgress=false;}
+ if(saved){try{render();receipt(sale);notify('Verkoop '+number+' geregistreerd.');}catch(e){notify('Verkoop '+number+' opgeslagen. Open de verkoopgeschiedenis als het bewijs niet verschijnt.');}}
  }
  function receipt(s){
  const lines=s.items.map(l=>'<tr><td>'+esc(l.name)+'</td><td>'+l.qty+'</td><td>'+money(lineTotal(l))+'</td></tr>').join('');
@@ -100,6 +118,7 @@
  else if(action==='history-page'){document.querySelector('[data-page="payments"]')?.click();}
  else if(action==='stock-plus'||action==='stock-minus'||action==='archive'){
  const ps=products(),p=ps.find(x=>x.id===pid);if(!p)return;const oldStock=p.stock;
+ if(!stockInt(oldStock)){notify('Voorraadgegevens zijn ongeldig. Corrigeer het artikel voordat je voorraad wijzigt.');return;}
  if(action==='archive'){if(!confirm('Artikel archiveren? Bestaande verkopen blijven behouden.'))return;p.active=false;}
  else {if(action==='stock-minus'&&p.stock<=0){notify('Voorraad kan niet negatief worden.');return;}p.stock+=action==='stock-plus'?1:-1;}
  try{commitStock(ps,action==='archive'?[]:[movement(p,p.stock-oldStock,'Handmatige voorraadcorrectie')]);render();}catch{notify('Voorraad kon niet worden opgeslagen.');}
@@ -112,10 +131,16 @@
  },true);
  document.addEventListener('submit',e=>{
  if(e.target.id!=='rfProductForm')return;e.preventDefault();const f=new FormData(e.target),name=String(f.get('name')||'').trim(),sku=String(f.get('sku')||'').trim(),imei=String(f.get('imei')||'').trim(),price=Number(f.get('price')),cost=Number(f.get('cost')),stock=Number(f.get('stock')),vat=Number(f.get('vat')),ps=products();
- if(!name||!positive(price)||!positive(cost)||!Number.isInteger(stock)||stock<0||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
+ if(!name||!positive(price)||!positive(cost)||!stockInt(stock)||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
  if(sku&&ps.some(p=>p.sku===sku&&p.active!==false)){notify('Deze SKU bestaat al.');return;}
- if(imei&&ps.some(p=>p.imei&&String(p.imei).replace(/[\\s-]/g,'').toUpperCase()===imei.replace(/[\\s-]/g,'').toUpperCase()&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
- if(imei){const refurb=read('rfRefurbV1',[]),norm=v=>String(v||'').replace(/[\\s-]/g,'').toUpperCase();if(Array.isArray(refurb)&&refurb.some(r=>r&&r.imei&&norm(r.imei)===norm(imei)&&!['Verkocht','Afgekeurd','Onderdelen-donor'].includes(r.status))){notify('Dit IMEI staat al als actief refurbished toestel geregistreerd. Beheer het via Refurbished.');return;}}
+ if(imei&&ps.some(p=>p.imei&&String(p.imei).replace(/[\\s-]/g,'').toUpperCase()===imei.replace(/[\s-]/g,'').toUpperCase()&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
+ if(imei){
+  const refurb=read('rfRefurbV1',[]),norm=v=>String(v||'').replace(/[\s-]/g,'').toUpperCase();
+  if(!Array.isArray(refurb)){notify('Refurbished-voorraad kan niet worden gecontroleerd. Controleer de gegevens voordat je dit toestel toevoegt.');return;}
+  if(refurb.some(r=>r&&typeof r==='object'&&!['Verkocht','Afgekeurd','Onderdelen-donor'].includes(r.status)&&[r.imei,r.imei1,r.imei2,r.serial,r.serialNumber].some(v=>v&&norm(v)===norm(imei)))){
+   notify('Dit IMEI/serienummer staat al bij een actief refurbished toestel. Beheer het via Refurbished.');return;
+  }
+ }
  ps.push({id:id(),name,sku,imei,price:round(price),cost:round(cost),stock,vat,active:true,createdAt:new Date().toISOString()});
  try{commitStock(ps,[movement(ps[ps.length-1],stock,'Beginvoorraad')]);render();notify('Product toegevoegd.');}catch{notify('Opslaan mislukt.');}
  },true);
