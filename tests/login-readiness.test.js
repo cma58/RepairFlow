@@ -12,7 +12,8 @@ test('login is fail-closed before any asynchronous readiness check',()=>{
 });
 test('public auth status never claims sessions are ready',()=>{
  const source=fs.readFileSync(path.join(__dirname,'../api/auth/status.js'),'utf8');
- assert.match(source,/loginEnabled=process\.env\.REPAIRFLOW_AUTH_LOGIN_ENABLED==='true'/);
+ assert.match(source,/REPAIRFLOW_AUTH_LOGIN_ENABLED==='true'/);
+ assert.match(source,/REPAIRFLOW_AUTH_EXCHANGE_VERIFIED==='true'/);
  assert.match(source,/authorization:'disabled'/);
  assert.match(source,/canAccessCustomerData:false/);
 });
