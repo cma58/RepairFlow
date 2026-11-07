@@ -24,3 +24,12 @@
 6. Pas daarna echte browserlogin en synchronisatie activeren. Lokale browserdata eerst veilig exporteren.
 
 Geen productie-uitrol uitgevoerd.
+
+
+## Live configuratie uitgevoerd op 2026-11-07
+- Neon Auth `main`: `disable_sign_up=true`, `require_email_verification=true`, `send_verification_email_on_sign_in=true`, `revoke_sessions_on_password_reset=true`, `allow_localhost=false`.
+- Trusted redirect origin: `https://repair-flow-theta.vercel.app`.
+- Database rol `repairflow_runtime_reader` aangemaakt als `read_only` voor `neondb.public`. Verifieerd: `rolbypassrls=false`, `rolsuper=false`. Query onder die rol geeft 0 zichtbare organisaties; geen policies aanwezig.
+- De aangemaakte rol heeft een eigen credential; **niet** in GitHub, logs of browser opgeslagen. Nog niet aan Vercel gekoppeld.
+- De applicatie gebruikt deze rol nog niet. `/api/staff-session` blijft fail-closed omdat `REPAIRFLOW_RUNTIME_DATABASE_URL` en tenant-/vestigingsinstellingen ontbreken.
+- Bestaande auth-gebruikers kunnen door verplichte e-mailverificatie opnieuw verificatie nodig hebben; nieuwe self-signup is bewust geblokkeerd.
