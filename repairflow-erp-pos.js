@@ -75,7 +75,9 @@
  const cartIds=new Set();
  if(!Array.isArray(cart)||cart.some(l=>!l||typeof l!=='object'||typeof l.id!=='string'||cartIds.has(l.id)||!cartIds.add(l.id))){notify('Winkelmandje bevat dubbele of ongeldige artikelen. Maak het winkelmandje opnieuw.');return;}
  for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||!stockInt(p.stock)||p.stock<l.qty||!Number.isFinite(p.price)||p.price<0||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
- const method=$('rfPaymentMethod')?.value||'Cash',customerId=$('rfSaleCustomer')?.value||'';
+ const method=$('rfPaymentMethod')?.value,customerId=$('rfSaleCustomer')?.value||'';
+ const allowedMethods=new Set(['Cash','Bancontact (extern bevestigd)','SumUp (extern bevestigd)','Overschrijving (ontvangen)']);
+ if(!allowedMethods.has(method)){notify('Kies een geldige betaalmethode voordat je de betaling registreert.');return;}
  const customerMatches=customerId?customers().filter(c=>c.id===customerId):[];
  if(customerId&&customerMatches.length!==1){notify('De geselecteerde klant bestaat niet meer of is dubbel geregistreerd. Kies opnieuw een klant.');return;}
  const customerRecord=customerMatches[0],customer=customerRecord?.name||'';
@@ -88,7 +90,7 @@
  if(!Number.isSafeInteger(highest)||highest>=Number.MAX_SAFE_INTEGER){notify('Verkoopnummer kan niet veilig worden aangemaakt.');return;}
  const number=prefix+String(highest+1).padStart(6,'0');
  if(usedNumbers.has(number)){notify('Dubbel verkoopnummer gedetecteerd.');return;}
- const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',source:'local-pos'};
+ const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',paymentConfirmation:'manual-staff-confirmation',providerTransactionId:null,source:'local-pos'};
  const nextProducts=ps.map(p=>{const l=items.find(x=>x.id===p.id);return l?{...p,stock:p.stock-l.qty}:p});
  const oldProductsRaw=localStorage.getItem(PRODUCTS),oldMovementsRaw=localStorage.getItem(MOVEMENTS),oldSalesRaw=localStorage.getItem(SALES),oldDraftRaw=localStorage.getItem(DRAFT),previousCart=cart.slice(),previousCustomer=selectedCustomer;
  let saved=false;
