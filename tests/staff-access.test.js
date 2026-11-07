@@ -27,3 +27,15 @@ test('sales cannot assume owner role',()=>{
 test('malformed staff identity from database is rejected',async()=>{
  await assert.rejects(resolveStaff({verifiedSubject:'verified-neon-subject',organizationId:org,branchId:branch,query:async()=>({rows:[{...row,id:'not-a-uuid'}]})}),/ACCESS_DENIED/);
 });
+
+test('branchless sales and technician records cannot access every branch',async()=>{
+ for(const role of ['sales','technician']){
+  await assert.rejects(resolveStaff({verifiedSubject:'verified-neon-subject',organizationId:org,branchId:branch,query:async()=>({rows:[{...row,role,branch_id:null}]})}),/ACCESS_DENIED/);
+ }
+});
+test('organization-wide owner and manager can access a valid branch',async()=>{
+ for(const role of ['owner','manager']){
+  const staff=await resolveStaff({verifiedSubject:'verified-neon-subject',organizationId:org,branchId:other,query:async()=>({rows:[{...row,role,branch_id:null}]})});
+  assert.equal(staff.role,role);assert.equal(staff.branchId,other);
+ }
+});
