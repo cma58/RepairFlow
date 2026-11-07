@@ -73,3 +73,15 @@ Werk op featurebranch; geen merge naar main en geen Vercel-publicatie vóór exp
 - De eventuele resterende opbrengst van de winkel is geen nettowinst zonder aftrek van andere kosten.
 - Het ontbreken van een factuur in de huidige praktijk is geen instructie om inkomsten of kosten buiten de boekhouding te houden. Bouw geen verborgen of niet-auditeerbare betalingsstroom; de juiste administratieve verwerking moet vóór productie worden afgestemd.
 - **Onbekend:** hoe de broer van de winkeleigenaar wordt vergoed. Geen aannames of vaste regels voor hem toepassen.
+
+## Definitieve productvereenvoudiging — toesteltracking boven vergoedingen
+- De gebruiker verduidelijkt dat hijzelf en de broer van de winkeleigenaar in de **operationele workflow als interne herstellers** worden behandeld. Dit is een softwarematige rol, geen uitspraak over hun juridische arbeidsstatuut.
+- De winkel verdeelt werk naar hen wanneer het druk is. Voor deze workflow zijn onderlinge betalingen **geen functionele vereiste**. Maak geen verplichte velden voor arbeidsvergoeding, factuur, marge of betaling aan hersteller.
+- **Prioriteit:** iedere bevoegde medewerker van de onderneming kan meteen zien waar het toestel ligt, bij wie het is en wat de status is, ongeacht vestiging.
+- Minimale velden per herstelling: `current_location_type` (vestiging / bij hersteller / onderweg), `current_location_id`, `assigned_repairer_id`, `repair_status`, `updated_at`.
+- Elke overdracht schrijft een gebeurtenis met `from_location`, `to_location`, `handed_over_by`, `received_by` (indien bevestigd), `timestamp` en optionele korte notitie.
+- Statussen: ontvangen, onderweg naar hersteller, in herstelling, klaar bij hersteller, onderweg naar vestiging, terug in vestiging, klant verwittigd, afgehaald.
+- Bevoegde medewerkers van beide vestigingen binnen **dezelfde onderneming** mogen deze locatie-/statusgegevens raadplegen. Andere ondernemingen niet.
+- Onderdeel wordt met toestel meegeleverd; deze route verlaagt geen eigen voorraad.
+- Eerdere ontwerpnotities over B2B-vergoedingen en aparte externe-herstellerfacturen zijn **niet leidend voor deze workflow**. Geen financiële verplichtingen of betaalstromen uit die notities implementeren.
+- Boekhoudkundige verplichtingen blijven onafhankelijk bestaan, maar worden niet vermengd met het operationele toesteltrackingproces.
