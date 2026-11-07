@@ -72,7 +72,10 @@
  if(checkoutInProgress||!cart.length)return;
  const ps=products(),items=[];
  for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||p.stock<l.qty||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
- const method=$('rfPaymentMethod')?.value||'Cash',customerId=$('rfSaleCustomer')?.value||'',customerRecord=customers().find(c=>c.id===customerId),customer=customerRecord?.name||'';
+ const method=$('rfPaymentMethod')?.value||'Cash',customerId=$('rfSaleCustomer')?.value||'';
+ const customerMatches=customerId?customers().filter(c=>c.id===customerId):[];
+ if(customerId&&customerMatches.length!==1){notify('De geselecteerde klant bestaat niet meer of is dubbel geregistreerd. Kies opnieuw een klant.');return;}
+ const customerRecord=customerMatches[0],customer=customerRecord?.name||'';
  const amount=total();if(!positive(amount)||amount<=0){notify('Een verkoop moet een positief totaal hebben.');return;}
  if(!confirm('Bevestig dat '+money(amount)+' daadwerkelijk ontvangen is via '+method+'?'))return;
  checkoutInProgress=true;
