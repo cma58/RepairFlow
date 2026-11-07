@@ -133,9 +133,9 @@
  if(e.target.id!=='rfProductForm')return;e.preventDefault();const f=new FormData(e.target),name=String(f.get('name')||'').trim(),sku=String(f.get('sku')||'').trim(),imei=String(f.get('imei')||'').trim(),price=Number(f.get('price')),cost=Number(f.get('cost')),stock=Number(f.get('stock')),vat=Number(f.get('vat')),ps=products();
  if(!name||!positive(price)||!positive(cost)||!stockInt(stock)||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
  if(sku&&ps.some(p=>p.sku===sku&&p.active!==false)){notify('Deze SKU bestaat al.');return;}
- if(imei&&ps.some(p=>p.imei&&String(p.imei).replace(/[\\s-]/g,'').toUpperCase()===imei.replace(/[\\s-]/g,'').toUpperCase()&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
+ if(imei&&ps.some(p=>p.imei&&String(p.imei).replace(/[\\s-]/g,'').toUpperCase()===imei.replace(/[\s-]/g,'').toUpperCase()&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
  if(imei){
-  const refurb=read('rfRefurbV1',null),norm=v=>String(v||'').replace(/[\\s-]/g,'').toUpperCase();
+  const refurb=read('rfRefurbV1',[]),norm=v=>String(v||'').replace(/[\s-]/g,'').toUpperCase();
   if(!Array.isArray(refurb)){notify('Refurbished-voorraad kan niet worden gecontroleerd. Controleer de gegevens voordat je dit toestel toevoegt.');return;}
   if(refurb.some(r=>r&&typeof r==='object'&&!['Verkocht','Afgekeurd','Onderdelen-donor'].includes(r.status)&&[r.imei,r.imei1,r.imei2,r.serial,r.serialNumber].some(v=>v&&norm(v)===norm(imei)))){
    notify('Dit IMEI/serienummer staat al bij een actief refurbished toestel. Beheer het via Refurbished.');return;
