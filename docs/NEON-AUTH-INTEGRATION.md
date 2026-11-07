@@ -5,7 +5,7 @@
 - Neon Auth is geprovisioneerd (Better Auth).
 - Issuer/base URL: `https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth`
 - JWKS URL: `https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth/.well-known/jwks.json`
-- Op dit moment zijn **registratie zonder uitnodiging ingeschakeld**, **e-mailverificatie niet vereist** en **localhost toegestaan**. Deze instellingen moeten vóór publiek gebruik worden verhard.
+- Oorspronkelijke toestand bij inspectie: vrije registratie ingeschakeld, e-mailverificatie niet vereist en localhost toegestaan. **Deze drie instellingen zijn inmiddels aangepast**, zie de live configuratie verderop.
 - De juiste JWT `aud` claim en het feitelijke tokenuitgiftepad moeten met een testaccount worden bevestigd. Veronderstel niet dat elk Better Auth sessietoken een JWT is.
 
 ## Serverroute
@@ -43,3 +43,10 @@ Geen productie-uitrol uitgevoerd.
 - Na bootstrap gecontroleerd met `repairflow_runtime_reader`: 0 zichtbare organisaties. RLS blijft fail-closed.
 - Configuratiewaarden voor toekomstige veilige serverruntime: `REPAIRFLOW_ORGANIZATION_ID=b7c7eeac-d1cc-42a3-bd09-d25a2280f474` en `REPAIRFLOW_BRANCH_ID=cd8c7cb9-66c1-40d5-b049-fa324d99607a`. Dit zijn niet-geheime identifiers, **geen authenticatie**.
 - Eerst echte geverifieerde Neon Auth-gebruiker, JWT-claims en veilige RLS-policies testen; geen runtime toegang of POS-API openen.
+
+
+## Eerste eigenaar — veilige registratie
+- Nog geen e-mailadres voor de eerste eigenaar ontvangen. Niet gokken en geen fictieve account aanmaken.
+- Vraag de gebruiker om het gewenste beheerders-e-mailadres. Maak daarna een gecontroleerd account aan met een door de eigenaar zelf gekozen wachtwoord/verificatie, niet met een wachtwoord in chat of GitHub.
+- Controleer het werkelijk uitgegeven Neon Auth-token en claims voordat `identity_subject` in `rf_staff` wordt gekoppeld.
+- Geef pas na deze verificatie `owner`-rechten voor PHIXAR. Geen RLS-openstelling of gegevensmigratie vóór positieve test.
