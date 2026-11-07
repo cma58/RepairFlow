@@ -94,3 +94,11 @@ Werk op featurebranch; geen merge naar main en geen Vercel-publicatie vóór exp
 - Toesteloverdracht mag uitsluitend interne locatievelden en de interne auditgeschiedenis wijzigen, **nooit** `repair.status`. De status mag alleen via de bestaande expliciete reparatieworkflow worden aangepast.
 - Autorisatietest: klant A met geldig token ziet alleen eigen publieke status, niet `current_location`, `assigned_repairer`, `transfer_events`, interne notities of kosten; ook niet in netwerkrespons of broncode.
 - Privacy: het portaal mag niet suggereren dat het toestel in de winkel ligt wanneer dit niet zo is. Toon enkel de werkelijke reparatiefase zonder uitspraken over fysieke locatie.
+
+## Productprioriteit bevestigd: PHIXAR-first pilot
+- **PHIXAR is de eerste en huidige testklant; alle actieve ontwikkeling richt zich primair op een betrouwbare PHIXAR-pilot.**
+- Eerst samen met de PHIXAR-eigenaar testen, fouten oplossen en de kernfuncties stabiel maken; daarna pas een tweede bedrijf overtuigen om RepairFlow te kopen/gebruiken.
+- Multi-tenant en meerdere vestigingen **architecturaal mogelijk maken**, maar geen uitgebreide tweede-winkel-workflows of betaalmodules bouwen vóór de PHIXAR-pilot.
+- Volgorde: betrouwbare kassa/herstellingen en documenten; centrale beveiligde opslag; veilige QR/statuspagina; klantentests; daarna iPad-kiosk en uitgebreid multi-vestigingsbeheer.
+- Interne toestellocatie blijft strikt gescheiden van klantstatus. Implementatie voor twee vestigingen kan wachten tot de tweede pilot.
+- Niet mergen of naar productie deployen voordat een grotere batch is getest en de gebruiker de publicatie goedkeurt.
