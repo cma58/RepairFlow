@@ -21,10 +21,10 @@ export default async function handler(req,res){
    return res.status(401).json({error:'unverified_identity'});
   }
   // Reject tokens minted by any other issuer even if the same signing infrastructure is used.
-  if(typeof payload.iss!=='string'||!payload.iss.startsWith(AUTH_BASE)){
+  if(typeof payload.iss!=='string'||payload.iss!==AUTH_BASE){
    return res.status(401).json({error:'wrong_issuer'});
   }
-  const sql=neon(process.env.DATABASE_URL);
+  // FORCE RLS with no policies intentionally denies this query until a tenant-safe\n  // server authorization strategy is implemented and tested. Do not bypass RLS here.\n  const sql=neon(process.env.DATABASE_URL);
   const staff=await sql`SELECT organization_id,branch_id,display_name,role FROM public.rf_staff
    WHERE identity_subject=${payload.sub} AND active=true LIMIT 2`;
   if(staff.length!==1)return res.status(403).json({error:'staff_not_active'});
