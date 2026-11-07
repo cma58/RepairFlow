@@ -16,6 +16,21 @@ Status: **Living specification**. Owner-confirmed decisions are distinguished fr
 5. Business customer: billing address required. Private customer: address generally not required at intake; whether required for certain invoices/legal cases needs validation.
 6. Customer can be selected for a repair, or staff can do a quick retail sale without unnecessary full customer registration, subject to invoicing requirements.
 
+### Additional customer intake & iPad decisions — owner-confirmed 2026-11-07
+1. Suggest existing customer matches based on phone number or email; **staff must confirm** before linking, to avoid false matches.
+2. After successful submission, automatically clear the shared iPad session and return to the home screen. Do not erase an unsent offline draft prematurely.
+3. Owner preference: **one checkbox covering intake terms and marketing**. **LEGAL/PRIVACY CONFLICT — DO NOT IMPLEMENT AS STATED:** optional marketing consent cannot be bundled with mandatory service/privacy acknowledgements. Use separate optional, unprechecked marketing opt-in pending legal review. Privacy notice is information, not consent for necessary processing. Ask owner to confirm compliant UX before implementation.
+4. No customer signature required on iPad.
+5. Required device fields: device type and brand; model if known; staff may complete the record.
+6. Document incoming device condition with **photos only**, no mandatory damage checklist. Staff should be able to attach condition photos.
+7. Unlock code is optional, only if necessary; protect it securely, restrict access, avoid plaintext storage/logging, and support a diagnostic process without it.
+8. Supplied accessories: free-text field, not a required checklist.
+9. Live staff queue with alert and **'Intake overnemen'** action. Claim/lock intake to prevent simultaneous duplicate processing.
+10. If connectivity is lost, show clear error, retain draft securely and support safe resend. Never imply server receipt before confirmation; avoid duplicate submission.
+11. Business registration fields: company name, billing address, VAT/enterprise number when applicable, contact person and email.
+12. After **staff acceptance/final intake**, provide receipt with QR via email or printed paper. iPad self-registration alone is not device acceptance.
+13. Preserve previous rule: individual address not mandatory by default; business billing address required.
+
 ## B. Repair workflow — confirmed
 1. Select/create customer, start repair and register device/issue and intake condition/photos.
 2. Usually begin with diagnosis. A fixed diagnostic fee is intended; exact amount awaits discussion with shop owner.
@@ -103,6 +118,7 @@ These are questions, not approved implementation requirements.
 When user approves a module, append the exact decisions here. Keep a changelog and distinguish **CONFIRMED**, **PROPOSED**, **OPEN**, **LEGAL REVIEW**. Never silently rewrite previous owner-confirmed rules. No production code changes are authorized by this document alone.
 
 ## Changelog
+- 2026-11-07: Added 12 owner-confirmed iPad/intake choices; flagged bundled marketing checkbox as legally unsafe and pending compliant redesign.
 - 2026-11-07: Consolidated owner-confirmed intake, repair, POS and refurbished decisions; parts inventory queued for questionnaire.
 - 2026-11-07: Recorded ten owner-approved parts-inventory decisions; flagged critical edge cases for follow-up.
 - 2026-11-07: Added four owner-confirmed inventory exception rules (shortages, installed-but-unpaid, defective parts, stock count differences).
