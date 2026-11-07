@@ -8,12 +8,29 @@
 const authBase='https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
 const form=document.getElementById('login'),status=document.getElementById('status'),button=document.getElementById('send');
 const params=new URLSearchParams(location.search);
+const callbackReturn=params.has('callback')||params.has('token')||params.has('code')||params.has('error');
+async function checkSession(){
+ status.textContent='Aanmeldsessie controleren…';
+ try{
+  const response=await fetch(authBase+'/get-session',{method:'GET',credentials:'include',headers:{'Accept':'application/json'},cache:'no-store'});
+  if(!response.ok)throw new Error('session unavailable');
+  const data=await response.json();
+  if(data&&data.user&&data.session){
+   status.textContent='Je e-maillink is bevestigd. Je account is nog niet geactiveerd voor het kassasysteem; er wordt geen toegang tot klantgegevens verleend.';
+  }else{
+   status.textContent='De e-maillink is geopend, maar deze browser heeft geen bevestigde sessie. Vraag voorlopig geen nieuwe link aan en meld dit aan de beheerder.';
+  }
+ }catch(error){
+  status.textContent='De e-maillink is geopend, maar de sessiecontrole lukt niet in deze browser. Vraag voorlopig geen nieuwe link aan en meld dit aan de beheerder.';
+ }
+}
+
 const invitedEmails=new Set(['gihanamarcelin@hotmail.com','amine.chtaiti@gmail.com']);
 const emailField=document.getElementById('email');
 emailField.value='';
-if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Vraag hieronder een nieuwe link aan.';history.replaceState(null,'',location.pathname)}
-else if(params.has('token')||params.has('code')){status.textContent='De link is geopend, maar de sessie is nog niet bevestigd. Je hebt nog geen toegang tot het kassasysteem.';history.replaceState(null,'',location.pathname)}
-else if(params.has('callback')){status.textContent='Je e-maillink is geopend. De beheerder moet je account nog activeren.';history.replaceState(null,'',location.pathname)}
+if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Meld dit aan de beheerder.';history.replaceState(null,'',location.pathname)}
+else if(params.has('token')||params.has('code')){history.replaceState(null,'',location.pathname);checkSession()}
+else if(params.has('callback')){history.replaceState(null,'',location.pathname);checkSession()}
 form.addEventListener('submit',async event=>{
  event.preventDefault();button.disabled=true;status.textContent='Aanvraag wordt verstuurd…';
  const email=emailField.value.trim();
