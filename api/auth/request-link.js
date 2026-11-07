@@ -5,7 +5,7 @@ export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store, private');
  res.setHeader('X-Content-Type-Options','nosniff');
  if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'method_not_allowed'})}
- if(process.env.REPAIRFLOW_AUTH_LOGIN_ENABLED!=='true')return res.status(503).json({error:'login_not_ready'});
+ if(process.env.REPAIRFLOW_AUTH_LOGIN_ENABLED!=='true'||process.env.REPAIRFLOW_AUTH_EXCHANGE_VERIFIED!=='true')return res.status(503).json({error:'login_not_ready'});
  if(req.headers.origin!==ORIGIN)return res.status(403).json({error:'invalid_origin'});
  const email=typeof req.body?.email==='string'?req.body.email.trim().toLowerCase():'';
  if(!INVITED.has(email))return res.status(403).json({error:'account_not_invited'});
