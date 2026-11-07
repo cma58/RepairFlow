@@ -39,3 +39,10 @@ test('organization-wide owner and manager can access a valid branch',async()=>{
   assert.equal(staff.role,role);assert.equal(staff.branchId,other);
  }
 });
+
+test('ambiguous staff identity mapping fails closed',async()=>{
+ await assert.rejects(resolveStaff({verifiedSubject:'verified-neon-subject',organizationId:org,branchId:branch,query:async(sql)=>{assert.match(sql,/LIMIT 2/);return {rows:[row,{...row,id:'55555555-5555-4555-8555-555555555555'}]};}}),/ACCESS_DENIED/);
+});
+test('malformed database result fails closed',async()=>{
+ await assert.rejects(resolveStaff({verifiedSubject:'verified-neon-subject',organizationId:org,branchId:branch,query:async()=>({rows:null})}),/ACCESS_DENIED/);
+});
