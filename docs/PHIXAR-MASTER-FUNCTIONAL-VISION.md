@@ -74,6 +74,27 @@ Status: **Living specification**. Owner-confirmed decisions are distinguished fr
 - Receipt, VAT, payment and stock movements must be traceable. Receipt is not automatically a legally compliant invoice.
 - Detailed POS rules also in docs/PHIXAR-POS-VISION.md.
 
+### Additional POS & payments decisions — owner-confirmed 2026-11-07
+1. Staff may grant limited discounts; larger discounts require manager approval. Define amount/percentage limits later.
+2. Staff may manually adjust sale price with recorded reason; large deviations require manager approval. Define threshold later.
+3. Deposits/prepayments attach to repair dossier and are automatically offset against amount due at pickup. Prevent double collection.
+4. Releasing goods/device with outstanding balance requires explicit manager approval and a recorded receivable.
+5. Refunds use a return/credit note linked to original transaction, with reason and authorization; do not delete historical sales.
+6. Issue business invoices and invoices on private customer's request; otherwise provide legally permitted receipt. Belgian invoicing/e-invoicing/tax rules require validation.
+7. Customer may choose printed receipt, email receipt or both.
+8. **Owner-selected POS UX:** selecting Bancontact, SumUp or bank transfer immediately marks the payment as received in the cashier workflow. **CONTROL RISK / NEEDS VALIDATION:** this is an operator-recorded assertion, NOT proof that a payment provider settled or a transfer arrived. Preserve payment method, operator, timestamp, evidence/reference when available, and a distinct provider/bank reconciliation status; do not automatically represent bank funds as verified. For bank transfer especially, consider a pending/unverified exception requiring owner confirmation.
+9. Daily close includes cash count, payment-method breakdown and variance reporting.
+10. Cash drawer ledger tracks opening float, cash receipts, cash expenses/payouts and closing balance.
+11. Incorrectly finalized sales require an auditable correction/void with reason; never silently delete.
+12. Reports include turnover, gross margin, payment methods, repairs, refurbished devices and staff performance; enforce role-based visibility.
+
+### POS implementation safeguards / pending configuration
+- Define discount and price-override thresholds, manager roles and approval audit.
+- Decide reconciliation treatment for immediate-received card/terminal/transfer payments; avoid treating unverified transfers as cleared funds.
+- Specify cash close reopening, corrections, payment refunds and shift boundaries.
+- Validate Belgian VAT, secondhand margin regime, consumer receipt/invoice rules, and applicable B2B structured e-invoicing.
+- Preserve original sales, deposits, partial payments and refunds as linked immutable/auditable records.
+
 ## D. Refurbished — owner-confirmed decisions (14)
 1. Sources: suppliers **and** devices taken over from customers.
 2. Device types: smartphones, laptops, tablets, other; adaptive specs (brand/model, RAM, storage, processor, IMEI/serial where relevant, notes, buy/sell prices).
@@ -138,6 +159,7 @@ These are questions, not approved implementation requirements.
 When user approves a module, append the exact decisions here. Keep a changelog and distinguish **CONFIRMED**, **PROPOSED**, **OPEN**, **LEGAL REVIEW**. Never silently rewrite previous owner-confirmed rules. No production code changes are authorized by this document alone.
 
 ## Changelog
+- 2026-11-07: Added 12 owner-confirmed POS/payment decisions and explicit reconciliation safeguards for immediately marked-as-received payments.
 - 2026-11-07: Added 12 owner-confirmed repair/warranty exception rules, including conditional diagnosis fee, quote approvals, single-button final test and repeat-warranty traceability.
 - 2026-11-07: Added 12 owner-confirmed iPad/intake choices; flagged bundled marketing checkbox as legally unsafe and pending compliant redesign.
 - 2026-11-07: Consolidated owner-confirmed intake, repair, POS and refurbished decisions; parts inventory queued for questionnaire.
