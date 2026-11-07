@@ -11,8 +11,8 @@ const handler=source.slice(start+5,end);
 function run({status='Klaar',balance=0,qc=true,accept=true,saveFails=false}={}){
  const r={status,qcComplete:qc,unlock:'1234',warranty:false,audit:[],payments:[]};
  const repairs={R1:r};let printed=0,details=0,saved=0,confirmations=0,message='';
- const ctx={repairs,a:{dataset:{ticket:'R1'}},due:()=>balance,confirm:()=>{confirmations++;return accept},setStatus:(obj,next)=>{obj.status=next;obj.audit.unshift({action:'Status gewijzigd'});return true},log:(obj,action)=>obj.audit.unshift({action}),save:()=>{saved++;if(saveFails)throw Error('QuotaExceededError')},detail:()=>{details++},paymentReceipt:()=>{printed++},toast:m=>{message=m},rfPaymentReturnTicket:'R1',JSON};
- vm.createContext(ctx);vm.runInContext('if(true){'+handler+'}',ctx);
+ const ctx={x:'pickup',repairs,a:{dataset:{ticket:'R1'}},due:()=>balance,confirm:()=>{confirmations++;return accept},setStatus:(obj,next)=>{obj.status=next;obj.audit.unshift({action:'Status gewijzigd'});return true},log:(obj,action)=>obj.audit.unshift({action}),save:()=>{saved++;if(saveFails)throw Error('QuotaExceededError')},detail:()=>{details++},paymentReceipt:()=>{printed++},toast:m=>{message=m},rfPaymentReturnTicket:'R1',JSON};
+ vm.createContext(ctx);vm.runInContext('(function(){'+handler+'})()',ctx);
  return {r:repairs.R1,printed,details,saved,confirmations,message};
 }
 test('successful handover starts warranty and opens receipt',()=>{
