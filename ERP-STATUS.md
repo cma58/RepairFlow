@@ -134,3 +134,13 @@
 - Reparatie-ontvangstbewijs, sticker en generieke reparatiedocumenten lezen bij openen de opgeslagen bedrijfsgegevens uit rfBusinessSettingsV1, met standaardwaarden als fallback.
 - Wijzigingen blijven uitsluitend in de lokale browseropslag en synchroniseren niet met andere apparaten. Geen automatische logo-upload of wettelijke factuurvalidatie.
 - Bestaande lokale klant- en reparatiegegevens blijven ongemoeid. JavaScript-syntax gecontroleerd; nog geen browser-/printtest.
+
+
+## PHIXAR klantportaal — ontwikkelbranch, niet live (2026-11-07)
+- Toegevoegd: `klant/index.html`, `kiosk/index.html`, `customer-portal.css`, `customer-portal.js`. Beide schermen geven expliciet aan dat online toegang nog niet geactiveerd is.
+- Publieke `api/customer-status.js` weigert toegang met HTTP 503 totdat veilige databasekoppeling, rollen en rate limiting zijn gerealiseerd.
+- PostgreSQL-conceptschema in `db/schema-v0.1.sql`; nog niet uitgevoerd of gekoppeld.
+- `lib/customer-status.js`: cryptografische 256-bit toegangscode, SHA-256 digest en strikte publieke statusprojectie zonder IMEI, locatie, hersteller of interne notities.
+- `lib/customer-status-repository.js`: geparameteriseerde SQL voor geldige, niet-ingetrokken toegang. Nog niet aan de publieke API gekoppeld; runtime-RLS-rollen en throttling ontbreken.
+- `tests/customer-status.test.js`: Node-testgevallen voor toegangscode, scheiding van gegevens en SQL. JavaScript-syntax gecontroleerd; tests zijn nog niet in CI uitgevoerd.
+- PHIXAR is eerste testklant; multi-bedrijf is architecturale voorbereiding. Geen merge, deployment, gegevensmigratie of live database uitgevoerd.
