@@ -12,7 +12,8 @@ module.exports=async function handler(req,res){
     count(*) FILTER (WHERE c.relrowsecurity AND c.relforcerowsecurity)::int AS protected
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE n.nspname='public' AND c.relkind='r' AND c.relname LIKE 'rf_%'`;
-  const ok=rows[0]?.total===15&&rows[0]?.protected===15;
-  return res.status(ok?200:503).json({status:ok?'ready':'unavailable'});
+  const schemaOk=rows[0]?.total===15&&rows[0]?.protected===15;
+  // A correct schema alone does NOT mean application authentication and RLS policies are ready.
+  return res.status(503).json({status:schemaOk?'schema_installed_access_disabled':'unavailable'});
  }catch(_){return res.status(503).json({status:'unavailable'});}
 };
