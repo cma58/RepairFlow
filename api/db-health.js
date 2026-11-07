@@ -1,0 +1,18 @@
+'use strict';
+// Read-only operational probe. Never exposes credentials, tenant data, or SQL errors.
+module.exports=async function handler(req,res){
+ res.setHeader('Cache-Control','no-store');
+ res.setHeader('X-Content-Type-Options','nosniff');
+ if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({status:'method_not_allowed'});}
+ if(!process.env.DATABASE_URL)return res.status(503).json({status:'unavailable'});
+ try{
+  const {neon}=require('@neondatabase/serverless');
+  const sql=neon(process.env.DATABASE_URL);
+  const rows=await sql`SELECT count(*)::int AS total,
+    count(*) FILTER (WHERE c.relrowsecurity AND c.relforcerowsecurity)::int AS protected
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relkind='r' AND c.relname LIKE 'rf_%'`;
+  const ok=rows[0]?.total===15&&rows[0]?.protected===15;
+  return res.status(ok?200:503).json({status:ok?'ready':'unavailable'});
+ }catch(_){return res.status(503).json({status:'unavailable'});}
+};
