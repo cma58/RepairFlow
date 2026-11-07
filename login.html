@@ -7,6 +7,10 @@
 'use strict';
 const authBase='https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
 const form=document.getElementById('login'),status=document.getElementById('status'),button=document.getElementById('send');
+const params=new URLSearchParams(location.search);
+if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Vraag hieronder een nieuwe link aan.';history.replaceState(null,'',location.pathname)}
+else if(params.has('token')||params.has('code')){status.textContent='De verificatielink is geopend. De toegang tot het kassasysteem is nog niet geactiveerd.';history.replaceState(null,'',location.pathname)}
+else if(params.has('callback')){status.textContent='Je e-maillink is geopend. De beheerder moet je account nog activeren.';history.replaceState(null,'',location.pathname)}
 form.addEventListener('submit',async event=>{
  event.preventDefault();button.disabled=true;status.textContent='Aanvraag wordt verstuurd…';
  const email=document.getElementById('email').value.trim();
