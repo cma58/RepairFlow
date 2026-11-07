@@ -8,7 +8,7 @@
 const authBase='https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
 const form=document.getElementById('login'),status=document.getElementById('status'),button=document.getElementById('send');
 const params=new URLSearchParams(location.search);
-const callbackReturn=params.has('callback')||params.has('token')||params.has('code')||params.has('error');
+const callbackReturn=params.has('auth_return')||params.has('callback')||params.has('token')||params.has('code')||params.has('error');
 async function checkSession(){
  status.textContent='Aanmeldsessie controleren…';
  try{
@@ -18,17 +18,18 @@ async function checkSession(){
   if(data&&data.user&&data.session){
    status.textContent='Je e-maillink is bevestigd. Je account is nog niet geactiveerd voor het kassasysteem; er wordt geen toegang tot klantgegevens verleend.';
   }else{
-   status.textContent='De e-maillink is geopend, maar deze browser heeft geen bevestigde sessie. Vraag voorlopig geen nieuwe link aan en meld dit aan de beheerder.';
+   status.textContent='De verificatielink is verwerkt, maar er is geen sessie beschikbaar op deze website. Het probleem zit in de sessiekoppeling; vraag geen nieuwe link aan.';
   }
  }catch(error){
-  status.textContent='De e-maillink is geopend, maar de sessiecontrole lukt niet in deze browser. Vraag voorlopig geen nieuwe link aan en meld dit aan de beheerder.';
+  status.textContent='De verificatielink is verwerkt, maar de sessie kan niet worden gecontroleerd. Het probleem zit in de sessiekoppeling; vraag geen nieuwe link aan.';
  }
 }
 
 const invitedEmails=new Set(['gihanamarcelin@hotmail.com','amine.chtaiti@gmail.com']);
 const emailField=document.getElementById('email');
 emailField.value='';
-if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Meld dit aan de beheerder.';history.replaceState(null,'',location.pathname)}
+if(params.has('auth_return')){history.replaceState(null,'',location.pathname);form.hidden=true;checkSession()}
+else if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Meld dit aan de beheerder.';history.replaceState(null,'',location.pathname)}
 else if(params.has('token')||params.has('code')){history.replaceState(null,'',location.pathname);checkSession()}
 else if(params.has('callback')){history.replaceState(null,'',location.pathname);checkSession()}
 form.addEventListener('submit',async event=>{
@@ -36,7 +37,7 @@ form.addEventListener('submit',async event=>{
  const email=emailField.value.trim();
  if(!invitedEmails.has(email.toLowerCase())){status.textContent='Dit account is nog niet uitgenodigd. Neem contact op met PHIXAR.';button.disabled=false;return;}
  try{
-  const response=await fetch(authBase+'/sign-in/magic-link',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,callbackURL:location.origin+'/login.html'})});
+  const response=await fetch(authBase+'/sign-in/magic-link',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,callbackURL:location.origin+'/login.html?auth_return=1'})});
   if(!response.ok)throw Error('Aanmelding momenteel niet beschikbaar');
   status.textContent='Als dit adres toegang heeft, ontvang je een persoonlijke inloglink. Controleer ook je ongewenste e-mail.';
  }catch(error){status.textContent='De inloglink kon niet worden aangevraagd. Probeer later opnieuw of contacteer de beheerder.'}
