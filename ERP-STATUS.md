@@ -152,3 +152,10 @@
 - GitHub Actions workflow uitgebreid om preflighttests mee te draaien.
 - `lib/customer-status-handler.js`: testbare, fail-closed HTTP-laag; **niet aangesloten op publieke route** wegens ontbrekende centrale database en rate limiting.
 - Geen echte import, databaseverbinding, login, merge of deploy. Huidige PHIXAR-browsergegevens blijven ongewijzigd.
+
+
+## PHIXAR kassa-betrouwbaarheid (featurebranch)
+- `repairflow-erp-pos.js`: `checkoutInProgress` blokkeert herhaalde checkout-aanroepen binnen één browsercontext.
+- Verkoopopslag en afdrukvoorbeeld zijn nu gescheiden: fouten in het renderen van het bewijs veroorzaken geen rollback van reeds opgeslagen verkopen.
+- **Beperking:** localStorage is geen echte database-transactie; cross-tab en cross-device races zijn hiermee niet opgelost. Hiervoor blijft een centrale transactionele backend noodzakelijk.
+- Syntaxcheck uitgevoerd; nog geen bevestigde browser-E2E-test of deployment.
