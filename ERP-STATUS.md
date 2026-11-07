@@ -144,3 +144,11 @@
 - `lib/customer-status-repository.js`: geparameteriseerde SQL voor geldige, niet-ingetrokken toegang. Nog niet aan de publieke API gekoppeld; runtime-RLS-rollen en throttling ontbreken.
 - `tests/customer-status.test.js`: Node-testgevallen voor toegangscode, scheiding van gegevens en SQL. JavaScript-syntax gecontroleerd; tests zijn nog niet in CI uitgevoerd.
 - PHIXAR is eerste testklant; multi-bedrijf is architecturale voorbereiding. Geen merge, deployment, gegevensmigratie of live database uitgevoerd.
+
+
+## PHIXAR veilige migratievoorbereiding (2026-11-07)
+- `lib/backup-preflight.js`: analyseert bestaande `RepairFlow-browser-backup` v1 zonder gegevens te wijzigen, telt bekende modules, detecteert kapotte JSON en extra modules. Geeft geen persoonsgegevens terug.
+- `tests/backup-preflight.test.js`: tests voor tellingen, privacy, ongeldig formaat en ontbrekende mapping.
+- GitHub Actions workflow uitgebreid om preflighttests mee te draaien.
+- `lib/customer-status-handler.js`: testbare, fail-closed HTTP-laag; **niet aangesloten op publieke route** wegens ontbrekende centrale database en rate limiting.
+- Geen echte import, databaseverbinding, login, merge of deploy. Huidige PHIXAR-browsergegevens blijven ongewijzigd.
