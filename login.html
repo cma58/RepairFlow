@@ -27,6 +27,21 @@ async function checkSession(){
 
 const invitedEmails=new Set(['gihanamarcelin@hotmail.com','amine.chtaiti@gmail.com']);
 const emailField=document.getElementById('email');
+async function loadReadiness(){
+ try{
+  const response=await fetch('/api/auth/status',{cache:'no-store'});
+  if(!response.ok)throw new Error('readiness unavailable');
+  const data=await response.json();
+  if(data.authentication?.sessionValidation!=='ready'||data.authentication?.authorization!=='ready'){
+   form.hidden=true;
+   status.textContent='Aanmelden tijdelijk gepauzeerd. De verificatiemail werkt, maar de beveiligde sessie en toegangscontrole worden nog afgewerkt. Je hoeft geen nieuwe e-mail aan te vragen.';
+  }
+ }catch(error){
+  form.hidden=true;
+  status.textContent='Aanmelden tijdelijk niet beschikbaar. De beveiligingscontrole kon niet worden uitgevoerd.';
+ }
+}
+loadReadiness();
 emailField.value='';
 if(params.has('auth_return')){history.replaceState(null,'',location.pathname);form.hidden=true;checkSession()}
 else if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Meld dit aan de beheerder.';history.replaceState(null,'',location.pathname)}
