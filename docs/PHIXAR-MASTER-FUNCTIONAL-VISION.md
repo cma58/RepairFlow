@@ -61,19 +61,42 @@ Status: **Living specification**. Owner-confirmed decisions are distinguished fr
 - Keep legally required consumer warranty rules separate from configurable commercial terms.
 - Validate Belgian VAT/margin-scheme eligibility per transaction; not every second-hand purchase qualifies.
 
-## E. Parts inventory — NEXT MODULE / NOT YET APPROVED
-To be decided collaboratively: part registration and SKU, suppliers, compatible models, stock locations, reorder thresholds, stock counting, part reservation on approved quotes, checkout consumption, cancellation/returns, transfers, cost tracking, damaged parts and permissions.
-**Do not treat these examples as approved requirements.**
+## E. Parts inventory — owner-confirmed decisions (2026-11-07)
+1. New parts can be entered **manually or by barcode/QR scan**.
+2. A single part record can list **multiple compatible device models**.
+3. Keep supplier and purchase price as the **required purchase information**; other fields should not be mandatory by default.
+4. Record a physical location for each part, such as cabinet, drawer or shelf.
+5. **Automatically reserve parts when a repair quotation is approved**, allowing authorized manual corrections. Reserved stock remains on hand but is not available for other jobs.
+6. Support **configurable minimum stock per part** and low-stock alerts.
+7. Manage supplier purchase orders and **partial deliveries**.
+8. Physical stock counts support scanning and manual adjustments **with a recorded reason**.
+9. Damaged/defective parts are separately tracked as defective, supplier return or waste; never silently count as saleable stock.
+10. Staff can use inventory, while **sensitive stock changes and purchase-price changes require manager approval**. Exact approval thresholds/permissions remain open.
+
+### Existing cross-module inventory contracts
+- For paid repairs, parts are reserved at approved quote and definitively deducted at successful checkout, closing reservations without double counting.
+- For free warranty work and fully prepaid repairs, there must be an authorized zero-due completion path that still records real consumption, without fabricating payment.
+- Cancelled/changed quotes release or adjust reservations. Never let reservations produce negative availability.
+- Refurbished devices and repair parts are distinct inventory entities, though their costs and usage may be linked.
+
+### Open edge cases (NOT YET APPROVED)
+- What happens if a quoted part is out of stock: block approval, backorder, or partial reservation?
+- At what point should physical usage be logged if a part is installed but repair/payment is cancelled or device remains uncollected?
+- How to handle wrong parts, failed installations, supplier returns and partial deliveries; exact reversal/approval steps.
+- Whether a part may be transferred across locations/branches and how reserved stock is treated.
+- How to identify and resolve stock-count discrepancies and concurrent reservations.
+These are questions, not approved implementation requirements.
 
 ## F. Open decisions and legal validation
 - Diagnostic fee and exceptions; exact status workflow and notification channel.
 - Belgian invoicing and VAT including second-hand margin regime; consumer warranty/second-hand legal minimum; GDPR identity retention; permissions.
 - Exact handling of unpaid pickup, fully prepaid repairs, free warranty repairs, returns and cancellations at the inventory ledger.
 - Provider integrations and settlement verification, multi-branch operations, offline behavior and audit roles.
-- All choices in section E.
+- The unresolved edge cases listed in section E.
 
 ## Change control
 When user approves a module, append the exact decisions here. Keep a changelog and distinguish **CONFIRMED**, **PROPOSED**, **OPEN**, **LEGAL REVIEW**. Never silently rewrite previous owner-confirmed rules. No production code changes are authorized by this document alone.
 
 ## Changelog
 - 2026-11-07: Consolidated owner-confirmed intake, repair, POS and refurbished decisions; parts inventory queued for questionnaire.
+- 2026-11-07: Recorded ten owner-approved parts-inventory decisions; flagged critical edge cases for follow-up.
