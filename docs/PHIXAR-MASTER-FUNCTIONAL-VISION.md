@@ -79,12 +79,17 @@ Status: **Living specification**. Owner-confirmed decisions are distinguished fr
 - Cancelled/changed quotes release or adjust reservations. Never let reservations produce negative availability.
 - Refurbished devices and repair parts are distinct inventory entities, though their costs and usage may be linked.
 
-### Open edge cases (NOT YET APPROVED)
-- What happens if a quoted part is out of stock: block approval, backorder, or partial reservation?
-- At what point should physical usage be logged if a part is installed but repair/payment is cancelled or device remains uncollected?
-- How to handle wrong parts, failed installations, supplier returns and partial deliveries; exact reversal/approval steps.
-- Whether a part may be transferred across locations/branches and how reserved stock is treated.
-- How to identify and resolve stock-count discrepancies and concurrent reservations.
+### Confirmed inventory edge-case decisions (2026-11-07)
+11. **Part unavailable when quote approved:** reserve the available parts; automatically add missing parts to a procurement/to-order list. The repair must clearly show outstanding parts and must not falsely appear fully ready.
+12. **Part already installed, customer has not paid/collected:** record installation immediately; keep physical on-hand and available-to-promise quantities accurate. The owner wants financial finalization at checkout, but installation, consumption, payment and accounting entries must be modeled separately to avoid fictitious stock or inaccurate accounting. Exact accounting recognition rules require validation.
+13. **New part defective during installation:** mark it defective, remove it from saleable availability, preserve traceability and reserve a replacement part.
+14. **Physical count discrepancy:** show the discrepancy, require a reason, and obtain manager approval before applying the stock correction.
+
+### Still open (not approved)
+- Exact mechanics for financial stock recognition, installed-but-unpaid repairs, cancellation after installation, and uncollected devices; accounting/legal review required.
+- Purchase order receipt/return reconciliation, including partial deliveries and wrong parts.
+- Transfers between stock locations or branches, if needed.
+- Permission thresholds and escalation for stock adjustments.
 These are questions, not approved implementation requirements.
 
 ## F. Open decisions and legal validation
@@ -100,3 +105,4 @@ When user approves a module, append the exact decisions here. Keep a changelog a
 ## Changelog
 - 2026-11-07: Consolidated owner-confirmed intake, repair, POS and refurbished decisions; parts inventory queued for questionnaire.
 - 2026-11-07: Recorded ten owner-approved parts-inventory decisions; flagged critical edge cases for follow-up.
+- 2026-11-07: Added four owner-confirmed inventory exception rules (shortages, installed-but-unpaid, defective parts, stock count differences).
