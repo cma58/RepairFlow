@@ -62,7 +62,9 @@
   const error=root?.querySelector('.rf-error');if(error)error.textContent='';
   if(active===0){
    if(!get('nm')?.value.trim()){if(error)error.textContent='Vul eerst de naam in.';get('nm')?.focus();return false}
-   if(get('vat')&&!get('vat').value.trim()){if(error)error.textContent='Vul het ondernemingsnummer in.';get('vat')?.focus();return false}
+   const vat=get('vat');
+   // The VAT field is optional for private customers; enforce it only when the underlying intake form marks it required.
+   if(vat?.required&&!vat.value.trim()){if(error)error.textContent='Vul het ondernemingsnummer in.';vat.focus();return false}
   }
   if(active===1){
    if(!get('dv')?.value.trim()){if(error)error.textContent='Welk toestel is het?';get('dv')?.focus();return false}
