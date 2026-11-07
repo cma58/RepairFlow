@@ -1,5 +1,5 @@
 'use strict';
-const {verifyStaffIdentity}=require('../lib/neon-auth-identity');
+const {verifyStaffIdentity,getConfig}=require('../lib/neon-auth-identity');
 const {resolveStaff}=require('../lib/staff-access');
 const {Pool}=require('@neondatabase/serverless');
 // No customer or POS data returned. Database RLS stays default-deny.
@@ -8,6 +8,8 @@ module.exports=async function handler(req,res){
  res.setHeader('X-Content-Type-Options','nosniff');
  res.setHeader('Referrer-Policy','no-referrer');
  if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({error:'Method not allowed'});}
+ // Missing auth configuration is an operational failure, not an invalid login.
+ try{getConfig(process.env);}catch{return res.status(503).json({error:'Medewerkersportaal nog niet geactiveerd'});}
  let identity;
  try{identity=await verifyStaffIdentity(req.headers?.authorization);}
  catch{return res.status(401).json({error:'Aanmelden vereist'});}
