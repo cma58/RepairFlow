@@ -1,0 +1,22 @@
+name: RepairFlow customer portal unit tests
+on:
+  push:
+    branches:
+      - feature/customer-portal-ipad-batch-20261107
+  pull_request:
+    paths:
+      - 'lib/customer-status*.js'
+      - 'tests/customer-status*.test.js'
+      - '.github/workflows/customer-portal-tests.yml'
+permissions:
+  contents: read
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Customer portal unit tests
+        run: node --test tests/customer-status.test.js tests/customer-status-handler.test.js
