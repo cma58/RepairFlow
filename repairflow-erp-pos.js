@@ -14,7 +14,8 @@
 
  let cart=read(DRAFT,[]),page='sales',query='',selectedCustomer='';
  const positive=n=>Number.isFinite(n)&&n>=0;
- const qtyInt=n=>Number.isInteger(n)&&n>0;
+ const qtyInt=n=>Number.isSafeInteger(n)&&n>0;
+ const stockInt=n=>Number.isSafeInteger(n)&&n>=0;
  const id=()=>globalThis.crypto?.randomUUID?.()||('rf-'+Date.now()+'-'+Math.random().toString(36).slice(2));
  const round=n=>Math.round((n+Number.EPSILON)*100)/100;
  const activeProducts=()=>products().filter(p=>p.active!==false);
@@ -61,7 +62,7 @@
  function add(productId,change){
  const p=products().find(p=>p.id===productId&&p.active!==false);if(!p)return;
  const existing=cart.find(l=>l.id===p.id),next=(existing?.qty||0)+change;
- if(next>p.stock){notify('Niet voldoende voorraad.');return;}
+ if(!stockInt(p.stock)||!qtyInt(next)&&next!==0||next>p.stock){notify('Ongeldige of onvoldoende voorraad. Controleer het artikel.');return;}
  if(next<=0)cart=cart.filter(l=>l.id!==p.id);
  else if(existing)existing.qty=next;
  else cart.push({id:p.id,name:p.name,sku:p.sku,imei:p.imei,price:p.price,vat:p.vat,qty:next});
@@ -71,7 +72,7 @@
  function checkout(){
  if(checkoutInProgress||!cart.length)return;
  const ps=products(),items=[];
- for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||p.stock<l.qty||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
+ for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||!stockInt(p.stock)||p.stock<l.qty||!Number.isFinite(p.price)||p.price<0||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
  const method=$('rfPaymentMethod')?.value||'Cash',customerId=$('rfSaleCustomer')?.value||'';
  const customerMatches=customerId?customers().filter(c=>c.id===customerId):[];
  if(customerId&&customerMatches.length!==1){notify('De geselecteerde klant bestaat niet meer of is dubbel geregistreerd. Kies opnieuw een klant.');return;}
@@ -108,6 +109,7 @@
  else if(action==='history-page'){document.querySelector('[data-page="payments"]')?.click();}
  else if(action==='stock-plus'||action==='stock-minus'||action==='archive'){
  const ps=products(),p=ps.find(x=>x.id===pid);if(!p)return;const oldStock=p.stock;
+ if(!stockInt(oldStock)){notify('Voorraadgegevens zijn ongeldig. Corrigeer het artikel voordat je voorraad wijzigt.');return;}
  if(action==='archive'){if(!confirm('Artikel archiveren? Bestaande verkopen blijven behouden.'))return;p.active=false;}
  else {if(action==='stock-minus'&&p.stock<=0){notify('Voorraad kan niet negatief worden.');return;}p.stock+=action==='stock-plus'?1:-1;}
  try{commitStock(ps,action==='archive'?[]:[movement(p,p.stock-oldStock,'Handmatige voorraadcorrectie')]);render();}catch{notify('Voorraad kon niet worden opgeslagen.');}
@@ -120,7 +122,7 @@
  },true);
  document.addEventListener('submit',e=>{
  if(e.target.id!=='rfProductForm')return;e.preventDefault();const f=new FormData(e.target),name=String(f.get('name')||'').trim(),sku=String(f.get('sku')||'').trim(),imei=String(f.get('imei')||'').trim(),price=Number(f.get('price')),cost=Number(f.get('cost')),stock=Number(f.get('stock')),vat=Number(f.get('vat')),ps=products();
- if(!name||!positive(price)||!positive(cost)||!Number.isInteger(stock)||stock<0||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
+ if(!name||!positive(price)||!positive(cost)||!stockInt(stock)||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
  if(sku&&ps.some(p=>p.sku===sku&&p.active!==false)){notify('Deze SKU bestaat al.');return;}
  if(imei&&ps.some(p=>p.imei&&String(p.imei).replace(/[\\s-]/g,'').toUpperCase()===imei.replace(/[\\s-]/g,'').toUpperCase()&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
  if(imei){const refurb=read('rfRefurbV1',[]),norm=v=>String(v||'').replace(/[\\s-]/g,'').toUpperCase();if(Array.isArray(refurb)&&refurb.some(r=>r&&r.imei&&norm(r.imei)===norm(imei)&&!['Verkocht','Afgekeurd','Onderdelen-donor'].includes(r.status))){notify('Dit IMEI staat al als actief refurbished toestel geregistreerd. Beheer het via Refurbished.');return;}}
