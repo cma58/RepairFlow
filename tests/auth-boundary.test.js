@@ -32,11 +32,14 @@ test('Never returns personal data without staff auth configuration',async()=>{
  }
 });
 test('Rejects requests with no bearer token before database access',async()=>{
- const keys=['NEON_AUTH_ISSUER','NEON_AUTH_AUDIENCE','NEON_AUTH_JWKS_URL'];
+ const keys=['NEON_AUTH_ISSUER','NEON_AUTH_AUDIENCE','NEON_AUTH_JWKS_URL','REPAIRFLOW_NEON_AUTH_URL'];
  const previous=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
  process.env.NEON_AUTH_ISSUER='https://auth.example.test/neondb/auth';
  process.env.NEON_AUTH_AUDIENCE='repairflow';
  process.env.NEON_AUTH_JWKS_URL='https://auth.example.test/neondb/auth/.well-known/jwks.json';
+ process.env.REPAIRFLOW_NEON_AUTH_URL='https://ep-example.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
+ process.env.NEON_AUTH_ISSUER=process.env.REPAIRFLOW_NEON_AUTH_URL;
+ process.env.NEON_AUTH_JWKS_URL=process.env.REPAIRFLOW_NEON_AUTH_URL+'/.well-known/jwks.json';
  try{
   const r=await invoke();
   assert.equal(r.statusCode,401);

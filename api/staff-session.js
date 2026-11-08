@@ -1,6 +1,6 @@
 'use strict';
 const {verifyStaffIdentity,getConfig}=require('../lib/neon-auth-identity');
-const {verifySession,sessionCookie}=require('../lib/neon-auth-session');
+const {verifySession,sessionCookie,authUrl}=require('../lib/neon-auth-session');
 const {resolveStaff}=require('../lib/staff-access');
 const {Pool}=require('@neondatabase/serverless');
 // No customer or POS data returned. Database RLS stays default-deny.
@@ -11,7 +11,8 @@ async function staffSessionHandler(req,res,{env=process.env,authenticate,createP
  if(req.method!=='GET'){res.setHeader('Allow','GET');return res.status(405).json({error:'Method not allowed'});}
  const viaCookie=!!sessionCookie(req.headers?.cookie);
  // A valid first-party cookie or verified bearer token is required.
- try{if(!viaCookie)getConfig(env);}catch{return res.status(503).json({error:'Medewerkersportaal nog niet geactiveerd'});}
+ try{if(!viaCookie&&getConfig(env).issuer!==authUrl(env))throw Error('AUTH_BRANCH_MISMATCH');}
+ catch{return res.status(503).json({error:'Medewerkersportaal nog niet geactiveerd'});}
  let identity;
  try{identity=authenticate?await authenticate(req):viaCookie?await verifySession(req.headers.cookie,{env}):await verifyStaffIdentity(req.headers?.authorization,{env});}
  catch{return res.status(401).json({error:'Aanmelden vereist'});}
