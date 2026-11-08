@@ -24,3 +24,45 @@ De eigenaar heeft drie concrete beeldreferenties geselecteerd. De drie originele
 
 ## Verificatie
 Als de drie PNG's nog niet aanwezig zijn in `docs/design-references/`, **stop met visuele implementatie en vraag om het ZIP-pakket**. Verzin de referenties niet.
+
+
+## Aanvullende eigenaarfeedback — 2026-11-08
+
+**Deze vier verbeteringen zijn voorwaarden voor de volgende ontwerpbeoordeling.**
+Vastgelegd als ontwerpvereisten; hiermee is geen implementatie, functionele test of definitieve goedkeuring aangetoond.
+
+### 1. Grotere leesbaarheid
+- Labels, dossiergegevens en statussen moeten op desktop bij 100% browserzoom direct leesbaar zijn.
+- Ontwerprichtlijn: hoofdtekst en dossiergegevens circa 16 px; ondersteunende labels en statusbadges minimaal 14 px. Vergroot rijhoogte en witruimte waar nodig; geen afgekapt essentieel dossiergegeven.
+- Statussen gebruiken duidelijke tekst met voldoende contrast, aangevuld met kleur of icoon. Kleur alleen is onvoldoende.
+- Controleer licht en donker op desktop en iPad met realistische lange klantnamen, modellen en dossiernummers.
+
+### 2. Meer ruimte en minder handelingen voor de kassa
+- Geef productzoeken/scannen, winkelmand, totaal en betalen de meeste ruimte in de kassamodule; houd secundaire statistieken ondergeschikt.
+- Houd totaal en primaire betaalactie zichtbaar tijdens een normale verkoop. Vermijd onnodige modals en dubbele invoer.
+- Maak een directe kassatoegang beschikbaar vanuit iedere module en betaling vanuit een reparatiedossier, met overname van klant, dossier en openstaand saldo.
+- Behoud gecombineerde verkoop van reparatie, product en refurbished, plus voorschotten en gesplitste betalingen.
+- Toets met twee concrete routes: eenvoudig product scannen → betaalmethode kiezen → verkoop bevestigen; dossier openen → afrekenen met reeds verrekend voorschot. Noteer het werkelijke aantal handelingen en verwijder vermijdbare stappen.
+- Een korte verkooproute mag bestaande betaal-, voorraad- en rechtencontroles niet overslaan.
+
+### 3. Eén directe zoekfunctie vanuit iedere module
+- Een vaste globale zoekbalk in de bovenste navigatie doorzoekt klanten, IMEI's, reparatienummers en producten zonder eerst een andere module te openen.
+- Ondersteun toetsenbordbediening en een zichtbare sneltoets, bijvoorbeeld Ctrl/Cmd+K; focus niet stelen tijdens gewone invoer of scannersessies.
+- Toon gegroepeerde resultaten met herkenbare identificatie en directe toegang tot het juiste dossier of product. Geef exacte IMEI- en reparatienummermatches voorrang.
+- Behoud de lopende winkelmand en niet-opgeslagen invoer bij zoeken en wisselen van context.
+- Maak laden, geen resultaten en fouten duidelijk. Meet reactiesnelheid met representatieve testgegevens voordat de zoekfunctie als snel wordt goedgekeurd.
+- Zoek uitsluitend binnen de gegevens en vestigingen waarvoor de medewerker rechten heeft.
+
+### 4. Prioriteiten onmiddellijk zichtbaar
+- Toon bovenaan een vaste prioriteitenzone met **Dringende reparaties**, **Wachtende klanten** en **Afhalingen**, met aantallen en directe acties.
+- Geef per item een concrete reden: gemarkeerd urgent of afgesproken termijn verstreken; wachtduur van een klant; gereed voor afhaling met gereeddatum.
+- Houd een klant die aan de balie wacht zichtbaar als aparte situatie ten opzichte van een dossier dat op klantantwoord wacht.
+- Sorteer binnen elke groep op relevante urgentie of wachttijd. Gebruik tekst, contrast en iconen naast kleur; decoratieve effecten mogen aandacht niet afleiden.
+- Leid wachttijden en urgentie af uit geregistreerde gegevens. Ontbrekende gegevens zichtbaar maken; geen verzonnen prioriteiten of aantallen.
+- Bestaande afhaal- en herinneringsafspraken blijven van toepassing; deze ontwerpaanpassing introduceert geen nieuwe automatische statusovergangen.
+
+### Vereiste beoordeling van de volgende preview
+- Werkende licht/donker-preview op desktop en iPad, met bovenstaande vier punten aantoonbaar zichtbaar.
+- Beoordeel de globale zoekfunctie vanuit iedere module en de twee beschreven kassascenario's.
+- Maak onderscheid tussen visueel getoond, interactief werkend en werkelijk gekoppeld aan de backend.
+- De eigenaar beoordeelt de verbeterde preview vóór definitieve ontwerpgoedkeuring.
