@@ -1,0 +1,8 @@
+.shop-app{display:grid;grid-template-columns:255px minmax(0,1fr);min-height:100vh}
+.shop-nav{background:#080d18;border-right:1px solid #283451;padding:18px 12px;position:sticky;top:0;height:100vh;box-sizing:border-box}
+.shop-brand{font-size:24px;font-weight:900;padding:8px;margin-bottom:12px}
+.shop-nav button{display:block;width:100%;text-align:left;color:#b3bfd8;background:transparent;border:0;padding:11px 12px;margin:2px 0}
+.shop-nav button.active,.shop-nav button:hover{background:#18233d;color:white}
+.shop-app main{width:100%;min-width:0;box-sizing:border-box}
+.shop-app section[hidden]{display:none}
+@media(max-width:900px){.shop-app{display:block}.shop-nav{position:static;height:auto;border-right:0;border-bottom:1px solid #283451;padding:10px}.shop-brand{font-size:20px;margin:0}.shop-nav nav{display:flex;overflow-x:auto}.shop-nav button{width:auto;white-space:nowrap;flex:none}.shop-app main{max-width:100%}}
