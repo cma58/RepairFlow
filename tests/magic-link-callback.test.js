@@ -5,13 +5,15 @@ const fs=require('node:fs');
 const path=require('node:path');
 const callback=fs.readFileSync(path.join(__dirname,'../api/auth/callback.js'),'utf8');
 const session=fs.readFileSync(path.join(__dirname,'../api/auth/session.js'),'utf8');
+// A comment is documentation, not a browser storage access. Keep the check on executable source.
+const executableCallback=callback.replace(/^\s*\/\/.*$/gm,'');
 
 test('magic-link callback exchanges verifier server-side, not in browser',()=>{
  assert.match(callback,/neon_auth_session_verifier/);
  assert.match(callback,/AUTH\+'\/get-session'/);
  assert.match(callback,/HttpOnly; Secure; SameSite=Lax/);
  assert.match(callback,/redirect: 'manual'|redirect:'manual'/);
- assert.doesNotMatch(callback,/localStorage/);
+ assert.doesNotMatch(executableCallback,/\blocalStorage\b/);
 });
 test('callback rejects unexpected verifier and fails closed on missing session',()=>{
  assert.match(callback,/invalid_verifier/);

@@ -41,14 +41,16 @@ let inventory;try{inventory=JSON.parse(localStorage.getItem('rfInventoryV3'))||s
 const RF_SHARED_PRODUCTS='rfPosProductsV1',RF_SHARED_MOVEMENTS='rfPosStockMovementsV1';
 function rfReadShared(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
 function rfSharedProducts(){const p=rfReadShared(RF_SHARED_PRODUCTS,[]);return Array.isArray(p)?p:[]}
+function rfCheckedShared(k){const raw=localStorage.getItem(k);if(raw===null)return [];try{const value=JSON.parse(raw);return Array.isArray(value)?value:null}catch{return null}}
 function rfStockChange(productId,delta,reason,reference){
  const oldProducts=localStorage.getItem(RF_SHARED_PRODUCTS),oldMovements=localStorage.getItem(RF_SHARED_MOVEMENTS);
- const products=rfSharedProducts(),p=products.find(x=>x.id===productId&&x.active!==false);
+ const products=rfCheckedShared(RF_SHARED_PRODUCTS),movements=rfCheckedShared(RF_SHARED_MOVEMENTS);
+ if(!products||!movements)return false;
+ const p=products.find(x=>x.id===productId&&x.active!==false);
  if(!p||!Number.isInteger(delta)||!Number.isInteger(p.stock)||p.stock+delta<0)return false;
  p.stock+=delta;
  const movement={id:uid('MOV'),at:new Date().toISOString(),productId:p.id,productName:p.name,delta,balance:p.stock,reason,reference};
  try{
-  const movements=rfReadShared(RF_SHARED_MOVEMENTS,[]);
   localStorage.setItem(RF_SHARED_MOVEMENTS,JSON.stringify([...movements,movement]));
   localStorage.setItem(RF_SHARED_PRODUCTS,JSON.stringify(products));
   return true;

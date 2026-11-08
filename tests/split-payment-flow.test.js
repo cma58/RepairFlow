@@ -23,7 +23,7 @@ test('split Bancontact and cash payments stay in same payment flow',()=>{
 test('printable payment summary shows both methods and remaining balance',()=>{
  const h=harness();h.context.confirmPayment('R1',300,'Betaling','Bancontact');h.context.confirmPayment('R1',388,'Betaling','Cash');
  h.context.paymentReceipt('R1');
- assert.match(h.html,/Betalingsoverzicht/);assert.match(h.html,/Bancontact/);assert.match(h.html,/Cash/);assert.match(h.html,/€ 300\\.00/);assert.match(h.html,/€ 388\\.00/);assert.match(h.html,/geen btw-factuur/);
+ assert.match(h.html,/Betalingsoverzicht/);assert.match(h.html,/Bancontact/);assert.match(h.html,/Cash/);assert.match(h.html,/€ 300\.00/);assert.match(h.html,/€ 388\.00/);assert.match(h.html,/Open saldo: <b>€ 0\.00<\/b>/);assert.match(h.html,/geen btw-factuur/);
  assert.equal(h.context.rfPaymentReturnTicket,'R1');
 });
 test('pickup shortcut is hidden before successful QC',()=>{
