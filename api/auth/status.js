@@ -7,8 +7,8 @@ export default function handler(req,res){
  const loginEnabled=process.env.REPAIRFLOW_AUTH_LOGIN_ENABLED==='true' && process.env.REPAIRFLOW_AUTH_EXCHANGE_VERIFIED==='true' && process.env.REPAIRFLOW_STAFF_AUTHORIZATION_VERIFIED==='true';
  return res.status(200).json({
   service:'RepairFlow',
-  authentication:{emailDelivery:'configured',sessionValidation:loginEnabled?'exchange_available':'not_implemented',authorization:'disabled',loginEnabled},
+  authentication:{emailDelivery:'configured',sessionValidation:loginEnabled?'exchange_available':'not_implemented',authorization:loginEnabled?'staff_check_available':'disabled',loginEnabled},
   canAccessCustomerData:false,
-  message:'Login via e-mail is nog niet gekoppeld aan een gecontroleerde RepairFlow-sessie.'
+  message:loginEnabled?'Medewerkerslogin wordt in een afgeschermde testomgeving gecontroleerd; de cloudwerkruimte is nog niet vrijgegeven.':'Login via e-mail is nog niet gekoppeld aan een gecontroleerde RepairFlow-sessie.'
  });
 }

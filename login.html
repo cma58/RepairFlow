@@ -17,7 +17,13 @@ async function checkSession(){
   if(!response.ok)throw new Error('session unavailable');
   const data=await response.json();
   if(data&&data.authenticated){
-   status.textContent='Je e-maillink is bevestigd. Je account is nog niet geactiveerd voor het kassasysteem; er wordt geen toegang tot klantgegevens verleend.';
+   const staffResponse=await fetch('/api/auth/me',{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json'},cache:'no-store'});
+   if(staffResponse.ok){
+    const staff=await staffResponse.json();
+    status.textContent='Sessie en medewerkersrechten bevestigd ('+staff.role+'). De cloudwerkruimte wordt nog getest; klantgegevens zijn hier nog niet beschikbaar.';
+   }else{
+    status.textContent='Je e-maillink is bevestigd, maar dit account heeft nog geen toegang tot deze winkel.';
+   }
   }else{
    status.textContent='De verificatielink is verwerkt, maar er is geen sessie beschikbaar op deze website. Het probleem zit in de sessiekoppeling; vraag geen nieuwe link aan.';
   }
