@@ -24,7 +24,12 @@ function render(){
  textList('repairs',state.repairs,(li,r)=>{
   li.append(document.createTextNode(r.reference+' · '+r.device_brand+' '+(r.device_model||'')+' · '+r.status+' · '+euro(r.charge_cents)));
   const next={Binnengebracht:['Diagnose'],Diagnose:['Wachten op klant','In reparatie'], 'Wachten op klant':['In reparatie'],'Wachten op onderdeel':['In reparatie'],'In reparatie':['Kwaliteitscontrole'],Kwaliteitscontrole:['Klaar','In reparatie'],Klaar:['Afgehaald']}[r.status]||[];
-  for(const status of next)li.append(button(status,()=>send({action:'changeRepair',repairId:r.id,expectedStatus:r.status,status},'Reparatiestatus opgeslagen.')));
+  for(const status of next)li.append(button(r.status==='Kwaliteitscontrole'&&status==='Klaar'?'Test geslaagd':r.status==='Kwaliteitscontrole'&&status==='In reparatie'?'Test mislukt':status,()=>{
+   const payload={action:'changeRepair',repairId:r.id,expectedStatus:r.status,status};
+   if(r.status==='Kwaliteitscontrole'&&status==='Klaar')payload.testPassed=true;
+   if(r.status==='Kwaliteitscontrole'&&status==='In reparatie'){const note=prompt('Waarom mislukte de kwaliteitscontrole?');if(!note)return;payload.qcNote=note}
+   send(payload,'Reparatiestatus opgeslagen.');
+  }));
  });
  textList('products',state.products,(li,p)=>li.textContent=p.sku+' · '+p.name+' · '+p.quantity+' stuks · '+euro(p.unit_price_cents));
  textList('refurbished',state.refurbished,(li,r)=>{li.append(document.createTextNode(r.imei+' · '+r.description+' · '+r.status+' · '+euro(r.price_cents)));if(['inspection','rejected','available'].includes(r.status))for(const status of ['rejected','available'].filter(v=>v!==r.status))li.append(button(status==='rejected'?'Keur af':'Keur goed',()=>{const reason=prompt('Reden van de beoordeling:');if(reason)send({action:'assess',refurbishedId:r.id,expectedStatus:r.status,status,reason},'Beoordeling met historiek opgeslagen.')}))});

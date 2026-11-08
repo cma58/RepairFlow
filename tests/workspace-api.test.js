@@ -82,6 +82,11 @@ test('pickup requires full repair charge and exact status',async()=>{
  const db={async query(sql){if(sql.startsWith('SELECT id,status,charge_cents'))return {rows:[{id:R,status:'Klaar',charge_cents:10000}]};if(sql.includes('coalesce(sum(l.line_total_cents)'))return {rows:[{amount:5000}]};throw Error('unexpected write')}};
  await assert.rejects(()=>changeRepair(db,staff,{repairId:R,expectedStatus:'Klaar',status:'Afgehaald'}),/CONFLICT/);
 });
+test('QC cannot mark a repair ready without explicit passed test',async()=>{
+ const db={query(){throw Error('database should not be reached')}};
+ await assert.rejects(()=>changeRepair(db,staff,{repairId:R,expectedStatus:'Kwaliteitscontrole',status:'Klaar'}),/INVALID_INPUT/);
+ await assert.rejects(()=>changeRepair(db,staff,{repairId:R,expectedStatus:'Kwaliteitscontrole',status:'In reparatie',qcNote:'x'}),/INVALID_INPUT/);
+});
 test('refurbished registration rejects invalid IMEI checksum before database access',async()=>{
  const db={query(){throw Error('database must not be reached')}};
  await assert.rejects(()=>refurb(db,staff,{requestId:R,imei:'990000000000004',description:'Test',priceCents:10000}),/INVALID_INPUT/);
