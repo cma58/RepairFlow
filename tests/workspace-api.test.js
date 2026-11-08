@@ -158,4 +158,6 @@ test('cash correction cannot make a closed day negative, and replay does not app
  assert.equal(calls.filter(sql=>sql.startsWith('INSERT INTO rf_cash_corrections')).length,0);
  replay=true;const result=await correction(db,staff,{requestId:R,dayId:F,deltaCents:-100,reason:'Counting error'});
  assert.equal(result.body.replayed,true);assert.equal(calls.filter(sql=>sql.startsWith('INSERT INTO rf_cash_corrections')).length,0);
+ assert.equal(calls.filter(sql=>sql.startsWith('SELECT pg_advisory_xact_lock')).length,2);
+ assert.equal(calls.some(sql=>sql.includes('rf_cash_days')&&sql.includes('FOR UPDATE')),false);
 });
