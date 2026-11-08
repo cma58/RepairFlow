@@ -191,6 +191,27 @@ These are questions, not approved implementation requirements.
 1. **Cancellation / installed part:** owner explicitly reiterates preference to **immediately return an installed part to available inventory, even without disassembly**. Record this as an owner-requested behavior, **NOT an approved executable stock rule**, because it contradicts physical inventory and could allow the same part to be sold or reserved twice. Implementation must not fabricate physical stock: distinguish an immediate administrative reversal/credit from physically verified return to saleable stock. Obtain explicit owner acceptance of this distinction before coding. Do not silently replace the owner's answer.
 2. **iPad 10-minute session:** start countdown when registration form opens. At ten minutes show warning and option to extend; if there is no response, securely close/reset the temporary form. A submission already claimed by staff is never deleted. Avoid deleting accepted records; determine warning grace period and treatment of unsubmitted draft before implementation.
 
+## G. Business configuration — owner-confirmed 2026-11-08
+1. **Diagnostic fee:** freely set per repair; no default diagnostic price. Existing policy still applies: diagnosis fee waived when customer proceeds with repair; otherwise payable if agreed/disclosed.
+2. **Staff discount limit:** without manager approval, maximum discount is the **lower of 5% of applicable base price or €10**. Define scope (line/basket, pre/post tax, stacking) in implementation.
+3. **Manual price change:** manager approval when deviation is **more than 5% OR more than €10** from reference price (whichever threshold is reached first). Log reason; exact baseline and aggregation need specification.
+4. **Uncollected device reminders:** at **3, 7 and 14 days** after ready-for-pickup notification (working assumption; confirm trigger if necessary). Record delivery status and avoid duplicate sends.
+5. **After 90 days uncollected:** flag for manager review; **never automatically sell, discard or delete** the device.
+6. **Wrong supplier part delivered:** owner wants **immediate removal from inventory**. Interpret as immediate removal from **saleable availability** with an auditable discrepancy/return/disposal transaction; do not erase purchasing, supplier or physical custody evidence. Exact supplier return workflow remains open.
+7. **Closed cash day:** no silent editing/reopening; only auditable correcting entry with reason and manager approval.
+8. **Access control:** manager and staff roles with individually configurable permissions; server-side authorization and approval/audit required.
+
+### Implementation and compliance review before coding
+- **CRITICAL — installed-part cancellation:** owner insists on immediately increasing available stock despite no physical removal. This conflicts with truthful physical inventory and could cause duplicate allocation; owner preference preserved, executable behavior blocked until administrative reversal vs physical restock is resolved.
+- **CRITICAL — payment state:** method selected does not prove bank/provider settlement. A terminal decline must remain unpaid; transfer pickup requires verified bank receipt or logged manager exception. Preserve reconciliation state and split-payment ledger.
+- **HIGH — iPad lifecycle:** 10-minute timer begins at form open, with warning/extension and secure close if no response. Staff-claimed/accepted records never auto-delete. Need define warning timing, session expiry and temporary-data deletion boundaries.
+- **HIGH — privacy:** combined compulsory marketing checkbox is not suitable consent; separate optional opt-in from necessary intake/terms; protect optional unlock codes, photos, device identifiers and temporary offline drafts.
+- **HIGH — tax/invoicing:** validate Belgian consumer invoices, B2B structured e-invoicing, VAT/secondhand margin-scheme treatment, refunds/credit notes and retention with qualified accountant.
+- **HIGH — warranty:** verify mandatory Belgian consumer guarantees, secondhand-specific rules and any proposed 6-/12-month commercial coverage; distinguish legal rights from voluntary repair warranties.
+- **HIGH — inventory/accounting:** physical consumption vs checkout timing, wrong-part supplier claims, defective stock, refunds and free warranty consumption need auditable ledger and accounting review.
+- **MEDIUM — configuration:** clarify discount application per line/basket, rounding and stacking; price-override reference baseline; reminder start date and delivery failures; permission matrix.
+- **MEDIUM — technical verification:** inspect actual repo architecture, migrations, server-side auth, durable database vs browser localStorage, idempotent checkout, concurrent reservations, offline retries, audit logs and end-to-end tests. No claims of implemented features without test evidence.
+
 ## F. Open decisions and legal validation
 - Diagnostic fee and exceptions; exact status workflow and notification channel.
 - Belgian invoicing and VAT including second-hand margin regime; consumer warranty/second-hand legal minimum; GDPR identity retention; permissions.
@@ -202,6 +223,7 @@ These are questions, not approved implementation requirements.
 When user approves a module, append the exact decisions here. Keep a changelog and distinguish **CONFIRMED**, **PROPOSED**, **OPEN**, **LEGAL REVIEW**. Never silently rewrite previous owner-confirmed rules. No production code changes are authorized by this document alone.
 
 ## Changelog
+- 2026-11-08: Recorded eight owner-approved business settings and prioritized technical/legal validation without application-code changes.
 - 2026-11-08: Recorded owner reiteration of immediate installed-part restock (explicit physical-stock conflict, implementation blocked pending resolution) and iPad 10-minute warning/extension behavior.
 - 2026-11-08: Added five owner decisions on intake timer, reservation reassignment, cancellation restock, transfer verification and claimed-intake retention; flagged physical stock and active-form safety conflicts.
 - 2026-11-08: Added six owner-confirmed end-to-end scenarios and cross-module consistency findings, explicitly separating confirmed behavior from open/legal-review issues.
