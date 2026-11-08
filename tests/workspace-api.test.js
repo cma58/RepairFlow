@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {withWorkspace}=require('../lib/workspace-session');
-const {checkout,stock,changeRepair}=require('../lib/workspace-operations');
+const {checkout,stock,refurb,changeRepair}=require('../lib/workspace-operations');
 const O='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',A='44444444-4444-4444-8444-444444444442';
 const P='55555555-5555-4555-8555-555555555555',F='66666666-6666-4666-8666-666666666666',R='77777777-7777-4777-8777-777777777777',S='88888888-8888-4888-8888-888888888888';
 const staff={id:A,organizationId:O,branchId:B,role:'manager'};
@@ -29,6 +29,11 @@ test('owner or manager operation stays in tenant transaction, sales denied',asyn
  assert.ok(b.queries.some(sql=>sql.includes("set_config('app.subject'")));
  const denied=boundary('sales'),res2=response();await withWorkspace(req,res2,async()=>{throw Error('must not run')},{...denied,authenticate:async()=>({subject:'verified-user'})});
  assert.equal(res2.statusCode,403);assert.equal(denied.queries.at(-1),'ROLLBACK');
+});
+test('failed operation rolls back and reveals no customer details',async()=>{
+ const b=boundary(),res=response(),req={method:'GET',headers:{cookie:'better-auth.session_token=test'}};
+ await withWorkspace(req,res,async()=>{throw Error('private customer record')},{...b,authenticate:async()=>({subject:'verified-user'})});
+ assert.equal(res.statusCode,503);assert.deepEqual(res.body,{error:'workspace_unavailable'});assert.equal(b.queries.at(-1),'ROLLBACK');
 });
 function saleDb({previous=false,stockAmount=3}={}){
  const queries=[];const client={async query(sql,params=[]){queries.push({sql,params});
@@ -74,4 +79,13 @@ test('repair part consumption uses a request lock and refuses negative balances'
 test('pickup requires full repair charge and exact status',async()=>{
  const db={async query(sql){if(sql.startsWith('SELECT id,status,charge_cents'))return {rows:[{id:R,status:'Klaar',charge_cents:10000}]};if(sql.includes('coalesce(sum(l.line_total_cents)'))return {rows:[{amount:5000}]};throw Error('unexpected write')}};
  await assert.rejects(()=>changeRepair(db,staff,{repairId:R,expectedStatus:'Klaar',status:'Afgehaald'}),/CONFLICT/);
+});
+test('refurbished registration rejects invalid IMEI checksum before database access',async()=>{
+ const db={query(){throw Error('database must not be reached')}};
+ await assert.rejects(()=>refurb(db,staff,{requestId:R,imei:'990000000000004',description:'Test',priceCents:10000}),/INVALID_INPUT/);
+});
+test('valid IMEI registration checks shared product catalogue for duplicates',async()=>{
+ const queries=[],db={async query(sql){queries.push(sql);if(sql.includes('FROM rf_products WHERE'))return {rows:[{id:P}]};return {rows:[]}}};
+ await assert.rejects(()=>refurb(db,staff,{requestId:R,imei:'990000000000002',description:'Test',priceCents:10000}),/CONFLICT/);
+ assert.equal(queries.filter(sql=>sql.startsWith('INSERT INTO rf_refurbished')).length,0);
 });

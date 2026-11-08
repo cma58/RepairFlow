@@ -56,6 +56,7 @@ CREATE TABLE rf_cash_days (
  closed_by uuid NOT NULL,
  closed_at timestamptz NOT NULL DEFAULT now(),
  UNIQUE(organization_id,branch_id,business_date),
+ UNIQUE(organization_id,branch_id,id),
  FOREIGN KEY(organization_id,branch_id) REFERENCES rf_branches(organization_id,id),
  FOREIGN KEY(organization_id,closed_by) REFERENCES rf_staff(organization_id,id)
 );
@@ -63,7 +64,7 @@ CREATE TABLE rf_cash_corrections (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  organization_id uuid NOT NULL REFERENCES rf_organizations(id),
  branch_id uuid NOT NULL,
- day_id uuid NOT NULL REFERENCES rf_cash_days(id),
+ day_id uuid NOT NULL,
  request_id uuid NOT NULL,
  delta_cents bigint NOT NULL CHECK(delta_cents<>0),
  reason text NOT NULL CHECK(length(trim(reason)) BETWEEN 5 AND 500),
@@ -71,6 +72,7 @@ CREATE TABLE rf_cash_corrections (
  created_at timestamptz NOT NULL DEFAULT now(),
  UNIQUE(organization_id,request_id),
  FOREIGN KEY(organization_id,branch_id) REFERENCES rf_branches(organization_id,id),
+ FOREIGN KEY(organization_id,branch_id,day_id) REFERENCES rf_cash_days(organization_id,branch_id,id),
  FOREIGN KEY(organization_id,approved_by) REFERENCES rf_staff(organization_id,id)
 );
 ALTER TABLE rf_refurbished ENABLE ROW LEVEL SECURITY; ALTER TABLE rf_refurbished FORCE ROW LEVEL SECURITY;
