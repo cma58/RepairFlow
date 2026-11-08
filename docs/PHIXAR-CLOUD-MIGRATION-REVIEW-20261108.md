@@ -11,10 +11,11 @@ Status: ontwikkelbranch; geen merge, deployment, schemawijziging of import uitge
 | IMEI | Bestaand POS-IMEI gebruikte in één vergelijking een foutieve whitespace-regex. Corrupt refurbished-bestand kon de kruiscontrole passeren. | Normalisatie gecorrigeerd; corrupt refurbished-bestand blokkeert nieuwe IMEI-registratie. |
 | Refurbished | Ongeldige eigen opslag werd bij laden als lege lijst gebruikt; eerste bewerking kon records overschrijven. Corrupte POS-lijst kon de kruiscontrole passeren. | Geen automatische lege overschrijving; mutaties geblokkeerd bij corrupte eigen data of oncontroleerbare POS-IMEI-lijst. |
 | Reparatieonderdelen | Een corrupt POS-voorraadjournaal kon door de gedeelde onderdeelmutatie worden vervangen. | Mutatie weigert ongeldige producten- of journaaldata zonder te schrijven. |
+| Klanten | Een corrupt klantenbestand kon als leeg worden behandeld en bij opstart vanuit reparaties worden overschreven. | Initialisatie en klantacties stoppen bij ongeldige JSON/objectvorm; ruwe opslag en reparatielinks blijven intact. |
 
 ## Nader te behandelen vóór cloudgebruik
 
-- Klanten: `ensureCustomers()` kan een corrupt `rfCustomersV1` als leeg behandelen en vervolgens vanuit reparaties nieuwe klanten opslaan. Klantsamenvoeging wijzigt reparatielinks zonder transactionele rollback of gegarandeerde herlinking van kassaverkopen. Deze paden vereisen afzonderlijke migratie- en browserintegratietests.
+- Klanten: klantsamenvoeging wijzigt reparatielinks zonder transactionele rollback of gegarandeerde herlinking van kassaverkopen. Dit pad vereist afzonderlijke migratie- en browserintegratietests.
 - Reparaties: `rf07v3` en legacy voorraad worden bij leesfouten ook naar lege in-memory objecten teruggebracht. De lokale opslag heeft geen atomische transacties tussen dossiers, klanten, voorraad en betalingen.
 - Refurbished: statusmodel, optionele QC, garanties en verkoop zijn nog niet gekoppeld aan één servertransactie met POS en voorraad. De UI gebruikt nog A/B/C-grades terwijl de mastervisie Nieuwstaat/Goed/Gebruikt/Beschadigd bevestigt; dit is een productverschil, geen veilige automatische dataconversie.
 - Kassa: de browsercheckout blijft retail-only en heeft één betaalmethode; de server-side `lib/pos-checkout.js` is niet op een geautoriseerde publieke route aangesloten. Gecombineerde reparatie/refurbishedregels, voorschotten, split tender, retouren en autorisatie zijn niet als end-to-end cloudflow geïmplementeerd. Handmatig geregistreerd is niet hetzelfde als bank/provider bevestigd.

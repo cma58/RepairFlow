@@ -51,3 +51,13 @@ test('repair part mutation preserves a corrupt stock journal',()=>{
  assert.equal(data.get('rfPosStockMovementsV1'),'{broken');
  assert.equal(JSON.parse(data.get('rfPosProductsV1'))[0].stock,1);
 });
+test('customer bootstrap and actions preserve malformed customer records',()=>{
+ const data=new Map([['rfCustomersV1','{broken']]),listeners={},messages=[],repairs={R1:{name:'A',phone:'123',email:'a@example.com',device:'Phone'}};
+ const localStorage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,String(v))};
+ const document={addEventListener:(name,fn)=>{listeners[name]=fn},getElementById:()=>null};
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../app-customers-v1.js'),'utf8'),{localStorage,document,repairs,go:()=>{},toast:m=>messages.push(m),console:{log(){}},Date,Math,JSON});
+ listeners.click({target:{closest:()=>({dataset:{caction:'new-customer'}})},preventDefault(){},stopImmediatePropagation(){}});
+ assert.equal(data.get('rfCustomersV1'),'{broken');
+ assert.equal(repairs.R1.customerId,undefined);
+ assert.match(messages.join(' '),/beschadigd/);
+});
