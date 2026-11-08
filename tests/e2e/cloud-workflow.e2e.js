@@ -6,7 +6,7 @@ const base=process.env.PHIXAR_E2E_BASE_URL,cookie=process.env.PHIXAR_E2E_SESSION
 const enabled=process.env.PHIXAR_E2E_ISOLATED==='true'&&!!base&&!!cookie;
 const synthetic=new Set(['11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222','33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444']);
 test('real isolated cloud: customer → free repair → QC → pickup persists after reload',{skip:!enabled},async()=>{
- const url=new URL(base);assert.equal(url.protocol,'https:');assert.match(url.hostname,/^repair-flow-[a-z0-9]+-aminechtaiti-3069s-projects\.vercel\.app$/);assert.equal(url.pathname,'/');
+ const url=new URL(base);assert.equal(url.protocol,'https:');assert.ok(url.hostname==='repair-flow-git-feature-cust-458be2-aminechtaiti-3069s-projects.vercel.app'||/^repair-flow-[a-z0-9]+-aminechtaiti-3069s-projects\.vercel\.app$/.test(url.hostname),'only this project preview or its fixed development alias is permitted');assert.equal(url.pathname,'/');
  async function request(path='',body){const r=await fetch(url.origin+'/api/workspace'+path,{method:body?'POST':'GET',redirect:'error',headers:{Cookie:cookie,Accept:'application/json',...(body?{Origin:url.origin,'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});assert.ok(r.ok,'isolated API request failed with HTTP '+r.status);return r.json()}
  const before=await request();assert.ok(synthetic.has(before.context.organizationId+':'+before.context.branchId),'write blocked outside allowlisted synthetic organization/branch');
  const marker='E2E-SYNTHETIC-'+crypto.randomUUID();
