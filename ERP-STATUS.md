@@ -1,5 +1,11 @@
 # RepairFlow — ERP/kassa implementatiestatus
 
+## Dashboardontwerp ter beoordeling (2026-11-08)
+- Afzonderlijke `dashboard-preview.html` met horizontale hoofdnavigatie, centrale licht/donkertokens, KPI's, snelle acties, reparatiepipeline, planning en activiteiten. Gebaseerd op de drie werkelijk bekeken PNG's in `docs/design-references/`; die zijn bytegelijk aan het aangeleverde ZIP-pakket.
+- Alleen fictieve gegevens in geheugen, geen API- of browseropslagtoegang. De winkelentree, legacy/cloudfunctionaliteiten en gegevens zijn ongewijzigd. Dit is geen productievervanging en geen afgerond operationeel dashboard.
+- `npm test`: 116/116; JS-syntax geslaagd. Browsercontroles voor thema, modulewisseling, zoeken, dossier/saldo en voorbeeldklantformulier. Responsieve iframecontroles op 1024/768/390 pixels; geen fysieke iPad/Safari- of printvalidatie. Screenshots en volledige grenzen: `docs/PHIXAR-DASHBOARD-PREVIEW-REVIEW.md`.
+- Geen merge, productiedeployment of migratie. Ontwerpbeoordeling door eigenaar staat open vóór aansluiting/vervanging van de startpagina.
+
 ## Nu daadwerkelijk geïmplementeerd
 - Bestaande reparatie-intake, diagnose, offerte, eindcontrole en afhaling (legacy engine).
 - Bestaande klant- en refurbishedmodules blijven behouden.
@@ -225,3 +231,9 @@
 - De eerste correctie op de afgesloten dag faalde echt met HTTP 503. Oorzaak: `SELECT ... FOR UPDATE` vereiste UPDATE-privilege op `rf_cash_days`. De beperkte rol behield zijn rechten; correcties zijn nu per dag in een transactie geserialiseerd via advisory lock. Browser herhaalde correctie en toonde €−1 naast de gesloten €160. Previewinstellingen zijn teruggezet op de oorspronkelijke synthetische tenant; de tweede tenantklant is daar niet zichtbaar.
 - Afdrukbare, tenantgebonden reparatie- en verkoopoverzichten toegevoegd. Browsertest bevestigde de gegevens, statusgeschiedenis, drie verkoopregels, splitbetalingen en expliciete niet-fiscale aanduiding. Deze overzichten bevatten geen gevalideerde Belgische BTW-classificatie of volledige bedrijfsidentiteit en zijn geen fiscale factuur. `npm test` 113/113 en syntaxcontrole geslaagd. De volledige oude v07-functionaliteit en veilige productie-import blijven open; zie `docs/PHIXAR-LEGACY-CLOUD-GAP-20261108.md`.
 - Read-only importvoorcontrole toegevoegd (`scripts/preflight-legacy-backup.js`): SHA-256, structuur, aantallen en dubbele identifiers/IMEI; geen recordwaarden in rapport, geen serverwrite of automatische migratie. De volledige POS-export en beperkte reparatie-export worden onderscheiden. Test met synthetische fixtures; `npm test` 116/116 en syntaxcontrole geslaagd. `readyForImport` blijft altijd `false` tot handmatig gecontroleerde mapping, kopieën en herstelproef.
+
+## Masterplan fase 2 — auditnulmeting (2026-11-08)
+- Eigenaar autoriseert zelfstandig werk op de featurebranch en geïsoleerde testomgeving; main, productie en echte migratie blijven uitgesloten.
+- Audit en afhankelijkheden/P0-P1-P2/releasegates: `docs/PHIXAR-FASE2-AUDIT-EN-PLAN.md`. Geen volledige module al productiegereed verklaard.
+- Bestaande regressies: 116/116 groen. Neon-testbranch read-only geïnspecteerd: 20 tabellen met ENABLE/FORCE RLS, waarvan 17 met policies. Branchspecifieke Vercelconfiguratie bestaat; preview `17f4692` READY. Geen geheimwaarden uitgelezen.
+- Nieuwe P0-bevindingen: ongescopeerde browserdrafts, eerder geladen gegevens blijven zichtbaar na sessieverlies, LIMIT-100-lijsten zijn geen volledige KPI-/zoekbron. Eerst herstel hiervan en dashboardintegratie op bestaande API; geen tweede ERP.
