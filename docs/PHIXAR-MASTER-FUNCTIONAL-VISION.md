@@ -187,6 +187,10 @@ These are questions, not approved implementation requirements.
 - Previous 10-minute unclaimed-registration deletion now uses **form opening** as timer start; precise active-form handling remains open.
 - Previous installed-part physical stock accuracy conflicts with unconditional restocking on cancellation; restock must await physical return and inspection. Owner confirmation pending.
 
+### Owner clarification — 2026-11-08 (latest)
+1. **Cancellation / installed part:** owner explicitly reiterates preference to **immediately return an installed part to available inventory, even without disassembly**. Record this as an owner-requested behavior, **NOT an approved executable stock rule**, because it contradicts physical inventory and could allow the same part to be sold or reserved twice. Implementation must not fabricate physical stock: distinguish an immediate administrative reversal/credit from physically verified return to saleable stock. Obtain explicit owner acceptance of this distinction before coding. Do not silently replace the owner's answer.
+2. **iPad 10-minute session:** start countdown when registration form opens. At ten minutes show warning and option to extend; if there is no response, securely close/reset the temporary form. A submission already claimed by staff is never deleted. Avoid deleting accepted records; determine warning grace period and treatment of unsubmitted draft before implementation.
+
 ## F. Open decisions and legal validation
 - Diagnostic fee and exceptions; exact status workflow and notification channel.
 - Belgian invoicing and VAT including second-hand margin regime; consumer warranty/second-hand legal minimum; GDPR identity retention; permissions.
@@ -198,6 +202,7 @@ These are questions, not approved implementation requirements.
 When user approves a module, append the exact decisions here. Keep a changelog and distinguish **CONFIRMED**, **PROPOSED**, **OPEN**, **LEGAL REVIEW**. Never silently rewrite previous owner-confirmed rules. No production code changes are authorized by this document alone.
 
 ## Changelog
+- 2026-11-08: Recorded owner reiteration of immediate installed-part restock (explicit physical-stock conflict, implementation blocked pending resolution) and iPad 10-minute warning/extension behavior.
 - 2026-11-08: Added five owner decisions on intake timer, reservation reassignment, cancellation restock, transfer verification and claimed-intake retention; flagged physical stock and active-form safety conflicts.
 - 2026-11-08: Added six owner-confirmed end-to-end scenarios and cross-module consistency findings, explicitly separating confirmed behavior from open/legal-review issues.
 - 2026-11-07: Added 12 owner-confirmed POS/payment decisions and explicit reconciliation safeguards for immediately marked-as-received payments.
