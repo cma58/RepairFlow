@@ -25,6 +25,7 @@ function render(){
  textList('customers',state.customers,(li,c)=>{li.append(document.createTextNode((c.company_name?c.company_name+' · ':'')+c.display_name+' · '+(c.phone||c.email||'geen contact')));li.append(button('Nieuwe reparatie',()=>{$('repair-customer').value=c.id;openModule('repairs')}))});
  textList('repairs',state.repairs,(li,r)=>{
   li.append(document.createTextNode(r.reference+' · '+r.device_brand+' '+(r.device_model||'')+' · '+r.status+' · '+euro(r.charge_cents)));
+  li.append(button('Document',()=>repairDocument(r.id)));
   const next={Binnengebracht:['Diagnose'],Diagnose:Number(r.charge_cents)>0?['Wachten op klant']:['Wachten op klant','In reparatie'], 'Wachten op klant':r.quote_approved_at?['In reparatie']:[],'Wachten op onderdeel':['In reparatie'],'In reparatie':['Kwaliteitscontrole'],Kwaliteitscontrole:['Klaar','In reparatie'],Klaar:['Afgehaald']}[r.status]||[];
   if(r.status==='Wachten op klant'&&!r.quote_approved_at)li.append(button('Offerte akkoord registreren',()=>{
    const method=prompt('Akkoordkanaal: oral of email?');if(!method)return;
@@ -95,7 +96,22 @@ $('checkout').addEventListener('click',async()=>{if(busy||!cart.length)return;tr
   const result=await send(payload,'Verkoop geregistreerd.',e=>{if(e.status>=400&&e.status<500){pending=null;localStorage.removeItem(PENDING_KEY);updatePending()}});if(!result)return;
   const receiptId=result.sale?.id;cart=[];pending=null;localStorage.removeItem(PENDING_KEY);saveDraft(CART_KEY,cart);renderCart();updatePending();if(receiptId)await receipt(receiptId);
  }catch(e){error('Winkelmand en aanvraag blijven bewaard: '+e.message)}});
-async function receipt(id){try{const response=await fetch('/api/workspace?saleId='+encodeURIComponent(id),{credentials:'same-origin',cache:'no-store'});if(!response.ok)throw Error('bewijs niet beschikbaar');const data=await response.json();$('receipt').textContent='Bewijs '+data.sale.reference+' · '+data.lines.map(l=>l.description+' '+l.quantity+' × '+euro(l.unit_price_cents)).join(' · ')+' · totaal '+euro(data.sale.total_cents)+' · '+data.payments.map(p=>p.method+' '+euro(p.amount_cents)+' ('+p.payment_state+')').join(' + ')+' · '+data.notice}catch(e){error(e.message)}}
+function printLine(root,label,value){if(value==null||value==='')return;const p=document.createElement('p'),strong=document.createElement('strong');strong.textContent=label+': ';p.append(strong,document.createTextNode(String(value)));root.append(p)}
+function printHeader(title,data){const root=$('print-document');root.replaceChildren();const h=document.createElement('h1');h.textContent=title;root.append(h);printLine(root,'Bedrijf',data.organization?.name||'PHIXAR');printLine(root,'Vestiging',data.branch?.name);printLine(root,'Adres',data.branch?.address);return root}
+function printNotice(root,notice){const p=document.createElement('p');p.className='print-notice';p.textContent=notice;root.append(p);$('print-button').hidden=false}
+function printTable(root,headers,rows){const table=document.createElement('table'),head=document.createElement('tr');for(const text of headers){const th=document.createElement('th');th.textContent=text;head.append(th)}table.append(head);for(const values of rows){const tr=document.createElement('tr');for(const value of values){const td=document.createElement('td');td.textContent=String(value??'');tr.append(td)}table.append(tr)}root.append(table)}
+async function documentData(query){const response=await fetch('/api/workspace?'+query,{credentials:'same-origin',cache:'no-store'});if(!response.ok)throw Error('document niet beschikbaar');return response.json()}
+async function receipt(id){try{const data=await documentData('saleId='+encodeURIComponent(id));$('receipt').textContent='Bewijs '+data.sale.reference+' · '+data.lines.map(l=>l.description+' '+l.quantity+' × '+euro(l.unit_price_cents)).join(' · ')+' · totaal '+euro(data.sale.total_cents)+' · '+data.payments.map(p=>p.method+' '+euro(p.amount_cents)+' ('+p.payment_state+')').join(' + ')+' · '+data.notice;
+ const root=printHeader('Verkoopoverzicht · geen btw-factuur',data);printLine(root,'Referentie',data.sale.reference);printLine(root,'Datum',new Date(data.sale.sold_at).toLocaleString('nl-BE'));
+ printTable(root,['Omschrijving','Aantal','Eenheidsprijs','Totaal'],data.lines.map(l=>[l.description,l.quantity,euro(l.unit_price_cents),euro(l.line_total_cents)]));printLine(root,'Totaal inclusief nog niet geclassificeerde btw',euro(data.sale.total_cents));
+ printTable(root,['Betaalwijze','Bedrag','Status'],data.payments.map(p=>[p.method,euro(p.amount_cents),p.payment_state]));printNotice(root,data.notice);
+ }catch(e){error(e.message)}}
+async function repairDocument(id){try{const data=await documentData('repairId='+encodeURIComponent(id)),r=data.repair,c=data.customer;const root=printHeader('Reparatieoverzicht · geen btw-factuur',data);
+ printLine(root,'Referentie',r.reference);printLine(root,'Intake',new Date(r.created_at).toLocaleString('nl-BE'));printLine(root,'Klant',c?.display_name);printLine(root,'Bedrijf klant',c?.company_name);printLine(root,'BTW-nummer klant (opgave)',c?.vat_number);printLine(root,'Contact',c?.phone||c?.email);printLine(root,'Toestel',r.device_brand+' '+(r.device_model||''));printLine(root,'Serienummer',r.device_serial);printLine(root,'Klacht',r.complaint);printLine(root,'Status',r.status);printLine(root,'Afgesproken bedrag',euro(r.charge_cents));
+ if(r.quote_approved_at){printLine(root,'Akkoord vastgelegd op',new Date(r.quote_approved_at).toLocaleString('nl-BE'));printLine(root,'Akkoordkanaal',r.quote_approval_method);printLine(root,'Medewerkersnotitie',r.quote_approval_note)}
+ printTable(root,['Datum','Van','Naar'],data.events.map(e=>[new Date(e.created_at).toLocaleString('nl-BE'),e.from_status||'—',e.to_status]));printNotice(root,data.notice);info('Reparatiedocument klaar voor afdrukken.');
+ }catch(e){error(e.message)}}
+$('print-button').addEventListener('click',()=>window.print());
 $('close-day').addEventListener('click',()=>send({action:'closeDay'},'Kassadag gesloten.'));
 $('refresh').addEventListener('click',load);
 updates?.addEventListener('message',()=>{if(document.visibilityState==='visible'&&!busy)load({silent:true})});
