@@ -1,6 +1,6 @@
 # PHIXAR — defectcontrole en veilige cloudvolgorde (2026-11-08)
 
-Status: ontwikkelbranch; geen merge, deployment, schemawijziging of import uitgevoerd. `PHIXAR-MASTER-FUNCTIONAL-VISION.md` en `PHIXAR-POS-VISION.md` bepalen het beoogde gedrag. `ERP-STATUS.md` beschrijft de huidige implementatie, niet de acceptatiecriteria.
+Status: ontwikkelbranch; afgeschermde Vercel-preview, geen merge, productiedeployment, schemawijziging of import uitgevoerd. `PHIXAR-MASTER-FUNCTIONAL-VISION.md` en `PHIXAR-POS-VISION.md` bepalen het beoogde gedrag. `ERP-STATUS.md` beschrijft de huidige implementatie, niet de acceptatiecriteria.
 
 ## Bevindingen en correcties
 
@@ -21,7 +21,7 @@ Status: ontwikkelbranch; geen merge, deployment, schemawijziging of import uitge
 - Refurbished: statusmodel, optionele QC, garanties en verkoop zijn nog niet gekoppeld aan één servertransactie met POS en voorraad. De UI gebruikt nog A/B/C-grades terwijl de mastervisie Nieuwstaat/Goed/Gebruikt/Beschadigd bevestigt; dit is een productverschil, geen veilige automatische dataconversie.
 - Kassa: de browsercheckout blijft retail-only en heeft één betaalmethode; de server-side `lib/pos-checkout.js` is niet op een geautoriseerde publieke route aangesloten. Gecombineerde reparatie/refurbishedregels, voorschotten, split tender, retouren en autorisatie zijn niet als end-to-end cloudflow geïmplementeerd. Handmatig geregistreerd is niet hetzelfde als bank/provider bevestigd.
 - Klantportaal: publieke statusroute blijft bewust 503. Mag pas open na tokens, rate limiting, privacyprojectie, tenantautorisatie en revocatie/expiratietests.
-- SQL: bestaande 15 `rf_*`-tabellen zijn volgens `ERP-STATUS.md` in Neon aanwezig met ENABLE/FORCE RLS en zonder policies. Het repositoryschema is geen bewijs dat de live database identiek is; controleer schema en privileges read-only opnieuw vóór wijzigingen.
+- SQL: read-only Neon-cataloguscontrole bevestigde 15 `rf_*`-tabellen met ENABLE/FORCE RLS en 0 policies. Er zijn 2 Neon Auth-gebruikers en 2 inactieve owner-staffrijen in één organisatie en vestiging. De werkelijke identiteitskoppelingen, runtimeprivileges en beleid moeten vóór activatie met minimale gegevensinzage worden geverifieerd; 0 policies mogen niet met een brede permissie worden omzeild.
 
 ## Migratievolgorde en gates
 

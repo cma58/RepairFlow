@@ -179,3 +179,10 @@
 - **P0 open:** browseropslag is niet transactioneel of multi-user; veilig server-side toegangsbeleid/RLS, migratie en herstelde login moeten voor gedeeld dagelijks gebruik aantoonbaar werken.
 - **P1 open:** gecombineerde POS-winkelmand, echte split tender, kassadagafsluiting/correcties, volledige refurbished/POS-koppeling en autorisatie van gevoelige acties. De bestaande schermen zijn geen bewijs van een werkende end-to-end winkelversie.
 - Klantportaal, automatische herinneringen en verdere rapportage blijven latere fases zolang P0/P1 open zijn. Geen productieclaim.
+
+## Verificatie na P0-betaalcorrectie (2026-11-08, featurebranch)
+- Reparatiebetalingen valideren nu hele eurocenten en het resterende saldo, zodat fracties van centen en herhaalde betalingen worden geweigerd. Een directe registratie met de niet gekoppelde SumUp-methode wordt geweigerd; handmatig bevestigde ontvangsten krijgen een expliciete verificatiebron in het betaalrecord. Dit bewijst geen externe settlement.
+- `npm test`: 81/81 geslaagd; alle JavaScript-bestanden slagen voor `node --check`. GitHub Actions-runs `42440027302` en `42440027340` voor commit `713e7d8` geslaagd.
+- Afgeschermde Vercel-preview [featurecommit 713e7d8](https://repair-flow-5mbywscni-aminechtaiti-3069s-projects.vercel.app) staat op READY; `/` antwoordde HTTP 200, `/api/auth/me` bleef terecht HTTP 503. De interactieve browserflow is door Vercel-aanmeldbescherming nog niet end-to-end geverifieerd. Productie is niet bijgewerkt.
+- Read-only Neon-controle: 15 `public.rf_*`-tabellen met ENABLE/FORCE RLS, 0 policies; `neon_auth.user` bevat 2 gebruikers en `rf_staff` 2 inactieve owner-rijen voor één organisatie en vestiging. De eerdere aanname dat er geen gebruikers bestonden was verouderd. Geen medewerker geactiveerd of databasegegeven gewijzigd.
+- **Blokkeert dagelijks gedeeld gebruik:** geldige magic-link-sessie wordt nog niet veilig aan actieve server-side medewerkerrechten gekoppeld; RLS-beleid en transacties voor de gecombineerde kassa ontbreken. Geen productiepublicatie of echte datamigratie uitgevoerd.
