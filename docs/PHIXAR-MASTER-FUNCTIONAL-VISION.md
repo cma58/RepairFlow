@@ -148,6 +148,32 @@ Status: **Living specification**. Owner-confirmed decisions are distinguished fr
 - Permission thresholds and escalation for stock adjustments.
 These are questions, not approved implementation requirements.
 
+## F. End-to-end shop scenarios — owner-confirmed 2026-11-08
+1. **Abandoned iPad registration:** owner requests definitive deletion after 10 minutes if the customer leaves without being received. Scope this timer to **unclaimed, incomplete/unaccepted temporary intake submissions**, never an active form in use, an intake already claimed by staff, an accepted repair dossier, a legal transaction record, or other records subject to retention duties. Exact inactivity/start event and safe deletion criteria remain to confirm; no irreversible purge of confirmed records.
+2. **Deposit plus approved extra work:** initial €180 repair, €50 deposit, approved €40 supplementary quote -> total €220, remaining due **€170**. Preserve the original quote, supplementary approval and deposit ledger; avoid double counting.
+3. **Part reserved for customer A:** do not allocate it to customer B automatically. Staff may reassign only with recorded reason and traceable reservation release/reallocation; permission rules remain configurable.
+4. **Repair pickup with accessories:** combine repaired device, case and screen protector in one POS basket, one checkout and one receipt, linked to the repair dossier. Preserve line-item tax, stock and warranty distinctions.
+5. **Warranty claim after three months:** retrieve original sale/repair, create a linked warranty intake and perform diagnosis before reasoned coverage decision.
+6. **Declined Bancontact terminal payment:** payment stays **unconfirmed/unpaid**, staff can retry or select another method. This overrides the earlier default 'mark received on selection' whenever terminal failure is known. Selection alone must never override an explicit decline.
+
+### Cross-module consistency findings (reviewed 2026-11-08)
+- **RESOLVED by precedence:** POS payment-method selection may initially register a cashier-reported receipt, but a known terminal decline must override it. Keep independent settlement/reconciliation status. Pending bank transfers still require a business rule before being considered verified.
+- **OPEN — iPad deletion:** distinguish in-progress forms, submitted-but-unclaimed registrations, staff-claimed intakes and legally retained dossiers; 10-minute trigger and irreversible deletion need explicit confirmation. Prevent erasing legitimate customers or audit evidence.
+- **CONFIRMED — arithmetic and links:** approved supplementary quote updates amount due, existing deposit offsets once; checkout can contain accessories while preserving repair identity.
+- **CONFIRMED — reservations:** reservation for A excludes availability for B; release/reassignment requires recorded reason and consistent inventory ledger.
+- **OPEN — physical vs financial stock:** installation immediately removes saleable availability, while the owner wants financial finalization at checkout. Accounting treatment for installed-but-unpaid, never-collected, warranty and failed repair cases needs validation.
+- **OPEN — warranty clock:** begins at actual pickup as intended, not repair completion; legal minimum periods, scope and exceptions require validation.
+- **LEGAL REVIEW — iPad marketing:** owner-selected single mandatory checkbox including marketing cannot be implemented as bundled consent; keep optional marketing opt-in separate from intake acknowledgement.
+- **OPEN — payment finality:** define bank transfer proof, terminal/provider reconciliation and how unpaid/part-paid devices are released with manager authorization.
+- **OPEN — receipt/fiscal rules:** combined checkout must retain correct VAT, invoices/credit notes, refurbished margin-scheme distinctions and Belgian B2B e-invoicing where applicable.
+
+### Next owner decisions needed
+1. What starts the 10-minute abandoned iPad-registration countdown, and should activity reset it? Delete only never-claimed submissions, not active forms or accepted dossiers.
+2. Who may reassign a reserved part: any employee with reason or manager approval?
+3. What happens to a part already installed if a customer cancels or never collects their device?
+4. When should bank transfers count as paid: on cashier selection, proof shown, or bank receipt? Distinguish receipt and verification.
+5. Define employee discount and price-override thresholds, diagnostic fee, and uncollected-device reminder cadence.
+
 ## F. Open decisions and legal validation
 - Diagnostic fee and exceptions; exact status workflow and notification channel.
 - Belgian invoicing and VAT including second-hand margin regime; consumer warranty/second-hand legal minimum; GDPR identity retention; permissions.
@@ -159,6 +185,7 @@ These are questions, not approved implementation requirements.
 When user approves a module, append the exact decisions here. Keep a changelog and distinguish **CONFIRMED**, **PROPOSED**, **OPEN**, **LEGAL REVIEW**. Never silently rewrite previous owner-confirmed rules. No production code changes are authorized by this document alone.
 
 ## Changelog
+- 2026-11-08: Added six owner-confirmed end-to-end scenarios and cross-module consistency findings, explicitly separating confirmed behavior from open/legal-review issues.
 - 2026-11-07: Added 12 owner-confirmed POS/payment decisions and explicit reconciliation safeguards for immediately marked-as-received payments.
 - 2026-11-07: Added 12 owner-confirmed repair/warranty exception rules, including conditional diagnosis fee, quote approvals, single-button final test and repeat-warranty traceability.
 - 2026-11-07: Added 12 owner-confirmed iPad/intake choices; flagged bundled marketing checkbox as legally unsafe and pending compliant redesign.
