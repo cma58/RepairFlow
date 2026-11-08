@@ -9,20 +9,23 @@
 const verifiedCallbackURL=location.origin+'/api/auth/callback';
 const form=document.getElementById('login'),status=document.getElementById('status'),button=document.getElementById('send');
 const params=new URLSearchParams(location.search);
-const callbackReturn=params.has('auth_return')||params.has('callback')||params.has('token')||params.has('code')||params.has('error');
-async function checkSession(){
+async function checkSession(returning=false){
  status.textContent='Aanmeldsessie controleren…';
  try{
   const response=await fetch('/api/auth/session',{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json'},cache:'no-store'});
+  if(response.status===401&&!returning){await loadReadiness();return}
   if(!response.ok)throw new Error('session unavailable');
   const data=await response.json();
   if(data&&data.authenticated){
    const staffResponse=await fetch('/api/auth/me',{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json'},cache:'no-store'});
    if(staffResponse.ok){
     const staff=await staffResponse.json();
+    form.hidden=true;
     status.textContent='Sessie en medewerkersrechten bevestigd ('+staff.role+'). De cloudwerkruimte wordt nog getest; klantgegevens zijn hier nog niet beschikbaar.';
-   }else{
+   }else if(staffResponse.status===403){
     status.textContent='Je e-maillink is bevestigd, maar dit account heeft nog geen toegang tot deze winkel.';
+   }else{
+    status.textContent='De medewerkersrechten kunnen tijdelijk niet worden gecontroleerd. Probeer later opnieuw.';
    }
   }else{
    status.textContent='De verificatielink is verwerkt, maar er is geen sessie beschikbaar op deze website. Het probleem zit in de sessiekoppeling; vraag geen nieuwe link aan.';
@@ -50,12 +53,12 @@ async function loadReadiness(){
 }
 emailField.value='';
 const returningFromAuth=params.has('auth_return')||params.has('error')||params.has('neon_auth_session_verifier');
-if(!returningFromAuth)loadReadiness();
+if(!returningFromAuth)checkSession();
 if(params.has('neon_auth_session_verifier')){const verifier=params.get('neon_auth_session_verifier');if(/^ml-[A-Za-z0-9_.-]{10,512}$/.test(verifier)){location.replace('/api/auth/callback?neon_auth_session_verifier='+encodeURIComponent(verifier))}else{history.replaceState(null,'',location.pathname);status.textContent='Ongeldige verificatielink.'}}
-else if(params.has('auth_return')){history.replaceState(null,'',location.pathname);form.hidden=true;checkSession()}
+else if(params.has('auth_return')){history.replaceState(null,'',location.pathname);form.hidden=true;checkSession(true)}
 else if(params.has('error')){status.textContent='De aanmelding is niet gelukt of de link is verlopen. Meld dit aan de beheerder.';history.replaceState(null,'',location.pathname)}
-else if(params.has('token')||params.has('code')){history.replaceState(null,'',location.pathname);checkSession()}
-else if(params.has('callback')){history.replaceState(null,'',location.pathname);checkSession()}
+else if(params.has('token')||params.has('code')){history.replaceState(null,'',location.pathname);checkSession(true)}
+else if(params.has('callback')){history.replaceState(null,'',location.pathname);checkSession(true)}
 // Server-side feature flag controls availability; no access is granted from this form.
 form.addEventListener('submit',async event=>{
  event.preventDefault();
