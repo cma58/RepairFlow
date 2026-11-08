@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {withWorkspace}=require('../lib/workspace-session');
-const {customer,checkout,stock,refurb,changeRepair,approveQuote,correction}=require('../lib/workspace-operations');
+const {customer,checkout,stock,refurb,changeRepair,approveQuote,correction,repairDocument,receipt}=require('../lib/workspace-operations');
 const O='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',A='44444444-4444-4444-8444-444444444442';
 const P='55555555-5555-4555-8555-555555555555',F='66666666-6666-4666-8666-666666666666',R='77777777-7777-4777-8777-777777777777',S='88888888-8888-4888-8888-888888888888';
 const staff={id:A,organizationId:O,branchId:B,role:'manager'};
@@ -160,4 +160,15 @@ test('cash correction cannot make a closed day negative, and replay does not app
  assert.equal(result.body.replayed,true);assert.equal(calls.filter(sql=>sql.startsWith('INSERT INTO rf_cash_corrections')).length,0);
  assert.equal(calls.filter(sql=>sql.startsWith('SELECT pg_advisory_xact_lock')).length,2);
  assert.equal(calls.some(sql=>sql.includes('rf_cash_days')&&sql.includes('FOR UPDATE')),false);
+});
+test('printable repair document does not read customer data when tenant repair is absent',async()=>{
+ const calls=[],db={async query(sql,params){calls.push({sql,params});return {rows:[]}}};
+ await assert.rejects(()=>repairDocument(db,staff,{repairId:R}),/NOT_FOUND/);
+ assert.equal(calls.length,1);
+ assert.deepEqual(calls[0].params,[O,B,R]);
+});
+test('sale receipt reads only lines, payments and company details after scoped sale lookup',async()=>{
+ const calls=[],db={async query(sql,params){calls.push({sql,params});if(sql.startsWith('SELECT id,reference,total_cents,sold_at'))return {rows:[{id:S,reference:'KAS-TEST',total_cents:16000,sold_at:'2026-11-08T12:00:00Z'}]};if(sql.startsWith('SELECT name FROM rf_organizations'))return {rows:[{name:'PHIXAR'}]};if(sql.startsWith('SELECT name,address FROM rf_branches'))return {rows:[{name:'Testvestiging',address:'Testadres'}]};return {rows:[]}}};
+ const result=await receipt(db,staff,{saleId:S});assert.equal(result.body.sale.total_cents,16000);assert.equal(result.body.organization.name,'PHIXAR');assert.match(result.body.notice,/geen fiscale factuur/i);
+ assert.deepEqual(calls[0].params,[O,B,S]);
 });
