@@ -44,6 +44,8 @@ De afgeschermde featurepreview heeft nu een geautoriseerde `/api/workspace` met 
 4. Vergelijk aantallen en identifiers per module en apparaat. Rapporteer dubbele klanten, IMEI's, tickets, betalingen, afwijkende statussen, ontbrekende verwijzingen, beschadigde records en onbekende velden. Geen automatische deduplicatie of veldverlies.
 
 ### Dry-run en omschakelgrens
+Voor een lokale, strikt read-only structuurcontrole van een bestaande export: `node scripts/preflight-legacy-backup.js /pad/naar/repairflow-backup.json`. Het programma geeft een SHA-256, aantallen en een lijst fouten/waarschuwingen zonder persoonsgegevens of recordwaarden uit te schrijven. Het ondersteunt de volledige POS-browserexport en de beperktere reparatie-export. `readyForImport` blijft bewust `false`: schema/velden, historiek, betrokken apparaten, originele bestanden, toestemming en herstel zijn nog niet gevalideerd. Voer de bronbestanden niet in op een publieke website.
+
 1. Parse kopieën in een geïsoleerde databasebranch. Maak een expliciet mappingrapport van elk veld naar een cloudkolom of een bewaarplichtig restveld. Behandel toestelcodes apart; schrijf ze niet als gewone tekst naar Neon of logs.
 2. Gebruik stabiele bronidentiteit `(apparaat, origin, sleutel, record-id)` en import-idempotentie. Maak een conflictlijst voor menselijke beoordeling; importeer nooit betalingen door bedragen op te tellen wanneer de oorspronkelijke transactie-identiteit onduidelijk is.
 3. Controleer aantallen, bedragen in centen, voorraadstanden, referenties, herstelbaarheid en roltoegang vóór en na de proefimport. Herhaal de proefimport; er mag geen tweede verkoop, betaling of voorraadmutatie bijkomen. Test twee onafhankelijke apparaten en onderbroken imports.
