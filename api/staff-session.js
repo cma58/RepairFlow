@@ -19,14 +19,14 @@ async function staffSessionHandler(req,res,{env=process.env,authenticate,createP
  const organizationId=env.REPAIRFLOW_ORGANIZATION_ID;
  const branchId=env.REPAIRFLOW_BRANCH_ID;
  const dbUrl=env.REPAIRFLOW_RUNTIME_DATABASE_URL;
- if(!organizationId||!branchId||!dbUrl||env.REPAIRFLOW_RUNTIME_ROLE!=='rf_runtime')return res.status(503).json({error:'Medewerkersportaal nog niet geactiveerd'});
+ if(!organizationId||!branchId||!dbUrl||env.REPAIRFLOW_RUNTIME_ROLE!=='rf_runtime_login')return res.status(503).json({error:'Medewerkersportaal nog niet geactiveerd'});
  const pool=createPool?createPool(dbUrl):new Pool({connectionString:dbUrl,max:1,connectionTimeoutMillis:3000});
  let client;
  try{
   client=await pool.connect();
   await client.query('BEGIN');
   const role=await client.query('SELECT current_user AS name, r.rolbypassrls AS bypass FROM pg_roles r WHERE r.rolname=current_user');
-  if(role.rows?.length!==1||role.rows[0].name!=='rf_runtime'||role.rows[0].bypass!==false)throw Error('UNSAFE_RUNTIME_ROLE');
+  if(role.rows?.length!==1||role.rows[0].name!=='rf_runtime_login'||role.rows[0].bypass!==false)throw Error('UNSAFE_RUNTIME_ROLE');
   await client.query("SELECT set_config('app.subject',$1,true),set_config('app.organization_id',$2,true),set_config('app.branch_id',$3,true)",[identity.subject,organizationId,branchId]);
   const staff=await resolveStaff({
    verifiedSubject:identity.subject,organizationId,branchId,

@@ -3,10 +3,10 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const handler=require('../api/staff-session');
 const org='11111111-1111-4111-8111-111111111111',branch='22222222-2222-4222-8222-222222222222';
 const auth='https://ep-test.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
-const env={NEON_AUTH_ISSUER:auth,NEON_AUTH_AUDIENCE:'repairflow',NEON_AUTH_JWKS_URL:auth+'/.well-known/jwks.json',REPAIRFLOW_NEON_AUTH_URL:auth,REPAIRFLOW_ORGANIZATION_ID:org,REPAIRFLOW_BRANCH_ID:branch,REPAIRFLOW_RUNTIME_DATABASE_URL:'postgres://restricted.invalid/db',REPAIRFLOW_RUNTIME_ROLE:'rf_runtime'};
-async function invoke({role='rf_runtime',staff=true,dbFail=false,settings=env}={}){
+const env={NEON_AUTH_ISSUER:auth,NEON_AUTH_AUDIENCE:'repairflow',NEON_AUTH_JWKS_URL:auth+'/.well-known/jwks.json',REPAIRFLOW_NEON_AUTH_URL:auth,REPAIRFLOW_ORGANIZATION_ID:org,REPAIRFLOW_BRANCH_ID:branch,REPAIRFLOW_RUNTIME_DATABASE_URL:'postgres://restricted.invalid/db',REPAIRFLOW_RUNTIME_ROLE:'rf_runtime_login'};
+async function invoke({role='rf_runtime_login',staff=true,dbFail=false,settings=env}={}){
  const calls=[];let status=200,body,closed=false,released=false;
- const client={query:async(sql,params)=>{calls.push({sql,params});if(sql.startsWith('SELECT current_user'))return {rows:[{name:role,bypass:role!=='rf_runtime'}]};if(sql.startsWith('SELECT set_config'))return {rows:[]};if(sql.startsWith('SELECT s.id')){if(dbFail)throw Error('network down');return {rows:staff?[{id:'44444444-4444-4444-8444-444444444441',organization_id:org,branch_id:branch,role:'owner'}]:[]};}return {rows:[]};},release:()=>{released=true}};
+ const client={query:async(sql,params)=>{calls.push({sql,params});if(sql.startsWith('SELECT current_user'))return {rows:[{name:role,bypass:role!=='rf_runtime_login'}]};if(sql.startsWith('SELECT set_config'))return {rows:[]};if(sql.startsWith('SELECT s.id')){if(dbFail)throw Error('network down');return {rows:staff?[{id:'44444444-4444-4444-8444-444444444441',organization_id:org,branch_id:branch,role:'owner'}]:[]};}return {rows:[]};},release:()=>{released=true}};
  const pool={connect:async()=>client,end:async()=>{closed=true}};
  const res={setHeader(){return this},status(n){status=n;return this},json(x){body=x;return this}};
  await handler({method:'GET',headers:{authorization:'Bearer test.token.sig'}},res,{env:settings,authenticate:async()=>({subject:'test-owner-phixar'}),createPool:()=>pool});
