@@ -19,7 +19,7 @@ async function load(){try{const data=await api();Object.assign(state,data);rende
 function render(){
  fillSelect('repair-customer',state.customers,c=>c.display_name);
  fillSelect('stock-product',state.products,p=>p.sku+' · '+p.name);
- fillSelect('stock-repair',state.repairs.filter(r=>['In reparatie','Kwaliteitscontrole'].includes(r.status)),r=>r.reference);
+ fillSelect('stock-repair',state.repairs.filter(r=>['In reparatie','Wachten op klant'].includes(r.status)&&(Number(r.charge_cents)===0||r.quote_approved_at)),r=>r.reference);
  textList('customers',state.customers,(li,c)=>li.textContent=(c.company_name?c.company_name+' · ':'')+c.display_name+' · '+(c.phone||c.email||'geen contact'));
  textList('repairs',state.repairs,(li,r)=>{
   li.append(document.createTextNode(r.reference+' · '+r.device_brand+' '+(r.device_model||'')+' · '+r.status+' · '+euro(r.charge_cents)));
@@ -27,7 +27,10 @@ function render(){
   if(r.status==='Wachten op klant'&&!r.quote_approved_at)li.append(button('Offerte akkoord registreren',()=>{
    const method=prompt('Akkoordkanaal: oral of email?');if(!method)return;
    const note=prompt('Bewijsnotitie: wie stemde wanneer in, en met welk werk en bedrag?');if(!note)return;
-   send({action:'approveQuote',repairId:r.id,method:method.trim().toLowerCase(),note},'Offerteakkoord vastgelegd.');
+   const sku=prompt('Benodigd onderdeel-SKU (leeg als deze offerte geen onderdeel nodig heeft):');if(sku===null)return;
+   const payload={action:'approveQuote',repairId:r.id,method:method.trim().toLowerCase(),note};
+   if(sku.trim()){const part=state.products.find(p=>p.sku===sku.trim()&&p.kind==='part');if(!part){error('Onderdeel-SKU niet gevonden. Offerteakkoord is nog niet opgeslagen.');return}const q=prompt('Hoeveel stuks reserveren?');const quantity=Number(q);if(!Number.isSafeInteger(quantity)||quantity<1||quantity>999){error('Ongeldig aantal; offerteakkoord is nog niet opgeslagen.');return}Object.assign(payload,{partProductId:part.id,partQuantity:quantity,partRequestId:crypto.randomUUID()})}
+   send(payload,'Offerteakkoord en benodigde reservering vastgelegd.');
   }));
   for(const status of next)li.append(button(r.status==='Kwaliteitscontrole'&&status==='Klaar'?'Test geslaagd':r.status==='Kwaliteitscontrole'&&status==='In reparatie'?'Test mislukt':status,()=>{
    const payload={action:'changeRepair',repairId:r.id,expectedStatus:r.status,status};
@@ -35,14 +38,18 @@ function render(){
    if(r.status==='Kwaliteitscontrole'&&status==='In reparatie'){const note=prompt('Waarom mislukte de kwaliteitscontrole?');if(!note)return;payload.qcNote=note}
    send(payload,'Reparatiestatus opgeslagen.');
   }));
+  if(['Binnengebracht','Diagnose','Wachten op klant','Wachten op onderdeel','In reparatie'].includes(r.status))li.append(button('Annuleer',()=>{
+   const reason=prompt('Reden voor annulering en vrijgave van reserveringen:');if(reason)send({action:'changeRepair',repairId:r.id,expectedStatus:r.status,status:'Geannuleerd',reason},'Reparatie geannuleerd; reserveringen vrijgegeven.');
+  }));
  });
- textList('products',state.products,(li,p)=>li.textContent=p.sku+' · '+p.name+' · '+p.quantity+' stuks · '+euro(p.unit_price_cents));
+ textList('products',state.products,(li,p)=>li.textContent=p.sku+' · '+p.name+' · fysiek '+p.quantity+' · beschikbaar '+p.available+' · '+euro(p.unit_price_cents));
+ textList('reservations',state.reservations||[],(li,r)=>{const product=state.products.find(p=>p.id===r.product_id),repair=state.repairs.find(p=>p.id===r.repair_id);li.textContent=(product?.name||r.product_id)+' · '+r.quantity+' voor '+(repair?.reference||r.repair_id)});
  textList('refurbished',state.refurbished,(li,r)=>{li.append(document.createTextNode(r.imei+' · '+r.description+' · '+r.status+' · '+euro(r.price_cents)));if(['inspection','rejected','available'].includes(r.status))for(const status of ['rejected','available'].filter(v=>v!==r.status))li.append(button(status==='rejected'?'Keur af':'Keur goed',()=>{const reason=prompt('Reden van de beoordeling:');if(reason)send({action:'assess',refurbishedId:r.id,expectedStatus:r.status,status,reason},'Beoordeling met historiek opgeslagen.')}))});
  textList('sales',state.sales,(li,s)=>{li.append(document.createTextNode(s.reference+' · '+euro(s.total_cents)+' · '));li.append(button('Bewijs',()=>receipt(s.id)))});
  textList('cash-days',state.cashDays,(li,d)=>{const methods=state.cashDayPayments?.filter(p=>String(p.business_date).slice(0,10)===String(d.business_date).slice(0,10)).map(p=>p.method+' '+euro(p.amount_cents)).join(' + ');li.append(document.createTextNode(String(d.business_date).slice(0,10)+' · geregistreerde verkopen '+euro(d.total_cents)+' · correcties '+euro(d.corrections_cents)+' · '+(methods||'geen betalingen')+' · gesloten'));li.append(button('Correctie',()=>{const reason=prompt('Reden voor correctie (minimaal 5 tekens):');if(!reason)return;const value=prompt('Correctiebedrag in euro (negatief of positief):');if(!value)return;try{const negative=value.trim().startsWith('-');const amount=toCents(negative?value.trim().slice(1):value);send({action:'correction',requestId:crypto.randomUUID(),dayId:d.id,deltaCents:negative?-amount:amount,reason},'Correctie toegevoegd.')}catch(e){error(e.message)}}))});
  updateCartPicker();renderCart();
 }
-function updateCartPicker(){const type=$('cart-type').value;const candidates=type==='product'?state.products.filter(x=>x.quantity>0&&x.active):type==='repair'?state.repairs.filter(x=>x.status==='Klaar'&&Number(x.charge_cents)>0):state.refurbished.filter(x=>x.status==='available');fillSelect('cart-item',candidates,x=>type==='product'?x.name+' · '+euro(x.unit_price_cents):type==='repair'?x.reference+' · '+euro(x.charge_cents):x.description+' · '+euro(x.price_cents))}
+function updateCartPicker(){const type=$('cart-type').value;const candidates=type==='product'?state.products.filter(x=>Number(x.available)>0&&x.active):type==='repair'?state.repairs.filter(x=>x.status==='Klaar'&&Number(x.charge_cents)>0):state.refurbished.filter(x=>x.status==='available');fillSelect('cart-item',candidates,x=>type==='product'?x.name+' · '+euro(x.unit_price_cents):type==='repair'?x.reference+' · '+euro(x.charge_cents):x.description+' · '+euro(x.price_cents))}
 function renderCart(){textList('cart',cart,(li,l)=>{const x=(l.type==='product'?state.products:l.type==='repair'?state.repairs:state.refurbished).find(v=>v.id===l.id);li.append(document.createTextNode((x?.name||x?.reference||x?.description||l.id)+' × '+l.quantity+' · '+l.type));li.append(button('Verwijder',()=>{if(pending){error('Deze aanvraag wacht op bevestiging. Herhaal eerst met dezelfde aanvraagcode.');return}cart=cart.filter(v=>v!==l);try{saveDraft(CART_KEY,cart)}catch(e){error(e.message)}renderCart()}))})}
 async function send(payload,success,onFailure){if(busy)return;busy=true;try{const result=await api(payload);info(success+(result.replayed?' Herhaalde aanvraag veilig herkend.':''));await load();return result}catch(e){onFailure?.(e);error('Niet opgeslagen of niet bevestigd: '+e.message);return null}finally{busy=false}}
 $('retry-pending').addEventListener('click',async()=>{
@@ -59,7 +66,7 @@ for(const action of ['customer','repair','product','stock','refurb'])$(action).a
   if(action==='customer')payload={...payload,type:x.type,name:x.name,email:x.email,phone:x.phone,company:x.company,vat:x.vat,billingAddress:x.billingAddress};
   if(action==='repair')payload={...payload,customerId:x.customerId,brand:x.brand,model:x.model,serial:x.serial,complaint:x.complaint,chargeCents:toCents(x.charge)};
   if(action==='product')payload={...payload,sku:x.sku,name:x.name,kind:x.kind,priceCents:toCents(x.price)};
-  if(action==='stock')payload={...payload,productId:x.productId,quantity:Number(x.quantity),operation:x.operation,repairId:x.operation==='consume'?x.repairId:undefined};
+  if(action==='stock')payload={...payload,productId:x.productId,quantity:Number(x.quantity),operation:x.operation,repairId:x.operation==='reserve'?x.repairId:undefined};
   if(action==='refurb')payload={...payload,imei:x.imei,description:x.description,priceCents:toCents(x.price)};
   if(pendingWrites[action])payload=pendingWrites[action];else{pendingWrites[action]=payload;saveDraft(WRITES_KEY,pendingWrites);updatePending()}
   const result=await send(payload,'Registratie opgeslagen.',e=>{if(e.status>=400&&e.status<500){delete pendingWrites[action];saveDraft(WRITES_KEY,pendingWrites)}});

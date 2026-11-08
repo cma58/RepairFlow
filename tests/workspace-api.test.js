@@ -37,12 +37,14 @@ test('failed operation rolls back and reveals no customer details',async()=>{
  await withWorkspace(req,res,async()=>{throw Error('private customer record')},{...b,authenticate:async()=>({subject:'verified-user'})});
  assert.equal(res.statusCode,503);assert.deepEqual(res.body,{error:'workspace_unavailable'});assert.equal(b.queries.at(-1),'ROLLBACK');
 });
-function saleDb({previous=false,stockAmount=3}={}){
+function saleDb({previous=false,stockAmount=3,reservation=false}={}){
  const queries=[];const client={async query(sql,params=[]){queries.push({sql,params});
   if(sql.includes('FROM rf_sales WHERE organization_id=$1 AND request_id=$2'))return {rows:previous?[{id:S,reference:'KAS-old',total_cents:5000,request_hash:'wrong'}]:[]};
   if(sql.includes("AT TIME ZONE 'Europe/Brussels')::date AS date"))return {rows:[{date:'2026-11-08'}]};
   if(sql.includes('FROM rf_cash_days WHERE'))return {rows:[]};
   if(sql.includes('FROM rf_products p JOIN rf_stock_balances'))return {rows:[{name:'Hoesje',sku:'CASE',unit_price_cents:1000,active:true,quantity:stockAmount}]};
+  if(sql.includes('coalesce(sum(quantity),0) AS amount FROM rf_part_reservations'))return {rows:[{amount:reservation?2:0}]};
+  if(sql.includes("FROM rf_part_reservations WHERE")&&sql.includes('ORDER BY product_id,id'))return {rows:reservation?[{id:R,product_id:P,quantity:2}]:[]};
   if(sql.includes('FROM rf_refurbished WHERE'))return {rows:[{name:'iPhone',unit_price_cents:3000,status:'available'}]};
   if(sql.includes('FROM rf_repairs WHERE'))return {rows:[{name:'REP',charge_cents:1000,status:'Klaar'}]};
   if(sql.includes('coalesce(sum(l.line_total_cents)'))return {rows:[{amount:0}]};
@@ -67,16 +69,38 @@ test('stock shortage, missing card reference and idempotency conflict never crea
   assert.equal(queries.filter(q=>q.sql.startsWith('INSERT INTO rf_sales')).length,0);
  }
 });
-test('repair part consumption uses a request lock and refuses negative balances',async()=>{
+test('repair part reservation uses a request lock and refuses unavailable stock',async()=>{
  const queries=[];const db={async query(sql){queries.push(sql);
-  if(sql.startsWith('SELECT product_id,repair_id'))return {rows:[]};
-  if(sql.startsWith('SELECT status FROM rf_repairs'))return {rows:[{status:'In reparatie'}]};
+  if(sql.startsWith('SELECT product_id,repair_id,quantity'))return {rows:[]};
+  if(sql.startsWith('SELECT status,charge_cents,quote_approved_at'))return {rows:[{status:'In reparatie',charge_cents:0,quote_approved_at:null}]};
   if(sql.startsWith('SELECT id FROM rf_products'))return {rows:[{id:P}]};
-  if(sql.startsWith('UPDATE rf_stock_balances'))return {rows:[]};
+  if(sql.startsWith('SELECT quantity FROM rf_stock_balances'))return {rows:[{quantity:1}]};
+  if(sql.includes('coalesce(sum(quantity),0) AS amount'))return {rows:[{amount:0}]};
   return {rows:[],rowCount:1};
  }};
- await assert.rejects(()=>stock(db,staff,{requestId:R,productId:P,quantity:2,operation:'consume',repairId:F}),/INSUFFICIENT_STOCK/);
- assert.equal(queries.filter(sql=>sql.startsWith('INSERT INTO rf_stock_movements')).length,0);
+ await assert.rejects(()=>stock(db,staff,{requestId:R,productId:P,quantity:2,operation:'reserve',repairId:F}),/INSUFFICIENT_STOCK/);
+ assert.equal(queries.filter(sql=>sql.startsWith('INSERT INTO rf_part_reservations')).length,0);
+});
+test('checkout finalizes reserved repair parts only once with the sale',async()=>{
+ const {client,queries}=saleDb({reservation:true,stockAmount:3});
+ const repairOnly={requestId:R,lines:[{type:'repair',id:A,quantity:1}],payments:[{method:'cash',amountCents:1000}]};
+ const result=await checkout(client,staff,repairOnly);
+ assert.equal(result.body.sale.totalCents,1000);
+ assert.equal(queries.filter(q=>q.sql.startsWith('UPDATE rf_part_reservations')&&q.sql.includes("status='consumed'")).length,1);
+ assert.equal(queries.filter(q=>q.sql.startsWith('INSERT INTO rf_stock_movements')&&q.sql.includes('repair_id')).length,1);
+});
+test('free pickup consumes reserved parts transactionally, cancellation releases them',async()=>{
+ const events=[];const db={async query(sql){events.push(sql);
+  if(sql.startsWith('SELECT id,status,charge_cents'))return {rows:[{id:R,status:'Klaar',charge_cents:0}]};
+  if(sql.includes("FROM rf_part_reservations WHERE")&&sql.includes('ORDER BY product_id,id'))return {rows:[{id:F,product_id:P,quantity:1}]};
+  return {rows:[],rowCount:1};
+ }};
+ await changeRepair(db,staff,{repairId:R,expectedStatus:'Klaar',status:'Afgehaald'});
+ assert.ok(events.some(sql=>sql.includes("status='consumed'")));
+ assert.ok(events.some(sql=>sql.startsWith('INSERT INTO rf_stock_movements')&&sql.includes('repair_id')));
+ const cancelled=[],cancelDb={async query(sql){cancelled.push(sql);if(sql.startsWith('SELECT id,status,charge_cents'))return {rows:[{id:R,status:'In reparatie',charge_cents:0}]};if(sql.includes("FROM rf_part_reservations WHERE")&&sql.includes("status='reserved' FOR UPDATE"))return {rows:[{id:F}]};return {rows:[],rowCount:1}}};
+ await changeRepair(cancelDb,staff,{repairId:R,expectedStatus:'In reparatie',status:'Geannuleerd',reason:'Klant annuleert de herstelling'});
+ assert.ok(cancelled.some(sql=>sql.includes("status='released'")));
 });
 test('pickup requires full repair charge and exact status',async()=>{
  const db={async query(sql){if(sql.startsWith('SELECT id,status,charge_cents'))return {rows:[{id:R,status:'Klaar',charge_cents:10000}]};if(sql.includes('coalesce(sum(l.line_total_cents)'))return {rows:[{amount:5000}]};throw Error('unexpected write')}};
@@ -100,6 +124,12 @@ test('quote approval records method, evidence, actor and agreed amount',async()=
  assert.equal(result.body.approved,true);
  assert.ok(calls.some(c=>c.sql.startsWith('UPDATE rf_repairs')&&c.params[3]===A));
  assert.ok(calls.some(c=>c.sql.startsWith('INSERT INTO rf_activity')&&c.params[3]==='repair.quote_approved'));
+});
+test('quote approval and part reservation share the same transaction work',async()=>{
+ const calls=[],db={async query(sql,params){calls.push({sql,params});if(sql.startsWith('SELECT id,status,charge_cents,quote_approved_at'))return {rows:[{id:A,status:'Wachten op klant',charge_cents:5000,quote_approved_at:null}]};if(sql.startsWith('SELECT product_id,repair_id,quantity'))return {rows:[]};if(sql.startsWith('SELECT status,charge_cents,quote_approved_at'))return {rows:[{status:'Wachten op klant',charge_cents:5000,quote_approved_at:new Date()}]};if(sql.startsWith('SELECT id FROM rf_products'))return {rows:[{id:P}]};if(sql.startsWith('SELECT quantity FROM rf_stock_balances'))return {rows:[{quantity:2}]};if(sql.includes('coalesce(sum(quantity),0) AS amount'))return {rows:[{amount:0}]};if(sql.startsWith('INSERT INTO rf_part_reservations'))return {rows:[{id:F}]};return {rows:[],rowCount:1}}};
+ await approveQuote(db,staff,{repairId:A,method:'oral',note:'Customer agreed to repair and one part',partProductId:P,partQuantity:1,partRequestId:R});
+ assert.equal(calls.filter(x=>x.sql.startsWith('INSERT INTO rf_part_reservations')).length,1);
+ assert.equal(calls.filter(x=>x.sql.startsWith('INSERT INTO rf_stock_movements')).length,0);
 });
 test('refurbished registration rejects invalid IMEI checksum before database access',async()=>{
  const db={query(){throw Error('database must not be reached')}};

@@ -43,6 +43,23 @@ CREATE TABLE rf_refurbished (
  FOREIGN KEY(organization_id,branch_id) REFERENCES rf_branches(organization_id,id)
 );
 CREATE UNIQUE INDEX rf_refurb_imei_unique ON rf_refurbished(organization_id,regexp_replace(upper(imei),'[^A-Z0-9]','','g'));
+CREATE TABLE rf_part_reservations (
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ organization_id uuid NOT NULL,
+ branch_id uuid NOT NULL,
+ repair_id uuid NOT NULL,
+ product_id uuid NOT NULL,
+ request_id uuid NOT NULL,
+ quantity integer NOT NULL CHECK(quantity>0),
+ status text NOT NULL DEFAULT 'reserved' CHECK(status IN ('reserved','consumed','released')),
+ created_at timestamptz NOT NULL DEFAULT now(),
+ updated_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(organization_id,request_id),
+ FOREIGN KEY(organization_id,branch_id) REFERENCES rf_branches(organization_id,id),
+ FOREIGN KEY(organization_id,repair_id) REFERENCES rf_repairs(organization_id,id),
+ FOREIGN KEY(organization_id,product_id) REFERENCES rf_products(organization_id,id)
+);
+CREATE INDEX rf_part_reservations_stock_idx ON rf_part_reservations(organization_id,branch_id,product_id) WHERE status='reserved';
 ALTER TABLE rf_sale_lines ADD CONSTRAINT rf_sale_refurb_fk FOREIGN KEY(organization_id,refurbished_id) REFERENCES rf_refurbished(organization_id,id);
 ALTER TABLE rf_sale_lines ADD CONSTRAINT rf_line_one_source CHECK(num_nonnulls(product_id,repair_id,refurbished_id)=1);
 CREATE TABLE rf_activity (
@@ -86,11 +103,13 @@ CREATE TABLE rf_cash_corrections (
  FOREIGN KEY(organization_id,approved_by) REFERENCES rf_staff(organization_id,id)
 );
 ALTER TABLE rf_refurbished ENABLE ROW LEVEL SECURITY; ALTER TABLE rf_refurbished FORCE ROW LEVEL SECURITY;
+ALTER TABLE rf_part_reservations ENABLE ROW LEVEL SECURITY; ALTER TABLE rf_part_reservations FORCE ROW LEVEL SECURITY;
 ALTER TABLE rf_activity ENABLE ROW LEVEL SECURITY; ALTER TABLE rf_activity FORCE ROW LEVEL SECURITY;
 ALTER TABLE rf_cash_days ENABLE ROW LEVEL SECURITY; ALTER TABLE rf_cash_days FORCE ROW LEVEL SECURITY;
 ALTER TABLE rf_cash_corrections ENABLE ROW LEVEL SECURITY; ALTER TABLE rf_cash_corrections FORCE ROW LEVEL SECURITY;
 
 GRANT SELECT,INSERT ON rf_customers,rf_repairs,rf_products,rf_sales,rf_sale_lines,rf_sale_payments,rf_stock_movements,rf_refurbished,rf_repair_status_events,rf_activity,rf_cash_days,rf_cash_corrections TO rf_runtime;
+GRANT SELECT,INSERT,UPDATE ON rf_part_reservations TO rf_runtime;
 GRANT SELECT,UPDATE ON rf_stock_balances,rf_repairs,rf_refurbished TO rf_runtime;
 GRANT INSERT ON rf_stock_balances TO rf_runtime;
 CREATE POLICY rf_customers_manager_insert ON rf_customers FOR INSERT TO rf_runtime WITH CHECK(public.rf_staff_scope(organization_id,NULL,true));
@@ -109,6 +128,9 @@ CREATE POLICY rf_movements_manager_insert ON rf_stock_movements FOR INSERT TO rf
 CREATE POLICY rf_refurb_manager_read ON rf_refurbished FOR SELECT TO rf_runtime USING(public.rf_staff_scope(organization_id,branch_id,true));
 CREATE POLICY rf_refurb_manager_insert ON rf_refurbished FOR INSERT TO rf_runtime WITH CHECK(public.rf_staff_scope(organization_id,branch_id,true));
 CREATE POLICY rf_refurb_manager_update ON rf_refurbished FOR UPDATE TO rf_runtime USING(public.rf_staff_scope(organization_id,branch_id,true)) WITH CHECK(public.rf_staff_scope(organization_id,branch_id,true));
+CREATE POLICY rf_reservations_manager_read ON rf_part_reservations FOR SELECT TO rf_runtime USING(public.rf_staff_scope(organization_id,branch_id,true));
+CREATE POLICY rf_reservations_manager_insert ON rf_part_reservations FOR INSERT TO rf_runtime WITH CHECK(public.rf_staff_scope(organization_id,branch_id,true));
+CREATE POLICY rf_reservations_manager_update ON rf_part_reservations FOR UPDATE TO rf_runtime USING(public.rf_staff_scope(organization_id,branch_id,true)) WITH CHECK(public.rf_staff_scope(organization_id,branch_id,true));
 CREATE POLICY rf_repair_events_manager_read ON rf_repair_status_events FOR SELECT TO rf_runtime USING(EXISTS(SELECT 1 FROM rf_repairs r WHERE r.id=rf_repair_status_events.repair_id AND r.organization_id=rf_repair_status_events.organization_id AND public.rf_staff_scope(r.organization_id,r.branch_id,true)));
 CREATE POLICY rf_repair_events_manager_insert ON rf_repair_status_events FOR INSERT TO rf_runtime WITH CHECK(EXISTS(SELECT 1 FROM rf_repairs r WHERE r.id=rf_repair_status_events.repair_id AND r.organization_id=rf_repair_status_events.organization_id AND public.rf_staff_scope(r.organization_id,r.branch_id,true)));
 CREATE POLICY rf_activity_manager_read ON rf_activity FOR SELECT TO rf_runtime USING(public.rf_staff_scope(organization_id,branch_id,true));
