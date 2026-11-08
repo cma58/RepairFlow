@@ -14,6 +14,7 @@ function textList(id,items,render){const list=$(id);list.replaceChildren();for(c
 function option(select,id,name){const el=document.createElement('option');el.value=id;el.textContent=name;select.append(el)}
 function fillSelect(id,items,name){const el=$(id),old=el.value;el.replaceChildren();option(el,'','Kies…');for(const item of items)option(el,item.id,name(item));el.value=items.some(i=>i.id===old)?old:''}
 function button(label,click){const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',click);return b}
+function openModule(id){document.querySelector('.shop-nav [data-module="'+id+'"]')?.click()}
 async function api(payload){const response=await fetch('/api/workspace',{method:payload?'POST':'GET',credentials:'same-origin',headers:payload?{'Content-Type':'application/json','Accept':'application/json'}:{'Accept':'application/json'},body:payload?JSON.stringify(payload):undefined,cache:'no-store'});
  const data=await response.json().catch(()=>({}));if(!response.ok){const e=Error(data.error||'Netwerk- of serverfout');e.status=response.status;throw e}return data}
 async function load({silent=false}={}){try{const data=await api();Object.assign(state,data);render();if(!silent)info('Cloudgegevens vernieuwd.')}catch(e){error('Cloudgegevens zijn niet geladen: '+e.message)}}
@@ -21,7 +22,7 @@ function render(){
  fillSelect('repair-customer',state.customers,c=>c.display_name);
  fillSelect('stock-product',state.products,p=>p.sku+' · '+p.name);
  fillSelect('stock-repair',state.repairs.filter(r=>['In reparatie','Wachten op klant'].includes(r.status)&&(Number(r.charge_cents)===0||r.quote_approved_at)),r=>r.reference);
- textList('customers',state.customers,(li,c)=>li.textContent=(c.company_name?c.company_name+' · ':'')+c.display_name+' · '+(c.phone||c.email||'geen contact'));
+ textList('customers',state.customers,(li,c)=>{li.append(document.createTextNode((c.company_name?c.company_name+' · ':'')+c.display_name+' · '+(c.phone||c.email||'geen contact')));li.append(button('Nieuwe reparatie',()=>{$('repair-customer').value=c.id;openModule('repairs')}))});
  textList('repairs',state.repairs,(li,r)=>{
   li.append(document.createTextNode(r.reference+' · '+r.device_brand+' '+(r.device_model||'')+' · '+r.status+' · '+euro(r.charge_cents)));
   const next={Binnengebracht:['Diagnose'],Diagnose:Number(r.charge_cents)>0?['Wachten op klant']:['Wachten op klant','In reparatie'], 'Wachten op klant':r.quote_approved_at?['In reparatie']:[],'Wachten op onderdeel':['In reparatie'],'In reparatie':['Kwaliteitscontrole'],Kwaliteitscontrole:['Klaar','In reparatie'],Klaar:['Afgehaald']}[r.status]||[];
@@ -42,6 +43,15 @@ function render(){
   if(['Binnengebracht','Diagnose','Wachten op klant','Wachten op onderdeel','In reparatie'].includes(r.status))li.append(button('Annuleer',()=>{
    const reason=prompt('Reden voor annulering en vrijgave van reserveringen:');if(reason)send({action:'changeRepair',repairId:r.id,expectedStatus:r.status,status:'Geannuleerd',reason},'Reparatie geannuleerd; reserveringen vrijgegeven.');
   }));
+  if(['In reparatie','Wachten op klant'].includes(r.status)&&(Number(r.charge_cents)===0||r.quote_approved_at))li.append(button('Onderdeel reserveren',()=>{$('stock-operation').value='reserve';$('stock-repair').value=r.id;openModule('stock')}));
+  if(r.status==='Klaar'&&Number(r.charge_cents)>Number(r.paid_cents||0))li.append(button('Naar kassa',()=>{
+   if(pending){error('Controleer eerst de onzekere verkoopaanvraag.');return}
+   if(!cart.some(l=>l.type==='repair'&&l.id===r.id)){
+    const line={type:'repair',id:r.id,quantity:1};cart.push(line);
+    try{saveDraft(CART_KEY,cart)}catch(e){cart.pop();error(e.message);return}
+   }
+   renderCart();openModule('checkout');info('Reparatie staat in de gecombineerde winkelmand.');
+  }));
  });
  textList('products',state.products,(li,p)=>li.textContent=p.sku+' · '+p.name+' · fysiek '+p.quantity+' · beschikbaar '+p.available+' · '+euro(p.unit_price_cents));
  textList('reservations',state.reservations||[],(li,r)=>{const product=state.products.find(p=>p.id===r.product_id),repair=state.repairs.find(p=>p.id===r.repair_id);li.textContent=(product?.name||r.product_id)+' · '+r.quantity+' voor '+(repair?.reference||r.repair_id)});
@@ -50,7 +60,7 @@ function render(){
  textList('cash-days',state.cashDays,(li,d)=>{const methods=state.cashDayPayments?.filter(p=>String(p.business_date).slice(0,10)===String(d.business_date).slice(0,10)).map(p=>p.method+' '+euro(p.amount_cents)).join(' + ');li.append(document.createTextNode(String(d.business_date).slice(0,10)+' · geregistreerde verkopen '+euro(d.total_cents)+' · correcties '+euro(d.corrections_cents)+' · '+(methods||'geen betalingen')+' · gesloten'));li.append(button('Correctie',()=>{const reason=prompt('Reden voor correctie (minimaal 5 tekens):');if(!reason)return;const value=prompt('Correctiebedrag in euro (negatief of positief):');if(!value)return;try{const negative=value.trim().startsWith('-');const amount=toCents(negative?value.trim().slice(1):value);send({action:'correction',requestId:crypto.randomUUID(),dayId:d.id,deltaCents:negative?-amount:amount,reason},'Correctie toegevoegd.')}catch(e){error(e.message)}}))});
  updateCartPicker();renderCart();
 }
-function updateCartPicker(){const type=$('cart-type').value;const candidates=type==='product'?state.products.filter(x=>Number(x.available)>0&&x.active):type==='repair'?state.repairs.filter(x=>x.status==='Klaar'&&Number(x.charge_cents)>0):state.refurbished.filter(x=>x.status==='available');fillSelect('cart-item',candidates,x=>type==='product'?x.name+' · '+euro(x.unit_price_cents):type==='repair'?x.reference+' · '+euro(x.charge_cents):x.description+' · '+euro(x.price_cents))}
+function updateCartPicker(){const type=$('cart-type').value;const candidates=type==='product'?state.products.filter(x=>Number(x.available)>0&&x.active):type==='repair'?state.repairs.filter(x=>x.status==='Klaar'&&Number(x.charge_cents)>Number(x.paid_cents||0)):state.refurbished.filter(x=>x.status==='available');fillSelect('cart-item',candidates,x=>type==='product'?x.name+' · '+euro(x.unit_price_cents):type==='repair'?x.reference+' · '+euro(Number(x.charge_cents)-Number(x.paid_cents||0)):x.description+' · '+euro(x.price_cents))}
 function renderCart(){textList('cart',cart,(li,l)=>{const x=(l.type==='product'?state.products:l.type==='repair'?state.repairs:state.refurbished).find(v=>v.id===l.id);li.append(document.createTextNode((x?.name||x?.reference||x?.description||l.id)+' × '+l.quantity+' · '+l.type));li.append(button('Verwijder',()=>{if(pending){error('Deze aanvraag wacht op bevestiging. Herhaal eerst met dezelfde aanvraagcode.');return}cart=cart.filter(v=>v!==l);try{saveDraft(CART_KEY,cart)}catch(e){error(e.message)}renderCart()}))})}
 async function send(payload,success,onFailure){if(busy)return;busy=true;try{const result=await api(payload);await load({silent:true});updates?.postMessage('changed');info(success+(result.replayed?' Herhaalde aanvraag veilig herkend.':''));return result}catch(e){onFailure?.(e);error('Niet opgeslagen of niet bevestigd: '+e.message);return null}finally{busy=false}}
 $('retry-pending').addEventListener('click',async()=>{
@@ -71,7 +81,7 @@ for(const action of ['customer','repair','product','stock','refurb'])$(action).a
   if(action==='refurb')payload={...payload,imei:x.imei,description:x.description,priceCents:toCents(x.price)};
   if(pendingWrites[action])payload=pendingWrites[action];else{pendingWrites[action]=payload;saveDraft(WRITES_KEY,pendingWrites);updatePending()}
   const result=await send(payload,'Registratie opgeslagen.',e=>{if(e.status>=400&&e.status<500){delete pendingWrites[action];saveDraft(WRITES_KEY,pendingWrites)}});
-  if(result){delete pendingWrites[action];saveDraft(WRITES_KEY,pendingWrites);updatePending();form.reset();if(action==='customer')$('customer-type').dispatchEvent(new Event('change'))}
+  if(result){delete pendingWrites[action];saveDraft(WRITES_KEY,pendingWrites);updatePending();form.reset();if(action==='customer'){$('customer-type').dispatchEvent(new Event('change'));$('repair-customer').value=result.customer?.id||'';openModule('repairs');info('Klant opgeslagen; registreer nu de reparatie.')}}
  }catch(e){error(e.message)}
 });
 $('cart-type').addEventListener('change',updateCartPicker);
