@@ -32,3 +32,20 @@
 - Dubbele import veroorzaakt geen dubbele betalingen.
 - Een gebruiker ziet alleen gegevens van zijn geautoriseerde organisatie/filiaal.
 - Cloudsync is uitgeschakeld totdat autorisatie en migratietests slagen.
+
+## Operationele aanvulling — 2026-11-08
+
+De afgeschermde featurepreview heeft nu een geautoriseerde `/api/workspace` met tenantgebonden RLS en een aparte synthetische dataset. De productie-RLS, echte eigenaaractivatie en migratie zijn **niet** uitgevoerd. De featurebranch toont op `/` de cloudwinkel; het oude `v07.html` blijft bereikbaar voor bestaande browserdossiers. Dit is nog geen gedeeld productie-ERP.
+
+### Voorbereiding per bronapparaat
+1. Inventariseer alle browsers/profielen/origins die ooit PHIXAR-data hebben opgeslagen. Een export op één toestel is geen back-up van andere toestellen. Sluit de lokale werkdag af en leg het tijdstip van de momentopname vast.
+2. Bewaar de ruwe waarden met sleutelnaam en origin, zonder ze te wijzigen. Minimaal inspecteren: `rf07v3`, `rfCustomersV1`, `rfInventoryV3`, `rfRefurbV1`, `rfPosProductsV1`, `rfPosSalesV1`, `rfPosStockMovementsV1`, plus betaal-, offerte-, dossier- en auditwaarden die bij inventarisatie worden aangetroffen. Een lege of ontbrekende sleutel is een afzonderlijke toestand van onleesbare JSON.
+3. Maak twee versleutelde kopieën op gescheiden locaties, noteer SHA-256 per origineel exportbestand, controleer de checksums na teruglezen, en test een herstel in een **afzonderlijk browserprofiel**. Beperk toegang wegens klantgegevens en eventuele toestelcodes.
+4. Vergelijk aantallen en identifiers per module en apparaat. Rapporteer dubbele klanten, IMEI's, tickets, betalingen, afwijkende statussen, ontbrekende verwijzingen, beschadigde records en onbekende velden. Geen automatische deduplicatie of veldverlies.
+
+### Dry-run en omschakelgrens
+1. Parse kopieën in een geïsoleerde databasebranch. Maak een expliciet mappingrapport van elk veld naar een cloudkolom of een bewaarplichtig restveld. Behandel toestelcodes apart; schrijf ze niet als gewone tekst naar Neon of logs.
+2. Gebruik stabiele bronidentiteit `(apparaat, origin, sleutel, record-id)` en import-idempotentie. Maak een conflictlijst voor menselijke beoordeling; importeer nooit betalingen door bedragen op te tellen wanneer de oorspronkelijke transactie-identiteit onduidelijk is.
+3. Controleer aantallen, bedragen in centen, voorraadstanden, referenties, herstelbaarheid en roltoegang vóór en na de proefimport. Herhaal de proefimport; er mag geen tweede verkoop, betaling of voorraadmutatie bijkomen. Test twee onafhankelijke apparaten en onderbroken imports.
+4. Maak vlak vóór een eventuele productieomschakeling zowel een gevalideerde Neon-back-up/restore-punt als nieuwe bronexports per apparaat. Productie-import en activering zijn afzonderlijke, expliciet goed te keuren stappen.
+5. Bij fout: stop schrijfacties, bewaar foutlog en bronexports, herstel Neon vanuit het vooraf geteste herstelpunt of draai een **specifiek geïdentificeerde importbatch** terug via gecontroleerde compensaties. Geen bulkverwijdering of overschrijving van lokale sleutels. Heropen de oude lokale route uitsluitend met uitleg over welke gegevensbron op dat moment gezaghebbend is.
