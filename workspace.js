@@ -23,7 +23,12 @@ function render(){
  textList('customers',state.customers,(li,c)=>li.textContent=(c.company_name?c.company_name+' · ':'')+c.display_name+' · '+(c.phone||c.email||'geen contact'));
  textList('repairs',state.repairs,(li,r)=>{
   li.append(document.createTextNode(r.reference+' · '+r.device_brand+' '+(r.device_model||'')+' · '+r.status+' · '+euro(r.charge_cents)));
-  const next={Binnengebracht:['Diagnose'],Diagnose:['Wachten op klant','In reparatie'], 'Wachten op klant':['In reparatie'],'Wachten op onderdeel':['In reparatie'],'In reparatie':['Kwaliteitscontrole'],Kwaliteitscontrole:['Klaar','In reparatie'],Klaar:['Afgehaald']}[r.status]||[];
+  const next={Binnengebracht:['Diagnose'],Diagnose:Number(r.charge_cents)>0?['Wachten op klant']:['Wachten op klant','In reparatie'], 'Wachten op klant':r.quote_approved_at?['In reparatie']:[],'Wachten op onderdeel':['In reparatie'],'In reparatie':['Kwaliteitscontrole'],Kwaliteitscontrole:['Klaar','In reparatie'],Klaar:['Afgehaald']}[r.status]||[];
+  if(r.status==='Wachten op klant'&&!r.quote_approved_at)li.append(button('Offerte akkoord registreren',()=>{
+   const method=prompt('Akkoordkanaal: oral of email?');if(!method)return;
+   const note=prompt('Bewijsnotitie: wie stemde wanneer in, en met welk werk en bedrag?');if(!note)return;
+   send({action:'approveQuote',repairId:r.id,method:method.trim().toLowerCase(),note},'Offerteakkoord vastgelegd.');
+  }));
   for(const status of next)li.append(button(r.status==='Kwaliteitscontrole'&&status==='Klaar'?'Test geslaagd':r.status==='Kwaliteitscontrole'&&status==='In reparatie'?'Test mislukt':status,()=>{
    const payload={action:'changeRepair',repairId:r.id,expectedStatus:r.status,status};
    if(r.status==='Kwaliteitscontrole'&&status==='Klaar')payload.testPassed=true;

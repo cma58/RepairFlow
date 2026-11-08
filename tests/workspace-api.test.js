@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {withWorkspace}=require('../lib/workspace-session');
-const {customer,checkout,stock,refurb,changeRepair,correction}=require('../lib/workspace-operations');
+const {customer,checkout,stock,refurb,changeRepair,approveQuote,correction}=require('../lib/workspace-operations');
 const O='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',A='44444444-4444-4444-8444-444444444442';
 const P='55555555-5555-4555-8555-555555555555',F='66666666-6666-4666-8666-666666666666',R='77777777-7777-4777-8777-777777777777',S='88888888-8888-4888-8888-888888888888';
 const staff={id:A,organizationId:O,branchId:B,role:'manager'};
@@ -86,6 +86,20 @@ test('QC cannot mark a repair ready without explicit passed test',async()=>{
  const db={query(){throw Error('database should not be reached')}};
  await assert.rejects(()=>changeRepair(db,staff,{repairId:R,expectedStatus:'Kwaliteitscontrole',status:'Klaar'}),/INVALID_INPUT/);
  await assert.rejects(()=>changeRepair(db,staff,{repairId:R,expectedStatus:'Kwaliteitscontrole',status:'In reparatie',qcNote:'x'}),/INVALID_INPUT/);
+});
+test('paid repair cannot start without approval for its exact charge',async()=>{
+ const writes=[];const db={async query(sql){writes.push(sql);return {rows:[{id:R,status:'Diagnose',charge_cents:5000,quote_approved_at:null,quote_approved_charge_cents:null}]}}};
+ await assert.rejects(()=>changeRepair(db,staff,{repairId:R,expectedStatus:'Diagnose',status:'In reparatie'}),/CONFLICT/);
+ assert.equal(writes.filter(sql=>sql.startsWith('UPDATE')).length,0);
+ const mismatch={async query(sql){writes.push(sql);return {rows:[{id:R,status:'Wachten op klant',charge_cents:6000,quote_approved_at:new Date(),quote_approved_charge_cents:5000}]}}};
+ await assert.rejects(()=>changeRepair(mismatch,staff,{repairId:R,expectedStatus:'Wachten op klant',status:'In reparatie'}),/CONFLICT/);
+});
+test('quote approval records method, evidence, actor and agreed amount',async()=>{
+ const calls=[],db={async query(sql,params){calls.push({sql,params});if(sql.startsWith('SELECT id,status,charge_cents,quote_approved_at'))return {rows:[{id:R,status:'Wachten op klant',charge_cents:5000,quote_approved_at:null}]};return {rows:[]}}};
+ const result=await approveQuote(db,staff,{repairId:R,method:'oral',note:'Customer accepted scope and 50 EUR by phone'});
+ assert.equal(result.body.approved,true);
+ assert.ok(calls.some(c=>c.sql.startsWith('UPDATE rf_repairs')&&c.params[3]===A));
+ assert.ok(calls.some(c=>c.sql.startsWith('INSERT INTO rf_activity')&&c.params[3]==='repair.quote_approved'));
 });
 test('refurbished registration rejects invalid IMEI checksum before database access',async()=>{
  const db={query(){throw Error('database must not be reached')}};
