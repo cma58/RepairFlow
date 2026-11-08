@@ -6,11 +6,12 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=n=>new Intl.NumberFormat('nl-BE',{style:'currency',currency:'EUR'}).format(Number(n)||0);
  const read=(k,f)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??f}catch{return f}};
+ const checkedArray=k=>{const raw=localStorage.getItem(k);if(raw===null)return [];let value;try{value=JSON.parse(raw)}catch{throw Error('CORRUPT_LOCAL_DATA')}if(!Array.isArray(value))throw Error('CORRUPT_LOCAL_DATA');return value};
  const products=()=>read(PRODUCTS,[]),sales=()=>read(SALES,[]);const customers=()=>{const x=read('rfCustomersV1',{});return (Array.isArray(x)?x:Object.values(x&&typeof x==='object'?x:{})).filter(c=>c&&c.name&&!c.archived)};
  const put=(k,v)=>{localStorage.setItem(k,JSON.stringify(v));};
  const movements=()=>read(MOVEMENTS,[]);
  const movement=(p,delta,reason,reference)=>({id:id(),at:new Date().toISOString(),productId:p.id,productName:p.name,delta,balance:p.stock,reason,reference:reference||null});
- function commitStock(ps,entries){const beforeProducts=localStorage.getItem(PRODUCTS),beforeMovements=localStorage.getItem(MOVEMENTS);try{put(MOVEMENTS,[...movements(),...entries]);put(PRODUCTS,ps);}catch(e){try{if(beforeProducts===null)localStorage.removeItem(PRODUCTS);else localStorage.setItem(PRODUCTS,beforeProducts);if(beforeMovements===null)localStorage.removeItem(MOVEMENTS);else localStorage.setItem(MOVEMENTS,beforeMovements)}catch{}throw e;}}
+ function commitStock(ps,entries){const beforeProducts=localStorage.getItem(PRODUCTS),beforeMovements=localStorage.getItem(MOVEMENTS);try{put(MOVEMENTS,[...checkedArray(MOVEMENTS),...entries]);put(PRODUCTS,ps);}catch(e){try{if(beforeProducts===null)localStorage.removeItem(PRODUCTS);else localStorage.setItem(PRODUCTS,beforeProducts);if(beforeMovements===null)localStorage.removeItem(MOVEMENTS);else localStorage.setItem(MOVEMENTS,beforeMovements)}catch{}throw e;}}
 
  let cart=read(DRAFT,[]),page='sales',query='',selectedCustomer='';
  const positive=n=>Number.isFinite(n)&&n>=0;
@@ -71,7 +72,9 @@
  let checkoutInProgress=false;
  function checkout(){
  if(checkoutInProgress||!cart.length)return;
- const ps=products(),items=[];
+ let ps,oldSales;
+ try{ps=checkedArray(PRODUCTS);oldSales=checkedArray(SALES);checkedArray(MOVEMENTS);checkedArray(DRAFT)}catch{notify('Browsergegevens zijn beschadigd. Maak eerst een back-up en controleer de gegevens.');return;}
+ const items=[];
  const cartIds=new Set();
  if(!Array.isArray(cart)||cart.some(l=>!l||typeof l!=='object'||typeof l.id!=='string'||cartIds.has(l.id)||!cartIds.add(l.id))){notify('Winkelmandje bevat dubbele of ongeldige artikelen. Maak het winkelmandje opnieuw.');return;}
  for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||!stockInt(p.stock)||p.stock<l.qty||!Number.isFinite(p.price)||p.price<0||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
@@ -84,12 +87,12 @@
  const amount=total();if(!positive(amount)||amount<=0){notify('Een verkoop moet een positief totaal hebben.');return;}
  if(!confirm('Bevestig dat '+money(amount)+' daadwerkelijk ontvangen is via '+method+'?'))return;
  checkoutInProgress=true;
- const oldSales=sales(),year=new Date().getFullYear(),prefix='KAS-'+year+'-';
+ const year=new Date().getFullYear(),prefix='KAS-'+year+'-';
  const usedNumbers=new Set(oldSales.map(s=>s?.number).filter(n=>typeof n==='string'));
  const highest=oldSales.reduce((max,s)=>{const n=s?.number;if(typeof n!=='string'||!n.startsWith(prefix))return max;const suffix=n.slice(prefix.length);return /^\d+$/.test(suffix)&&Number.isSafeInteger(Number(suffix))?Math.max(max,Number(suffix)):max;},0);
- if(!Number.isSafeInteger(highest)||highest>=Number.MAX_SAFE_INTEGER){notify('Verkoopnummer kan niet veilig worden aangemaakt.');return;}
+ if(!Number.isSafeInteger(highest)||highest>=Number.MAX_SAFE_INTEGER){checkoutInProgress=false;notify('Verkoopnummer kan niet veilig worden aangemaakt.');return;}
  const number=prefix+String(highest+1).padStart(6,'0');
- if(usedNumbers.has(number)){notify('Dubbel verkoopnummer gedetecteerd.');return;}
+ if(usedNumbers.has(number)){checkoutInProgress=false;notify('Dubbel verkoopnummer gedetecteerd.');return;}
  const sale={id:id(),number,at:new Date().toISOString(),items,total:amount,method,customer,customerId:customerRecord?.id||null,status:'paid',paymentConfirmation:'manual-staff-confirmation',providerTransactionId:null,source:'local-pos'};
  const nextProducts=ps.map(p=>{const l=items.find(x=>x.id===p.id);return l?{...p,stock:p.stock-l.qty}:p});
  const oldProductsRaw=localStorage.getItem(PRODUCTS),oldMovementsRaw=localStorage.getItem(MOVEMENTS),oldSalesRaw=localStorage.getItem(SALES),oldDraftRaw=localStorage.getItem(DRAFT),previousCart=cart.slice(),previousCustomer=selectedCustomer;
@@ -117,7 +120,7 @@
  else if(action==='stock-page'){document.querySelector('[data-page="parts"]')?.click();}
  else if(action==='history-page'){document.querySelector('[data-page="payments"]')?.click();}
  else if(action==='stock-plus'||action==='stock-minus'||action==='archive'){
- const ps=products(),p=ps.find(x=>x.id===pid);if(!p)return;const oldStock=p.stock;
+ let ps;try{ps=checkedArray(PRODUCTS)}catch{notify('Voorraadgegevens zijn beschadigd. Maak eerst een back-up.');return;}const p=ps.find(x=>x.id===pid);if(!p)return;const oldStock=p.stock;
  if(!stockInt(oldStock)){notify('Voorraadgegevens zijn ongeldig. Corrigeer het artikel voordat je voorraad wijzigt.');return;}
  if(action==='archive'){if(!confirm('Artikel archiveren? Bestaande verkopen blijven behouden.'))return;p.active=false;}
  else {if(action==='stock-minus'&&p.stock<=0){notify('Voorraad kan niet negatief worden.');return;}p.stock+=action==='stock-plus'?1:-1;}
@@ -130,13 +133,12 @@
  else if(action==='backup')backup();
  },true);
  document.addEventListener('submit',e=>{
- if(e.target.id!=='rfProductForm')return;e.preventDefault();const f=new FormData(e.target),name=String(f.get('name')||'').trim(),sku=String(f.get('sku')||'').trim(),imei=String(f.get('imei')||'').trim(),price=Number(f.get('price')),cost=Number(f.get('cost')),stock=Number(f.get('stock')),vat=Number(f.get('vat')),ps=products();
+ if(e.target.id!=='rfProductForm')return;e.preventDefault();const f=new FormData(e.target),name=String(f.get('name')||'').trim(),sku=String(f.get('sku')||'').trim(),imei=String(f.get('imei')||'').trim(),price=Number(f.get('price')),cost=Number(f.get('cost')),stock=Number(f.get('stock')),vat=Number(f.get('vat'));let ps;try{ps=checkedArray(PRODUCTS);checkedArray(MOVEMENTS)}catch{notify('Voorraadgegevens zijn beschadigd. Maak eerst een back-up.');return;}
  if(!name||!positive(price)||!positive(cost)||!stockInt(stock)||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
  if(sku&&ps.some(p=>p.sku===sku&&p.active!==false)){notify('Deze SKU bestaat al.');return;}
- if(imei&&ps.some(p=>p.imei&&String(p.imei).replace(/[\\s-]/g,'').toUpperCase()===imei.replace(/[\s-]/g,'').toUpperCase()&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
+ if(imei&&ps.some(p=>p.imei&&String(p.imei).replace(/[\s-]/g,'').toUpperCase()===imei.replace(/[\s-]/g,'').toUpperCase()&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
  if(imei){
-  const refurb=read('rfRefurbV1',[]),norm=v=>String(v||'').replace(/[\s-]/g,'').toUpperCase();
-  if(!Array.isArray(refurb)){notify('Refurbished-voorraad kan niet worden gecontroleerd. Controleer de gegevens voordat je dit toestel toevoegt.');return;}
+  let refurb;try{refurb=checkedArray('rfRefurbV1')}catch{notify('Refurbished-voorraad kan niet worden gecontroleerd. Controleer de gegevens voordat je dit toestel toevoegt.');return;}const norm=v=>String(v||'').replace(/[\s-]/g,'').toUpperCase();
   if(refurb.some(r=>r&&typeof r==='object'&&!['Verkocht','Afgekeurd','Onderdelen-donor'].includes(r.status)&&[r.imei,r.imei1,r.imei2,r.serial,r.serialNumber].some(v=>v&&norm(v)===norm(imei)))){
    notify('Dit IMEI/serienummer staat al bij een actief refurbished toestel. Beheer het via Refurbished.');return;
   }

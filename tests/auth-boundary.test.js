@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import handler from '../api/auth/me.js';
 
 function invoke({method='GET',headers={}}={}){
@@ -18,39 +19,39 @@ test('Rejects methods other than GET',async()=>{
  assert.equal(r.statusCode,405);
  assert.equal(r.headersOut.allow,'GET');
 });
-test('Never returns personal data without database configuration',async()=>{
- const previous=process.env.DATABASE_URL;
- delete process.env.DATABASE_URL;
+test('Never returns personal data without staff auth configuration',async()=>{
+ const previous=process.env.NEON_AUTH_ISSUER;
+ delete process.env.NEON_AUTH_ISSUER;
  try{
   const r=await invoke();
   assert.equal(r.statusCode,503);
-  assert.equal(r.body.error,'auth_not_configured');
+  assert.equal(r.body.error,'Medewerkersportaal nog niet geactiveerd');
   assert.match(r.headersOut['cache-control'],/no-store/);
  }finally{
-  if(previous!==undefined)process.env.DATABASE_URL=previous;
+  if(previous!==undefined)process.env.NEON_AUTH_ISSUER=previous;
  }
 });
 test('Rejects requests with no bearer token before database access',async()=>{
- const previous=process.env.DATABASE_URL;
- process.env.DATABASE_URL='postgresql://invalid:invalid@localhost/unused';
+ const keys=['NEON_AUTH_ISSUER','NEON_AUTH_AUDIENCE','NEON_AUTH_JWKS_URL'];
+ const previous=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+ process.env.NEON_AUTH_ISSUER='https://auth.example.test/neondb/auth';
+ process.env.NEON_AUTH_AUDIENCE='repairflow';
+ process.env.NEON_AUTH_JWKS_URL='https://auth.example.test/neondb/auth/.well-known/jwks.json';
  try{
   const r=await invoke();
   assert.equal(r.statusCode,401);
-  assert.equal(r.body.error,'missing_access_token');
+  assert.equal(r.body.error,'Aanmelden vereist');
  }finally{
-  if(previous===undefined)delete process.env.DATABASE_URL;
-  else process.env.DATABASE_URL=previous;
+  for(const key of keys)if(previous[key]===undefined)delete process.env[key];else process.env[key]=previous[key];
  }
 });
 test('Rejects a foreign browser origin',async()=>{
- const previous=process.env.DATABASE_URL;
- process.env.DATABASE_URL='postgresql://invalid:invalid@localhost/unused';
- try{
-  const r=await invoke({headers:{origin:'https://untrusted.example'}});
-  assert.equal(r.statusCode,403);
-  assert.equal(r.body.error,'origin_denied');
- }finally{
-  if(previous===undefined)delete process.env.DATABASE_URL;
-  else process.env.DATABASE_URL=previous;
- }
+ const r=await invoke({headers:{origin:'https://untrusted.example'}});
+ assert.equal(r.statusCode,403);
+ assert.equal(r.body.error,'origin_denied');
+});
+test('The public staff route cannot use the database owner connection',()=>{
+ const source=fs.readFileSync(new URL('../api/auth/me.js',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/process\.env\.DATABASE_URL|\bneon\(process\.env\.DATABASE_URL\)/);
+ assert.match(source,/staffSession\(req,res\)/);
 });

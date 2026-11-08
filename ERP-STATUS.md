@@ -168,3 +168,12 @@
 - `api/db-health.js` is een read-only verbindingsprobe; status blijft HTTP 503 (`schema_installed_access_disabled`) tot gebruikersauthenticatie en tenantbeleid veilig zijn aangesloten. Dit is geen 'ready' endpoint.
 - Vercel previewdeployment blijft door gratis API-deploymentlimiet (402) geblokkeerd; geen productie-uitrol.
 - Bestaande browserdata blijft lokaal; er is geen automatische migratie uitgevoerd.
+
+## P0-herstel en scope eerste winkelversie (2026-11-08, featurebranch)
+- Reparatie- en legacy voorraadgegevens worden bij corrupte JSON niet langer als lege nieuwe data weggeschreven. Automatisch opslaan bij het laden is verwijderd. Lokale reparatieschrijfacties proberen beide sleutels terug te zetten bij een gedeeltelijke fout.
+- Klantsamenvoeging houdt toestellen en auditregels, koppelt reparaties, POS-verkopen en refurbished-verkopen om, en probeert alle betrokken lokale sleutels bij een schrijffout te herstellen. Een geopend refurbished-scherm krijgt de nieuwe klantkoppeling in geheugen.
+- `npm test`: 75 tests geslaagd na deze fase; syntaxcontrole en echte browser-/apparaatintegratie blijven afzonderlijke gates.
+- `api/auth/me.js` gebruikt nu dezelfde streng geverifieerde medewerkersgrens als `api/staff-session.js` en kan niet meer met de algemene database-eigenaarverbinding medewerkers opzoeken. Magic-link-cookie naar actieve medewerkersautorisatie is nog niet gekoppeld; login blijft terecht gesloten.
+- **P0 open:** browseropslag is niet transactioneel of multi-user; veilig server-side toegangsbeleid/RLS, migratie en herstelde login moeten voor gedeeld dagelijks gebruik aantoonbaar werken.
+- **P1 open:** gecombineerde POS-winkelmand, echte split tender, kassadagafsluiting/correcties, volledige refurbished/POS-koppeling en autorisatie van gevoelige acties. De bestaande schermen zijn geen bewijs van een werkende end-to-end winkelversie.
+- Klantportaal, automatische herinneringen en verdere rapportage blijven latere fases zolang P0/P1 open zijn. Geen productieclaim.

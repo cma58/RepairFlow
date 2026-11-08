@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../app-v3.js'),'utf8');
 function extract(start,end){const a=source.indexOf(start),b=source.indexOf(end,a+start.length);assert.ok(a>=0&&b>a,'Payment function not found');return source.slice(a,b);}
 const paymentCode=extract('function paymentForm(ticket){','\nfunction renderTicketQR(ticket)');
-const confirmCode=extract('function confirmPayment(ticket,amount,type,method){','\nrepairShell();save();');
+const confirmCode=extract('function confirmPayment(ticket,amount,type,method){','\nrepairShell();');
 function harness(){
  const repairs={R1:{payments:[],quotes:[{amount:688}],name:'Testklant',device:'Testtoestel',status:'Klaar',qcComplete:true}};
  let overlayHtml='',message='',saved=0;
@@ -23,7 +23,7 @@ test('split Bancontact and cash payments stay in same payment flow',()=>{
 test('printable payment summary shows both methods and remaining balance',()=>{
  const h=harness();h.context.confirmPayment('R1',300,'Betaling','Bancontact');h.context.confirmPayment('R1',388,'Betaling','Cash');
  h.context.paymentReceipt('R1');
- assert.match(h.html,/Betalingsoverzicht/);assert.match(h.html,/Bancontact/);assert.match(h.html,/Cash/);assert.match(h.html,/€ 300\\.00/);assert.match(h.html,/€ 388\\.00/);assert.match(h.html,/geen btw-factuur/);
+ assert.match(h.html,/Betalingsoverzicht/);assert.match(h.html,/Bancontact/);assert.match(h.html,/Cash/);assert.match(h.html,/€ 300\.00/);assert.match(h.html,/€ 388\.00/);assert.match(h.html,/Open saldo: <b>€ 0\.00<\/b>/);assert.match(h.html,/geen btw-factuur/);
  assert.equal(h.context.rfPaymentReturnTicket,'R1');
 });
 test('pickup shortcut is hidden before successful QC',()=>{
