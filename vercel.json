@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/v07.html"
+      "destination": "/workspace.html"
     }
   ]
 }
