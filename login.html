@@ -5,7 +5,6 @@
 <body><main><h1>PHIXAR</h1><p>Beveiligde medewerkerslogin</p><form id="login" hidden><label for="email">E-mailadres</label><input id="email" type="email" autocomplete="email" required placeholder="naam@voorbeeld.be"><button id="send" type="submit">Stuur mij een inloglink</button></form><p id="status" role="status" aria-live="polite"></p><small>Gebruik alleen je eigen mailbox. Een inloglink is persoonlijk en maximaal 10 minuten geldig. De toegang tot klantdossiers wordt pas geactiveerd nadat je account is goedgekeurd. De inlogpagina geeft op zichzelf geen toegang.</small></main>
 <script>
 'use strict';
-const authBase='https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
 // When login is enabled, Neon redirects its one-time verifier to our first-party callback.
 const verifiedCallbackURL=location.origin+'/api/auth/callback';
 const form=document.getElementById('login'),status=document.getElementById('status'),button=document.getElementById('send');

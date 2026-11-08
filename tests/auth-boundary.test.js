@@ -46,9 +46,13 @@ test('Rejects requests with no bearer token before database access',async()=>{
  }
 });
 test('Rejects a foreign browser origin',async()=>{
- const r=await invoke({headers:{origin:'https://untrusted.example'}});
- assert.equal(r.statusCode,403);
- assert.equal(r.body.error,'origin_denied');
+ const previous=process.env.REPAIRFLOW_APP_ORIGIN;
+ process.env.REPAIRFLOW_APP_ORIGIN='https://preview.example.test';
+ try{
+  const r=await invoke({headers:{origin:'https://untrusted.example'}});
+  assert.equal(r.statusCode,403);
+  assert.equal(r.body.error,'origin_denied');
+ }finally{if(previous===undefined)delete process.env.REPAIRFLOW_APP_ORIGIN;else process.env.REPAIRFLOW_APP_ORIGIN=previous;}
 });
 test('The public staff route cannot use the database owner connection',()=>{
  const source=fs.readFileSync(new URL('../api/auth/me.js',import.meta.url),'utf8');

@@ -3,10 +3,6 @@
   "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/neon-auth/get-session",
-      "destination": "https://ep-rough-cake-ba03t8v8.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth/get-session"
-    },
-    {
       "source": "/",
       "destination": "/v07.html"
     }

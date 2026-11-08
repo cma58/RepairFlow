@@ -10,8 +10,8 @@ const executableCallback=callback.replace(/^\s*\/\/.*$/gm,'');
 
 test('magic-link callback exchanges verifier server-side, not in browser',()=>{
  assert.match(callback,/neon_auth_session_verifier/);
- assert.match(callback,/AUTH\+'\/get-session'/);
- assert.match(callback,/HttpOnly; Secure; SameSite=Lax/);
+ assert.match(callback,/authUrl\(\)\+'\/get-session'/);
+ assert.match(fs.readFileSync(path.join(__dirname,'../lib/neon-auth-session.js'),'utf8'),/HttpOnly; Secure; SameSite=Lax/);
  assert.match(callback,/redirect: 'manual'|redirect:'manual'/);
  assert.doesNotMatch(executableCallback,/\blocalStorage\b/);
 });
@@ -19,6 +19,7 @@ test('callback rejects unexpected verifier and fails closed on missing session',
  assert.match(callback,/invalid_verifier/);
  assert.match(callback,/no_session/);
  assert.match(callback,/cookie_unavailable/);
+ assert.match(callback,/verified\.subject!==body\.user\.id/);
 });
 test('session endpoint does not authorize staff or expose customer records',()=>{
  assert.match(session,/authorized:false/);
