@@ -1,6 +1,6 @@
 # PHIXAR — visuele dashboardreferenties (eigenaar, 2026-11-08)
 
-**STATUS: ontwerpbrief, geen goedgekeurde code en geen toestemming om productie of main te wijzigen.**
+**STATUS: herontwerp versie 2 goedgekeurd door de eigenaar op 2026-11-08 als visuele en interactieve ontwerpbasis. Backendintegratie en productiegeschiktheid zijn hiermee niet geverifieerd; productie- en main-wijzigingen vallen buiten deze ontwerpgoedkeuring.**
 
 De eigenaar heeft drie concrete beeldreferenties geselecteerd. De drie originele PNG-bestanden zijn aangeleverd in het aparte pakket `PHIXAR-dashboard-referenties.zip`. **De beelden zijn nog niet in deze repository opgenomen.** Work moet ze eerst toevoegen onder `docs/design-references/` en de daadwerkelijke beeldbestanden bekijken alvorens een definitief dashboard te ontwerpen. Beschrijvingen hieronder vervangen de PNG's niet.
 
@@ -66,3 +66,23 @@ Vastgelegd als ontwerpvereisten; hiermee is geen implementatie, functionele test
 - Beoordeel de globale zoekfunctie vanuit iedere module en de twee beschreven kassascenario's.
 - Maak onderscheid tussen visueel getoond, interactief werkend en werkelijk gekoppeld aan de backend.
 - De eigenaar beoordeelt de verbeterde preview vóór definitieve ontwerpgoedkeuring.
+
+
+## Eigenaargoedkeuring herontwerp versie 2 — 2026-11-08
+
+De eigenaar antwoordde na presentatie van het herontwerp: **“Ik keurig het goed”**. Dit bevestigt goedkeuring van de getoonde dashboard- en kassa-indeling met de vier gevraagde verbeteringen.
+
+Goedgekeurde ontwerpbasis:
+- Grotere leesbaarheid van labels, dossiergegevens en statussen.
+- Ruime kassa met producten, winkelmand, totaal en betaalacties.
+- Globale zoekfunctie voor klanten, IMEI's, reparatienummers en producten.
+- Zichtbare prioriteiten voor dringende reparaties, wachtende klanten en afhalingen.
+- Behoud van horizontale navigatie, donkere turquoise stijl en lichte weergave.
+
+Exact gepresenteerde bestanden:
+- [PHIXAR-herontwerp.html](https://chatgpt.com/library?file_id=libfile_4ea813e910748191af2424e594b142c4&account_id=personal)
+- [PHIXAR-dashboard-preview.zip](https://chatgpt.com/library?file_id=libfile_3548cd1813a48191a5abf08a53d330db&account_id=personal), bijgewerkt previewpakket versie 2.
+
+De codepreview gebruikte uitsluitend fictieve gegevens in werkgeheugen. De getoonde interacties zijn geen bewijs van integratie met bestaande cloudmodules, echte betalingen, voorraad of klantdossiers. Tablet- en mobiele layoutcontrole vond plaats op ingesloten breedtes, niet op een fysieke iPad. De implementatie moet de bestaande bedrijfsafspraken, toegangsrechten en gegevensintegriteit behouden.
+
+Vervolg: gebruik dit goedgekeurde herontwerp als basis voor implementatie op de featurebranch en valideer de gekoppelde winkelprocessen. Deze bevestiging op een ontwerpvoorstel is geen afzonderlijk verzoek om naar main te mergen, productie te publiceren of echte gegevens te migreren.
