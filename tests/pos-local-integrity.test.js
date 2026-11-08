@@ -9,8 +9,8 @@ function harness(initial={}){
  const context={document,localStorage:storage,alert:m=>messages.push(m),confirm:()=>true,FormData:class {constructor(form){this.form=form}get(k){return this.form.fields[k]}},Intl,Date,Math,Number,JSON,Set,Map,globalThis:{crypto:{randomUUID:()=> 'generated-id'}}};
  vm.runInNewContext(source,context);
  function submit(fields){listeners.submit({target:{id:'rfProductForm',fields},preventDefault(){}})}
- function checkout(){listeners.click({target:{closest:()=>({dataset:{rf:'checkout'}})},preventDefault(){},stopImmediatePropagation(){}})}
- return {data,messages,submit,checkout};
+ function action(rf,id){listeners.click({target:{closest:()=>({dataset:{rf,id}})},preventDefault(){},stopImmediatePropagation(){}})}
+ return {data,messages,submit,checkout:()=>action('checkout'),add:id=>action('add',id)};
 }
 const product={id:'P1',name:'Phone',sku:'P1',price:100,stock:1,active:true};
 const fields={name:'Second phone',sku:'P2',imei:'12 34',price:'100',cost:'20',stock:'1',vat:'21'};
@@ -30,6 +30,26 @@ test('IMEI normalization detects whitespace collision in existing POS catalog',(
  const h=harness({rfPosProductsV1:JSON.stringify([{...product,imei:'1234'}])});h.submit(fields);
  assert.equal(JSON.parse(h.data.get('rfPosProductsV1')).length,1);
  assert.match(h.messages.join(' '),/IMEI\/serienummer bestaat al/);
+});
+test('POS checkout totals fractional euro prices through integer cents',()=>{
+ const item={...product,price:0.10,stock:3};
+ const h=harness({rfPosProductsV1:JSON.stringify([item]),rfPosCartV1:JSON.stringify([{id:'P1',name:'Phone',price:0.10,qty:3}])});
+ h.checkout();
+ const sale=JSON.parse(h.data.get('rfPosSalesV1'))[0];
+ assert.equal(sale.total,0.30);
+ assert.equal(JSON.parse(h.data.get('rfPosProductsV1'))[0].stock,0);
+});
+test('POS rejects prices beyond eurocent precision',()=>{
+ const h=harness({rfPosProductsV1:'[]'});h.submit({...fields,imei:'',price:'1.005'});
+ assert.equal(h.data.get('rfPosProductsV1'),'[]');
+ assert.match(h.messages.join(' '),/productgegevens/);
+});
+test('corrupt cart is preserved and cannot be silently replaced',()=>{
+ const h=harness({rfPosProductsV1:JSON.stringify([product]),rfPosCartV1:'{broken'});
+ h.add('P1');h.checkout();
+ assert.equal(h.data.get('rfPosCartV1'),'{broken');
+ assert.equal(h.data.get('rfPosSalesV1'),undefined);
+ assert.match(h.messages.join(' '),/beschadigd/);
 });
 test('corrupt refurbished storage cannot be silently replaced by a new record',()=>{
  const data=new Map([['rfRefurbV1','{broken']]),listeners={},messages=[];

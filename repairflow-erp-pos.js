@@ -13,15 +13,19 @@
  const movement=(p,delta,reason,reference)=>({id:id(),at:new Date().toISOString(),productId:p.id,productName:p.name,delta,balance:p.stock,reason,reference:reference||null});
  function commitStock(ps,entries){const beforeProducts=localStorage.getItem(PRODUCTS),beforeMovements=localStorage.getItem(MOVEMENTS);try{put(MOVEMENTS,[...checkedArray(MOVEMENTS),...entries]);put(PRODUCTS,ps);}catch(e){try{if(beforeProducts===null)localStorage.removeItem(PRODUCTS);else localStorage.setItem(PRODUCTS,beforeProducts);if(beforeMovements===null)localStorage.removeItem(MOVEMENTS);else localStorage.setItem(MOVEMENTS,beforeMovements)}catch{}throw e;}}
 
- let cart=read(DRAFT,[]),page='sales',query='',selectedCustomer='';
+ let cart,draftCorrupt=false;try{cart=checkedArray(DRAFT);if(cart.some(l=>!l||typeof l!=='object'||typeof l.id!=='string'||!Number.isSafeInteger(l.qty)||l.qty<1||typeof l.price!=='number'||!Number.isFinite(l.price)))throw Error('INVALID_CART')}catch{cart=[];draftCorrupt=true}
+ let page='sales',query='',selectedCustomer='';
  const positive=n=>Number.isFinite(n)&&n>=0;
  const qtyInt=n=>Number.isSafeInteger(n)&&n>0;
  const stockInt=n=>Number.isSafeInteger(n)&&n>=0;
  const id=()=>globalThis.crypto?.randomUUID?.()||('rf-'+Date.now()+'-'+Math.random().toString(36).slice(2));
  const round=n=>Math.round((n+Number.EPSILON)*100)/100;
+ const cents=n=>{if(typeof n!=='number'||!Number.isFinite(n)||n<0)return null;const value=Math.round(n*100);return Number.isSafeInteger(value)&&Math.abs(n-value/100)<1e-9?value:null};
+ const lineCents=l=>{const price=cents(l.price);if(price===null||!qtyInt(l.qty)||!Number.isSafeInteger(price*l.qty))return NaN;return price*l.qty};
  const activeProducts=()=>products().filter(p=>p.active!==false);
- const lineTotal=l=>round(l.qty*l.price);
- const total=()=>round(cart.reduce((sum,l)=>sum+lineTotal(l),0));
+ const lineTotal=l=>lineCents(l)/100;
+ const totalCents=()=>cart.reduce((sum,l)=>sum+lineCents(l),0);
+ const total=()=>totalCents()/100;
  const notify=m=>{const t=$('rfPosMessage');if(t){t.textContent=m;t.hidden=false;t.scrollIntoView({block:'nearest'});}else alert(m)};
  const opt=(v,selected)=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(v)+'</option>';
  function shell(){
@@ -59,8 +63,9 @@
  const sum=a=>round(a.reduce((n,s)=>n+s.total,0));el.innerHTML=header('Kassarapport','Cijfers van geregistreerde kassaverkopen op deze browser.')+'<div class="rf-erp-stats"><div><span>Verkopen vandaag</span><strong>'+todays.length+'</strong></div><div><span>Omzet vandaag</span><strong>'+money(sum(todays))+'</strong></div><div><span>Totale kassaverkopen</span><strong>'+money(sum(ss))+'</strong></div></div><p class="rf-erp-hint">Reparatiebetalingen en refurbished verkopen zijn nog niet opgenomen in dit rapport. Dit is geen boekhoudkundige btw-aangifte.</p><button class="btn s" data-rf="export">Kassaverkopen exporteren</button>';
  }
  function render(){renderSales();renderStock();renderHistory();renderReceipts();renderReports();}
- function saveCart(){put(DRAFT,cart);renderSales();}
+ function saveCart(){if(draftCorrupt){notify('Winkelmandgegevens zijn beschadigd. Maak eerst een back-up.');return}put(DRAFT,cart);renderSales();}
  function add(productId,change){
+ if(draftCorrupt){notify('Winkelmandgegevens zijn beschadigd. Maak eerst een back-up.');return}
  const p=products().find(p=>p.id===productId&&p.active!==false);if(!p)return;
  const existing=cart.find(l=>l.id===p.id),next=(existing?.qty||0)+change;
  if(!stockInt(p.stock)||!qtyInt(next)&&next!==0||next>p.stock){notify('Ongeldige of onvoldoende voorraad. Controleer het artikel.');return;}
@@ -71,20 +76,21 @@
  }
  let checkoutInProgress=false;
  function checkout(){
+ if(draftCorrupt){notify('Winkelmandgegevens zijn beschadigd. Maak eerst een back-up.');return}
  if(checkoutInProgress||!cart.length)return;
  let ps,oldSales;
  try{ps=checkedArray(PRODUCTS);oldSales=checkedArray(SALES);checkedArray(MOVEMENTS);checkedArray(DRAFT)}catch{notify('Browsergegevens zijn beschadigd. Maak eerst een back-up en controleer de gegevens.');return;}
  const items=[];
  const cartIds=new Set();
  if(!Array.isArray(cart)||cart.some(l=>!l||typeof l!=='object'||typeof l.id!=='string'||cartIds.has(l.id)||!cartIds.add(l.id))){notify('Winkelmandje bevat dubbele of ongeldige artikelen. Maak het winkelmandje opnieuw.');return;}
- for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||!stockInt(p.stock)||p.stock<l.qty||!Number.isFinite(p.price)||p.price<0||p.price!==l.price){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
+ for(const l of cart){const p=ps.find(x=>x.id===l.id);if(!p||p.active===false||!qtyInt(l.qty)||!stockInt(p.stock)||p.stock<l.qty||cents(p.price)===null||p.price!==l.price||!Number.isSafeInteger(lineCents(l))){notify('Product, prijs of voorraad is veranderd. Controleer de winkelmand.');return;}items.push({...l});}
  const method=$('rfPaymentMethod')?.value,customerId=$('rfSaleCustomer')?.value||'';
  const allowedMethods=new Set(['Cash','Bancontact (extern bevestigd)','SumUp (extern bevestigd)','Overschrijving (ontvangen)']);
  if(!allowedMethods.has(method)){notify('Kies een geldige betaalmethode voordat je de betaling registreert.');return;}
  const customerMatches=customerId?customers().filter(c=>c.id===customerId):[];
  if(customerId&&customerMatches.length!==1){notify('De geselecteerde klant bestaat niet meer of is dubbel geregistreerd. Kies opnieuw een klant.');return;}
  const customerRecord=customerMatches[0],customer=customerRecord?.name||'';
- const amount=total();if(!positive(amount)||amount<=0){notify('Een verkoop moet een positief totaal hebben.');return;}
+ const amountCents=totalCents(),amount=amountCents/100;if(!Number.isSafeInteger(amountCents)||amountCents<=0){notify('Een verkoop moet een positief totaal in eurocenten hebben.');return;}
  if(!confirm('Bevestig dat '+money(amount)+' daadwerkelijk ontvangen is via '+method+'?'))return;
  checkoutInProgress=true;
  const year=new Date().getFullYear(),prefix='KAS-'+year+'-';
@@ -134,7 +140,7 @@
  },true);
  document.addEventListener('submit',e=>{
  if(e.target.id!=='rfProductForm')return;e.preventDefault();const f=new FormData(e.target),name=String(f.get('name')||'').trim(),sku=String(f.get('sku')||'').trim(),imei=String(f.get('imei')||'').trim(),price=Number(f.get('price')),cost=Number(f.get('cost')),stock=Number(f.get('stock')),vat=Number(f.get('vat'));let ps;try{ps=checkedArray(PRODUCTS);checkedArray(MOVEMENTS)}catch{notify('Voorraadgegevens zijn beschadigd. Maak eerst een back-up.');return;}
- if(!name||!positive(price)||!positive(cost)||!stockInt(stock)||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
+ if(!name||cents(price)===null||cents(cost)===null||!stockInt(stock)||(imei&&stock>1)||![0,6,12,21].includes(vat)){notify('Controleer de productgegevens.');return;}
  if(sku&&ps.some(p=>p.sku===sku&&p.active!==false)){notify('Deze SKU bestaat al.');return;}
  if(imei&&ps.some(p=>p.imei&&String(p.imei).replace(/[\s-]/g,'').toUpperCase()===imei.replace(/[\s-]/g,'').toUpperCase()&&p.active!==false)){notify('Dit IMEI/serienummer bestaat al.');return;}
  if(imei){
@@ -143,7 +149,7 @@
    notify('Dit IMEI/serienummer staat al bij een actief refurbished toestel. Beheer het via Refurbished.');return;
   }
  }
- ps.push({id:id(),name,sku,imei,price:round(price),cost:round(cost),stock,vat,active:true,createdAt:new Date().toISOString()});
+ ps.push({id:id(),name,sku,imei,price:cents(price)/100,cost:cents(cost)/100,stock,vat,active:true,createdAt:new Date().toISOString()});
  try{commitStock(ps,[movement(ps[ps.length-1],stock,'Beginvoorraad')]);render();notify('Product toegevoegd.');}catch{notify('Opslaan mislukt.');}
  },true);
  document.addEventListener('change',e=>{if(e.target.id==='rfSaleCustomer')selectedCustomer=e.target.value;},true);
