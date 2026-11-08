@@ -1,0 +1,10 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {restore,scope}=require('../workspace-context');
+const c={organizationId:'11111111-1111-4111-8111-111111111111',branchId:'22222222-2222-4222-8222-222222222222',staffId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',role:'manager'};
+function storage(values={}){const data=new Map(Object.entries(values));return {data,getItem:k=>data.get(k)??null,setItem(){throw Error('restore must not write')},removeItem(){throw Error('restore must not delete')}}}
+test('legacy unscoped drafts are retained and never adopted by a verified tenant',()=>{const st=storage({rfCloudCartDraftV1:'[{"personal":"legacy"}]'}),r=restore(st,c);assert.deepEqual(r.cart,[]);assert.equal(st.data.get('rfCloudCartDraftV1'),'[{"personal":"legacy"}]')});
+test('draft storage differs by enterprise, branch and staff',()=>{const base=restore(storage(),c).keys.cart;for(const delta of [{organizationId:'33333333-3333-4333-8333-333333333333'},{branchId:'44444444-4444-4444-8444-444444444444'},{staffId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}])assert.notEqual(restore(storage(),{...c,...delta}).keys.cart,base)});
+test('corrupt and malformed drafts fail without changing original bytes',()=>{const key=restore(storage(),c).keys.cart;for(const value of ['{broken','{}','[{"type":"product","id":"bad","quantity":1}]']){const st=storage({[key]:value});assert.throws(()=>restore(st,c),/winkelconcepten/);assert.equal(st.data.get(key),value)}});
+test('unknown role and forged context are rejected before reading drafts',()=>{for(const bad of [{...c,role:'sales'},{...c,organizationId:'other'},null])assert.throws(()=>restore(storage(),bad),/winkelcontext/)});
+test('valid pending checkout preserves its exact request identity and payments',()=>{const keys=restore(storage(),c).keys;const pending={action:'checkout',requestId:c.staffId,lines:[{type:'repair',id:c.branchId,quantity:1}],payments:[{method:'cash',amountCents:5000}]};const st=storage({[keys.pending]:JSON.stringify(pending)});assert.deepEqual(restore(st,c).pending,pending)});
