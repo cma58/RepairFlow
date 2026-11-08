@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id),state={customers:[],repairs:[],products:[],refurbished:[],sales:[],cashDays:[]};
 const CART_KEY='rfCloudCartDraftV1',PENDING_KEY='rfCloudPendingV1',WRITES_KEY='rfCloudPendingWritesV1';
 let cart=[],pending=null,pendingWrites={},storageOk=true,busy=false;
+const updates=typeof BroadcastChannel==='function'?new BroadcastChannel('rf-workspace-updates'):null;
 function euro(c){return '€ '+(Number(c)/100).toFixed(2).replace('.',',')}
 function toCents(value){const s=String(value).trim().replace(',','.');if(!/^(0|[1-9][0-9]{0,9})(\.[0-9]{1,2})?$/.test(s))throw Error('Gebruik een geldig bedrag met maximaal twee decimalen.');const [whole,fraction='']=s.split('.');return Number(whole)*100+Number(fraction.padEnd(2,'0'))}
 function info(message){$('message').textContent=message;$('error').textContent=''}
@@ -15,7 +16,7 @@ function fillSelect(id,items,name){const el=$(id),old=el.value;el.replaceChildre
 function button(label,click){const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',click);return b}
 async function api(payload){const response=await fetch('/api/workspace',{method:payload?'POST':'GET',credentials:'same-origin',headers:payload?{'Content-Type':'application/json','Accept':'application/json'}:{'Accept':'application/json'},body:payload?JSON.stringify(payload):undefined,cache:'no-store'});
  const data=await response.json().catch(()=>({}));if(!response.ok){const e=Error(data.error||'Netwerk- of serverfout');e.status=response.status;throw e}return data}
-async function load(){try{const data=await api();Object.assign(state,data);render();info('Cloudgegevens vernieuwd.')}catch(e){error('Cloudgegevens zijn niet geladen: '+e.message)}}
+async function load({silent=false}={}){try{const data=await api();Object.assign(state,data);render();if(!silent)info('Cloudgegevens vernieuwd.')}catch(e){error('Cloudgegevens zijn niet geladen: '+e.message)}}
 function render(){
  fillSelect('repair-customer',state.customers,c=>c.display_name);
  fillSelect('stock-product',state.products,p=>p.sku+' · '+p.name);
@@ -51,7 +52,7 @@ function render(){
 }
 function updateCartPicker(){const type=$('cart-type').value;const candidates=type==='product'?state.products.filter(x=>Number(x.available)>0&&x.active):type==='repair'?state.repairs.filter(x=>x.status==='Klaar'&&Number(x.charge_cents)>0):state.refurbished.filter(x=>x.status==='available');fillSelect('cart-item',candidates,x=>type==='product'?x.name+' · '+euro(x.unit_price_cents):type==='repair'?x.reference+' · '+euro(x.charge_cents):x.description+' · '+euro(x.price_cents))}
 function renderCart(){textList('cart',cart,(li,l)=>{const x=(l.type==='product'?state.products:l.type==='repair'?state.repairs:state.refurbished).find(v=>v.id===l.id);li.append(document.createTextNode((x?.name||x?.reference||x?.description||l.id)+' × '+l.quantity+' · '+l.type));li.append(button('Verwijder',()=>{if(pending){error('Deze aanvraag wacht op bevestiging. Herhaal eerst met dezelfde aanvraagcode.');return}cart=cart.filter(v=>v!==l);try{saveDraft(CART_KEY,cart)}catch(e){error(e.message)}renderCart()}))})}
-async function send(payload,success,onFailure){if(busy)return;busy=true;try{const result=await api(payload);info(success+(result.replayed?' Herhaalde aanvraag veilig herkend.':''));await load();return result}catch(e){onFailure?.(e);error('Niet opgeslagen of niet bevestigd: '+e.message);return null}finally{busy=false}}
+async function send(payload,success,onFailure){if(busy)return;busy=true;try{const result=await api(payload);await load({silent:true});updates?.postMessage('changed');info(success+(result.replayed?' Herhaalde aanvraag veilig herkend.':''));return result}catch(e){onFailure?.(e);error('Niet opgeslagen of niet bevestigd: '+e.message);return null}finally{busy=false}}
 $('retry-pending').addEventListener('click',async()=>{
  if(pending){const result=await send(pending,'Verkoopaanvraag gecontroleerd.',e=>{if(e.status>=400&&e.status<500){pending=null;localStorage.removeItem(PENDING_KEY);updatePending()}});if(result){const id=result.sale?.id;pending=null;cart=[];localStorage.removeItem(PENDING_KEY);saveDraft(CART_KEY,cart);renderCart();updatePending();if(id)await receipt(id)}return}
  const action=Object.keys(pendingWrites)[0];if(!action)return;
@@ -87,5 +88,8 @@ $('checkout').addEventListener('click',async()=>{if(busy||!cart.length)return;tr
 async function receipt(id){try{const response=await fetch('/api/workspace?saleId='+encodeURIComponent(id),{credentials:'same-origin',cache:'no-store'});if(!response.ok)throw Error('bewijs niet beschikbaar');const data=await response.json();$('receipt').textContent='Bewijs '+data.sale.reference+' · '+data.lines.map(l=>l.description+' '+l.quantity+' × '+euro(l.unit_price_cents)).join(' · ')+' · totaal '+euro(data.sale.total_cents)+' · '+data.payments.map(p=>p.method+' '+euro(p.amount_cents)+' ('+p.payment_state+')').join(' + ')+' · '+data.notice}catch(e){error(e.message)}}
 $('close-day').addEventListener('click',()=>send({action:'closeDay'},'Kassadag gesloten.'));
 $('refresh').addEventListener('click',load);
+updates?.addEventListener('message',()=>{if(document.visibilityState==='visible'&&!busy)load({silent:true})});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!busy)load({silent:true})});
+setInterval(()=>{if(document.visibilityState==='visible'&&!busy)load({silent:true})},15000);
 try{const draft=readDraft(CART_KEY,[]);if(!Array.isArray(draft)||!draft.every(l=>l&&['product','repair','refurbished'].includes(l.type)&&typeof l.id==='string'&&Number.isSafeInteger(l.quantity)&&l.quantity>0))throw Error('ongeldig winkelmandje');cart=draft;pending=readDraft(PENDING_KEY,null);pendingWrites=readDraft(WRITES_KEY,{});updatePending();if(pending||Object.keys(pendingWrites).length)info('Een eerdere aanvraag is onzeker. Herhaal dezelfde actie om de serveruitkomst veilig te controleren.')}catch{storageOk=false;error('Beschadigde browserdraft. Niets wordt overschreven.')}
 fetch('/api/auth/me',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(Error('geen medewerkersrechten'))).then(me=>{$('identity').textContent='Aangemeld als '+me.role+' · geïsoleerde cloudtest';return load()}).catch(e=>error('Geen toegang: '+e.message));
