@@ -263,3 +263,11 @@
 - Zonder app-sessie toont een afzonderlijke preview-origin Geen toegang, geen klant-/reparatiegegevens en geblokkeerde invoer. Er is geen login of rechtenverruiming uitgevoerd voor die controle.
 - Synthetische kassaproef op de al afgesloten dag: artikel €10 + contant invullen → server weigert met conflict; winkelmand blijft behouden, onzekere aanvraag wordt na de definitieve fout opgeheven, beschikbare voorraad blijft 1 en de verkooplijst blijft bij de bestaande verkoop. Daarna uitsluitend het eigen nieuwe testmandje leeggemaakt. De generieke conflicttekst kan nog concreter worden gemaakt; een geslaagde nieuwe betaalde checkout is hiermee niet bewezen.
 - Deze fase is een afgeronde audit met eerste veilige frontendintegratie, geen afronding van het volledige masterplan. Gebrek aan urgente vlag, intakewachtrij, voorschotledger, fiscale documenten, retouren, fijnmazige medewerkersrechten en geteste restore blijft releaseblokkerend. Productie/main/echte migratie zijn niet gewijzigd.
+
+
+## Fase 2.1 — reparatieledger in verificatie (2026-11-08)
+- Additieve migratie 003 uitsluitend op geïsoleerde Neon-testbranch toegepast: dubbele IMEI/serienummer, diagnoseprijs, versienummer, aanvullende offertes/beslissingen, append-only betalingen/correcties en idempotente opdrachten. Geen historische gegevens verwijderd.
+- Dossierdialoog binnen de bestaande PHIXAR-shell; expliciete akkoordregistratie, betaalhistoriek/restsaldo en heropenreden. Server vereist exacte dossier-versie en blokkeert betaald werk tijdens open offerte. Kaartregistratie blijft administratief, nooit extern bevestigd.
+- 153/153 lokale tests geslaagd (129 behouden, 24 nieuwe). Echte betaalde browser-/databaseverificatie is nog in uitvoering; geen vrijgaveclaim.
+- Tijdelijke previewcontext: uitsluitend synthetische onderneming 55555555… / vestiging 66666666… op bestaande geïsoleerde testdatabase. Geen productie/main/echte migratie.
+- Resterende grenzen: twee onafhankelijke medewerkersessies, fysieke iPad, echte netwerkonderbreking en fiscale terugbetaling na afhaling nog niet bewezen.
