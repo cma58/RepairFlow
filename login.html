@@ -2,12 +2,13 @@
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PHIXAR · Beveiligde aanmelding</title>
 <style>body{background:#0b1020;color:#eef4ff;font:16px system-ui;min-height:100vh;display:grid;place-items:center;margin:0;padding:20px;box-sizing:border-box}main{background:#121a2d;border:1px solid #283451;border-radius:18px;padding:28px;width:min(440px,100%)}h1{margin:0 0 8px}p{color:#b3bfd8;line-height:1.5}label{display:block;margin:20px 0 8px}input{width:100%;box-sizing:border-box;padding:13px;border-radius:9px;border:1px solid #71809d;background:#080d18;color:white;font:inherit}button{margin-top:16px;width:100%;border:0;border-radius:9px;padding:13px;background:#6ea8fe;color:#0b1020;font-weight:700;font:inherit;cursor:pointer}button:disabled{opacity:.6;cursor:wait}#status{min-height:24px}small{color:#aebbd2}</style></head>
-<body><main><h1>PHIXAR</h1><p>Beveiligde medewerkerslogin</p><form id="login" hidden><label for="email">E-mailadres</label><input id="email" type="email" autocomplete="email" required placeholder="naam@voorbeeld.be"><button id="send" type="submit">Stuur mij een inloglink</button></form><p id="status" role="status" aria-live="polite"></p><small>Gebruik alleen je eigen mailbox. Een inloglink is persoonlijk en maximaal 10 minuten geldig. De toegang tot klantdossiers wordt pas geactiveerd nadat je account is goedgekeurd. De inlogpagina geeft op zichzelf geen toegang.</small></main>
+<body><main><h1>PHIXAR</h1><p>Beveiligde medewerkerslogin</p><form id="login" hidden><label for="email">E-mailadres</label><input id="email" type="email" autocomplete="email" required placeholder="naam@voorbeeld.be"><button id="send" type="submit">Stuur mij een inloglink</button></form><p id="status" role="status" aria-live="polite"></p><a id="workspace-link" href="/workspace" hidden>Open geïsoleerde cloudwerkruimte</a><small>Gebruik alleen je eigen mailbox. Een inloglink is persoonlijk en maximaal 10 minuten geldig. De toegang tot klantdossiers wordt pas geactiveerd nadat je account is goedgekeurd. De inlogpagina geeft op zichzelf geen toegang.</small></main>
 <script>
 'use strict';
 // When login is enabled, Neon redirects its one-time verifier to our first-party callback.
 const verifiedCallbackURL=location.origin+'/api/auth/callback';
 const form=document.getElementById('login'),status=document.getElementById('status'),button=document.getElementById('send');
+const workspaceLink=document.getElementById('workspace-link');
 const params=new URLSearchParams(location.search);
 async function checkSession(returning=false){
  status.textContent='Aanmeldsessie controleren…';
@@ -21,7 +22,8 @@ async function checkSession(returning=false){
    if(staffResponse.ok){
     const staff=await staffResponse.json();
     form.hidden=true;
-    status.textContent='Sessie en medewerkersrechten bevestigd ('+staff.role+'). De cloudwerkruimte wordt nog getest; klantgegevens zijn hier nog niet beschikbaar.';
+    workspaceLink.hidden=false;
+    status.textContent='Sessie en medewerkersrechten bevestigd ('+staff.role+'). De geïsoleerde cloudwerkruimte is beschikbaar voor tests; bestaande browsergegevens worden niet automatisch overgezet.';
    }else if(staffResponse.status===403){
     status.textContent='Je e-maillink is bevestigd, maar dit account heeft nog geen toegang tot deze winkel.';
    }else{
