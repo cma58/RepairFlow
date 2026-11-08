@@ -5,6 +5,8 @@ const env={REPAIRFLOW_NEON_AUTH_URL:'https://ep-test.neonauth.c-8.eu-central-1.a
 test('auth endpoint and callback origin are explicit and branch specific',()=>{
  assert.equal(authUrl(env),env.REPAIRFLOW_NEON_AUTH_URL);
  assert.equal(appOrigin(env),env.REPAIRFLOW_APP_ORIGIN);
+ assert.equal(authUrl({DATABASE_NEON_AUTH_BASE_URL:env.REPAIRFLOW_NEON_AUTH_URL}),env.REPAIRFLOW_NEON_AUTH_URL);
+ assert.equal(appOrigin({VERCEL_URL:'branch-preview.vercel.app'}),'https://branch-preview.vercel.app');
  for(const bad of ['http://ep-test.neon.tech/auth','https://evil.test/auth','https://user:pass@ep-test.neon.tech/auth'])assert.throws(()=>authUrl({...env,REPAIRFLOW_NEON_AUTH_URL:bad}));
  assert.throws(()=>appOrigin({...env,REPAIRFLOW_APP_ORIGIN:'https://preview.example.test/redirect'}));
 });
