@@ -8,5 +8,6 @@
  function pending(value){return value===null||object(value)&&value.action==='checkout'&&UUID.test(value.requestId)&&lines(value.lines)&&value.lines.length>0&&Array.isArray(value.payments)&&value.payments.length>0&&value.payments.length<=5&&value.payments.every(payment)}
  function writes(value){return object(value)&&Object.entries(value).every(([key,x])=>['customer','repair','product','stock','refurb'].includes(key)&&object(x)&&x.action===key&&UUID.test(x.requestId))}
  function restore(storage,context){const prefix='rfCloudV2:'+scope(context)+':';const keys={cart:prefix+'cart',pending:prefix+'pending',writes:prefix+'writes'};const read=(key,fallback,valid)=>{const raw=storage.getItem(key);if(raw===null)return fallback;let value;try{value=JSON.parse(raw)}catch{throw Error('Beschadigde winkelconcepten; originele gegevens blijven behouden.')}if(!valid(value))throw Error('Ongeldige winkelconcepten; originele gegevens blijven behouden.');return value};return {keys,cart:read(keys.cart,[],lines),pending:read(keys.pending,null,pending),writes:read(keys.writes,{},writes)}}
- return {scope,restore,lines,pending,writes};
+ function date(value){const d=new Date(value);return Number.isNaN(d.getTime())?'Datum niet beschikbaar':d.toLocaleString('nl-BE',{timeZone:'Europe/Brussels'})}
+ return {scope,restore,lines,pending,writes,date};
 });
