@@ -174,6 +174,19 @@ These are questions, not approved implementation requirements.
 4. When should bank transfers count as paid: on cashier selection, proof shown, or bank receipt? Distinguish receipt and verification.
 5. Define employee discount and price-override thresholds, diagnostic fee, and uncollected-device reminder cadence.
 
+### Additional owner decisions — 2026-11-08 (exception resolution)
+1. **iPad timer:** 10 minutes begins immediately upon opening the registration form. Owner preference is to delete abandoned temporary registration after this window. **Safety requirement / clarification:** do not delete an active customer's unsaved input without warning or recovery; never purge a staff-claimed intake or legally retained record. Need explicit UX decision on active form expiry and submission at minute 10.
+2. **Reservation reassignment:** employee may reassign a part with a mandatory reason; original reservation and all changes remain in audit history. No manager approval required for this reassignment by default (other sensitive inventory corrections still require manager approval).
+3. **Cancellation after installation:** owner requests automatic return of installed part to inventory. **PHYSICAL-INVENTORY CONFLICT / DO NOT IMPLEMENT LITERAL AUTOMATIC RESTOCK:** cancellation does not physically remove a mounted part, and a removed part may be damaged/non-resaleable. Record a return-to-stock workflow requiring physical removal, inspection and disposition; only confirmed reusable stock can become available. Ask owner to confirm whether this safeguard matches intent. Never increment saleable stock solely on cancellation.
+4. **Bank transfer at pickup:** release device only after bank receipt is confirmed, except explicit manager-approved release with outstanding balance and audit. Cashier payment-method selection is not evidence of receipt.
+5. **Staff-claimed iPad intake:** never auto-delete it; retain accepted dossier according to applicable retention policy.
+
+### Reconciliation of owner decisions
+- Previous 'staff can reassign reserved part with recorded reason' is now confirmed as no manager approval needed for this specific action.
+- Previous 'mark bank transfer received upon method selection' applies only to POS operator input; actual device release requires confirmed bank receipt or manager exception. UI must distinguish recorded vs verified.
+- Previous 10-minute unclaimed-registration deletion now uses **form opening** as timer start; precise active-form handling remains open.
+- Previous installed-part physical stock accuracy conflicts with unconditional restocking on cancellation; restock must await physical return and inspection. Owner confirmation pending.
+
 ## F. Open decisions and legal validation
 - Diagnostic fee and exceptions; exact status workflow and notification channel.
 - Belgian invoicing and VAT including second-hand margin regime; consumer warranty/second-hand legal minimum; GDPR identity retention; permissions.
@@ -185,6 +198,7 @@ These are questions, not approved implementation requirements.
 When user approves a module, append the exact decisions here. Keep a changelog and distinguish **CONFIRMED**, **PROPOSED**, **OPEN**, **LEGAL REVIEW**. Never silently rewrite previous owner-confirmed rules. No production code changes are authorized by this document alone.
 
 ## Changelog
+- 2026-11-08: Added five owner decisions on intake timer, reservation reassignment, cancellation restock, transfer verification and claimed-intake retention; flagged physical stock and active-form safety conflicts.
 - 2026-11-08: Added six owner-confirmed end-to-end scenarios and cross-module consistency findings, explicitly separating confirmed behavior from open/legal-review issues.
 - 2026-11-07: Added 12 owner-confirmed POS/payment decisions and explicit reconciliation safeguards for immediately marked-as-received payments.
 - 2026-11-07: Added 12 owner-confirmed repair/warranty exception rules, including conditional diagnosis fee, quote approvals, single-button final test and repeat-warranty traceability.
