@@ -7,10 +7,10 @@ const source=fs.readFileSync(require('node:path').join(__dirname,'../app-v3.js')
 function extract(start,end){const a=source.indexOf(start),b=source.indexOf(end,a+start.length);assert.ok(a>=0&&b>a,'Payment function not found');return source.slice(a,b);}
 const paymentCode=extract('function paymentForm(ticket){','\nfunction renderTicketQR(ticket)');
 const confirmCode=extract('function confirmPayment(ticket,amount,type,method){','\nrepairShell();');
-function harness(){
+function harness({failSave=false}={}){
  const repairs={R1:{payments:[],quotes:[{amount:688}],name:'Testklant',device:'Testtoestel',status:'Klaar',qcComplete:true}};
  let overlayHtml='',message='',saved=0;
- const context={repairs,rfPaymentReturnTicket:null,rfBusiness:()=>({legalName:'PHIXAR',street:'Teststraat',city:'Gent'}),overlay:(title,html)=>{overlayHtml=html;},due:r=>Math.max(0,688-r.payments.reduce((sum,p)=>sum+(p.status==='confirmed'?p.amount:0),0)),quoteAmount:()=>688,paidTotal:r=>r.payments.reduce((sum,p)=>sum+p.amount,0),euro:n=>'€ '+n.toFixed(2),esc:x=>String(x),uid:()=>String(Math.random()),now:()=>new Date().toISOString(),log:()=>{},save:()=>{saved++;},toast:m=>{message=m;},Date,Object,Number,Math};
+ const context={repairs,rfPaymentReturnTicket:null,rfBusiness:()=>({legalName:'PHIXAR',street:'Teststraat',city:'Gent'}),overlay:(title,html)=>{overlayHtml=html;},due:r=>Math.max(0,688-r.payments.reduce((sum,p)=>sum+(p.status==='confirmed'?p.amount:0),0)),quoteAmount:()=>688,paidTotal:r=>r.payments.reduce((sum,p)=>sum+p.amount,0),euro:n=>'€ '+n.toFixed(2),esc:x=>String(x),uid:()=>String(Math.random()),now:()=>new Date().toISOString(),log:r=>{r.audit=(r.audit||[]);r.audit.unshift({action:'betaling'});},save:()=>{if(failSave)throw Error('quota');saved++;},toast:m=>{message=m;},Date,Object,Number,Math};
  vm.createContext(context);vm.runInContext(paymentCode+'\n'+confirmCode,context);
  return {context,repairs,get html(){return overlayHtml;},get message(){return message;},get saved(){return saved;}};
 }
@@ -37,4 +37,20 @@ test('payment exceeding balance is rejected and not saved',()=>{
 test('payment form returns to same repair ticket',()=>{
  const h=harness();h.context.paymentForm('R1');
  assert.equal(h.context.rfPaymentReturnTicket,'R1');assert.match(h.html,/Terug naar afhaling/);
+});
+test('fractional eurocents, repeated payment and unlinked provider are rejected',()=>{
+ const h=harness();h.context.confirmPayment('R1',0.001,'Betaling','Cash');
+ assert.equal(h.saved,0);assert.match(h.message,/eurocenten/);
+ h.context.confirmPayment('R1',688,'Betaling','Cash');
+ h.context.confirmPayment('R1',688,'Betaling','Cash');
+ assert.equal(h.saved,1);assert.equal(h.repairs.R1.payments.length,1);
+ const unlinked=harness();unlinked.context.confirmPayment('R1',1,'Betaling','SumUp');
+ assert.equal(unlinked.saved,0);assert.match(unlinked.message,/Ongeldige betaalmethode/);
+});
+test('cent-level split payments total exactly and failed save rolls back',()=>{
+ const h=harness();h.context.confirmPayment('R1',0.1,'Voorschot','Cash');h.context.confirmPayment('R1',687.9,'Betaling','Bancontact');
+ assert.equal(h.saved,2);assert.equal(h.repairs.R1.payments.reduce((s,p)=>s+Math.round(p.amount*100),0),68800);
+ assert.equal(h.repairs.R1.payments[1].verification,'medewerker bevestigde ontvangst');
+ const failed=harness({failSave:true});failed.context.confirmPayment('R1',1,'Betaling','Cash');
+ assert.equal(failed.repairs.R1.payments.length,0);assert.equal(failed.repairs.R1.audit.length,0);assert.match(failed.message,/Opslaan mislukt/);
 });

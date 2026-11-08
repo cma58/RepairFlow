@@ -79,9 +79,9 @@ function exportRepairBackup(){
 }
 function log(r,action,oldValue='',newValue='',actor='Medewerker',source='medewerker'){r.audit.unshift(auditEvent(actor,action,oldValue,newValue,source));}
 function currentQuote(r){return r.quotes.slice().sort((a,b)=>b.version-a.version)[0]||null;}
-function paidTotal(r){return r.payments.filter(p=>p.status==='confirmed').reduce((s,p)=>s+(+p.amount||0),0);}
+function paidTotal(r){return r.payments.filter(p=>p.status==='confirmed').reduce((s,p)=>s+Math.round((+p.amount||0)*100),0)/100;}
 function quoteAmount(r){const q=currentQuote(r);return q?+q.amount||0:0;}
-function due(r){return Math.max(0,quoteAmount(r)-paidTotal(r));}
+function due(r){return Math.max(0,Math.round(quoteAmount(r)*100)-Math.round(paidTotal(r)*100))/100;}
 function calc(r){const parts=r.parts.reduce((s,p)=>s+(+p.price||0)*(+p.qty||1),0),labor=(+r.laborHours||0)*(+r.laborRate||0),other=+r.otherCost||0;return{parts,labor,other,total:parts+labor+other};}
 function toast(m){const t=$('toast');if(!t)return;t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2300);}
 let rfPrintReturnTicket=null;
@@ -253,7 +253,7 @@ else if(x==='repair-mark-ready'){const r=repairs[a.dataset.ticket];if(!r.qcCompl
 else if(x==='repair-payment-new')paymentForm(a.dataset.ticket);
 else if(x==='repair-payment-start'){
  const ticket=a.dataset.ticket,method=$('payMethod')?.value,amount=Number($('payAmount')?.value),type=$('payType')?.value;
- if(!Number.isFinite(amount)||amount<=0||amount>due(repairs[ticket])+0.001){toast('Controleer het bedrag en het open saldo.');return}
+ if(!Number.isFinite(amount)||amount<=0||!Number.isSafeInteger(Math.round(amount*100))||Math.abs(amount*100-Math.round(amount*100))>1e-7||Math.round(amount*100)>Math.round(due(repairs[ticket])*100)){toast('Controleer het bedrag in eurocenten en het open saldo.');return}
  if(method==='SumUp'){
   overlay('Kaartbetaling',`<div class="oc"><h2>SumUp niet gekoppeld</h2><p>Er is geen betaalterminal gekoppeld. Registreer geen kaartbetaling zonder een echte bevestiging op de terminal.</p><button class="btn s" data-action="close">Sluiten</button></div>`);
  }else if(method==='Overschrijving'){
@@ -305,6 +305,18 @@ else if(x==='kiosk')kiosk();else if(x==='kiosk-form')kioskForm(a.dataset.type);e
 else if(x==='employee-open'){closeOverlay();activeRepairTab='intake';detail(a.dataset.ticket,'intake');}
 else if(x==='close')closeOverlay();
 else if(x==='module')moduleDemo(a.dataset.module);else if(x==='csv')toast('Boekhoudexport blijft voor het tabblad Boekhouding.');});
-function confirmPayment(ticket,amount,type,method){const r=repairs[ticket];if(!r){toast('Reparatie niet gevonden.');return}const open=due(r);if(!Number.isFinite(amount)||!(amount>0)){toast('Bedrag moet groter zijn dan 0.');return}if(amount>open+0.001){toast('Bedrag mag niet groter zijn dan open saldo.');return}const seq=1000+Object.values(repairs).reduce((s,x)=>s+x.payments.length,0)+1,ref='PAY-'+new Date().getFullYear()+'-'+String(seq).padStart(5,'0');const payment={id:uid('PAY'),ref,amount,method,type,at:now(),status:'confirmed'};r.payments.push(payment);log(r,type+' geregistreerd','',ref+' '+euro(amount)+' via '+method);try{save()}catch(e){r.payments.pop();r.audit.shift();toast('Opslaan mislukt. Betaling is niet geregistreerd.');return;}paymentForm(ticket);toast('Betaling '+euro(amount)+' geregistreerd.');}
+function confirmPayment(ticket,amount,type,method){
+ const r=repairs[ticket];if(!r){toast('Reparatie niet gevonden.');return}
+ const cents=Math.round(amount*100),openCents=Math.round(due(r)*100);
+ if(!Number.isFinite(amount)||cents<=0||!Number.isSafeInteger(cents)||Math.abs(amount*100-cents)>1e-7){toast('Bedrag moet een positief aantal eurocenten zijn.');return}
+ if(cents>openCents){toast('Bedrag mag niet groter zijn dan open saldo.');return}
+ if(!['Betaling','Voorschot'].includes(type)||!['Cash','Bancontact','Overschrijving','Andere'].includes(method)){toast('Ongeldige betaalmethode of betalingstype.');return}
+ const confirmedAmount=cents/100;
+ const seq=1000+Object.values(repairs).reduce((s,x)=>s+x.payments.length,0)+1,ref='PAY-'+new Date().getFullYear()+'-'+String(seq).padStart(5,'0');
+ const payment={id:uid('PAY'),ref,amount:confirmedAmount,method,type,at:now(),status:'confirmed',verification:'medewerker bevestigde ontvangst'};
+ r.payments.push(payment);log(r,type+' geregistreerd','',ref+' '+euro(confirmedAmount)+' via '+method);
+ try{save()}catch(e){r.payments.pop();r.audit.shift();toast('Opslaan mislukt. Betaling is niet geregistreerd.');return;}
+ paymentForm(ticket);toast('Betaling '+euro(confirmedAmount)+' geregistreerd.');
+}
 repairShell();
 console.log('RepairFlow Reparaties V3 loaded');
