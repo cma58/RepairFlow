@@ -20,7 +20,7 @@ function render(){
  fillSelect('repair-customer',state.customers,c=>c.display_name);
  fillSelect('stock-product',state.products,p=>p.sku+' · '+p.name);
  fillSelect('stock-repair',state.repairs.filter(r=>['In reparatie','Kwaliteitscontrole'].includes(r.status)),r=>r.reference);
- textList('customers',state.customers,(li,c)=>li.textContent=c.display_name+' · '+(c.phone||c.email||'geen contact'));
+ textList('customers',state.customers,(li,c)=>li.textContent=(c.company_name?c.company_name+' · ':'')+c.display_name+' · '+(c.phone||c.email||'geen contact'));
  textList('repairs',state.repairs,(li,r)=>{
   li.append(document.createTextNode(r.reference+' · '+r.device_brand+' '+(r.device_model||'')+' · '+r.status+' · '+euro(r.charge_cents)));
   const next={Binnengebracht:['Diagnose'],Diagnose:['Wachten op klant','In reparatie'], 'Wachten op klant':['In reparatie'],'Wachten op onderdeel':['In reparatie'],'In reparatie':['Kwaliteitscontrole'],Kwaliteitscontrole:['Klaar','In reparatie'],Klaar:['Afgehaald']}[r.status]||[];
@@ -42,17 +42,18 @@ $('retry-pending').addEventListener('click',async()=>{
  if(result){delete pendingWrites[action];saveDraft(WRITES_KEY,pendingWrites);updatePending()}
 });
 function formData(form){return Object.fromEntries(new FormData(form).entries())}
+$('customer-type').addEventListener('change',()=>{const business=$('customer-type').value==='business';$('company').required=business;$('billing-address').required=business});
 for(const action of ['customer','repair','product','stock','refurb'])$(action).addEventListener('submit',async event=>{
  event.preventDefault();const form=event.currentTarget,x=formData(form);try{
   let payload={action,requestId:crypto.randomUUID()};
-  if(action==='customer')payload={...payload,name:x.name,email:x.email,phone:x.phone};
+  if(action==='customer')payload={...payload,type:x.type,name:x.name,email:x.email,phone:x.phone,company:x.company,vat:x.vat,billingAddress:x.billingAddress};
   if(action==='repair')payload={...payload,customerId:x.customerId,brand:x.brand,model:x.model,serial:x.serial,complaint:x.complaint,chargeCents:toCents(x.charge)};
   if(action==='product')payload={...payload,sku:x.sku,name:x.name,kind:x.kind,priceCents:toCents(x.price)};
   if(action==='stock')payload={...payload,productId:x.productId,quantity:Number(x.quantity),operation:x.operation,repairId:x.operation==='consume'?x.repairId:undefined};
   if(action==='refurb')payload={...payload,imei:x.imei,description:x.description,priceCents:toCents(x.price)};
   if(pendingWrites[action])payload=pendingWrites[action];else{pendingWrites[action]=payload;saveDraft(WRITES_KEY,pendingWrites);updatePending()}
   const result=await send(payload,'Registratie opgeslagen.',e=>{if(e.status>=400&&e.status<500){delete pendingWrites[action];saveDraft(WRITES_KEY,pendingWrites)}});
-  if(result){delete pendingWrites[action];saveDraft(WRITES_KEY,pendingWrites);updatePending();form.reset()}
+  if(result){delete pendingWrites[action];saveDraft(WRITES_KEY,pendingWrites);updatePending();form.reset();if(action==='customer')$('customer-type').dispatchEvent(new Event('change'))}
  }catch(e){error(e.message)}
 });
 $('cart-type').addEventListener('change',updateCartPicker);

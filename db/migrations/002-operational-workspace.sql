@@ -3,6 +3,10 @@
 -- transaction-locally after verifying a Neon Auth session and active staff row.
 BEGIN;
 ALTER TABLE rf_customers ADD COLUMN IF NOT EXISTS request_id uuid;
+ALTER TABLE rf_customers ADD COLUMN IF NOT EXISTS customer_type text NOT NULL DEFAULT 'individual' CHECK(customer_type IN ('individual','business'));
+ALTER TABLE rf_customers ADD COLUMN IF NOT EXISTS company_name text;
+ALTER TABLE rf_customers ADD COLUMN IF NOT EXISTS vat_number text;
+ALTER TABLE rf_customers ADD COLUMN IF NOT EXISTS billing_address text;
 ALTER TABLE rf_repairs ADD COLUMN IF NOT EXISTS request_id uuid;
 ALTER TABLE rf_repairs ADD COLUMN IF NOT EXISTS charge_cents bigint NOT NULL DEFAULT 0 CHECK(charge_cents>=0);
 ALTER TABLE rf_products ADD COLUMN IF NOT EXISTS request_id uuid;

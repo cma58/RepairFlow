@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {withWorkspace}=require('../lib/workspace-session');
-const {checkout,stock,refurb,changeRepair}=require('../lib/workspace-operations');
+const {customer,checkout,stock,refurb,changeRepair,correction}=require('../lib/workspace-operations');
 const O='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',A='44444444-4444-4444-8444-444444444442';
 const P='55555555-5555-4555-8555-555555555555',F='66666666-6666-4666-8666-666666666666',R='77777777-7777-4777-8777-777777777777',S='88888888-8888-4888-8888-888888888888';
 const staff={id:A,organizationId:O,branchId:B,role:'manager'};
@@ -27,6 +27,8 @@ test('owner or manager operation stays in tenant transaction, sales denied',asyn
  const res=response();await withWorkspace(req,res,async(_db,user)=>({body:{role:user.role}}),{...b,authenticate:async()=>({subject:'verified-user'})});
  assert.equal(res.statusCode,200);assert.equal(res.body.role,'manager');assert.equal(b.queries[0],'BEGIN');assert.equal(b.queries.at(-1),'COMMIT');
  assert.ok(b.queries.some(sql=>sql.includes("set_config('app.subject'")));
+ const owner=boundary('owner'),ownerRes=response();await withWorkspace(req,ownerRes,async(_db,user)=>({body:{role:user.role}}),{...owner,authenticate:async()=>({subject:'verified-owner'})});
+ assert.equal(ownerRes.statusCode,200);assert.equal(ownerRes.body.role,'owner');
  const denied=boundary('sales'),res2=response();await withWorkspace(req,res2,async()=>{throw Error('must not run')},{...denied,authenticate:async()=>({subject:'verified-user'})});
  assert.equal(res2.statusCode,403);assert.equal(denied.queries.at(-1),'ROLLBACK');
 });
@@ -88,4 +90,23 @@ test('valid IMEI registration checks shared product catalogue for duplicates',as
  const queries=[],db={async query(sql){queries.push(sql);if(sql.includes('FROM rf_products WHERE'))return {rows:[{id:P}]};return {rows:[]}}};
  await assert.rejects(()=>refurb(db,staff,{requestId:R,imei:'990000000000002',description:'Test',priceCents:10000}),/CONFLICT/);
  assert.equal(queries.filter(sql=>sql.startsWith('INSERT INTO rf_refurbished')).length,0);
+});
+test('business customer requires a billing address and retains VAT as supplied',async()=>{
+ const queries=[],db={async query(sql,params){queries.push({sql,params});if(sql.startsWith('INSERT INTO rf_customers'))return {rows:[{id:R,display_name:'Contact',email:null,phone:null,customer_type:'business',company_name:'Company',vat_number:'BE0123456789',billing_address:'Street 1'}]};return {rows:[]}}};
+ await assert.rejects(()=>customer(db,staff,{requestId:R,type:'business',name:'Contact',company:'Company',vat:'BE0123456789'}),/INVALID_INPUT/);
+ assert.equal(queries.length,0);
+ const result=await customer(db,staff,{requestId:R,type:'business',name:'Contact',company:'Company',vat:'BE0123456789',billingAddress:'Street 1'});
+ assert.equal(result.body.customer.vat_number,'BE0123456789');assert.equal(queries.filter(x=>x.sql.startsWith('INSERT INTO rf_activity')).length,1);
+});
+test('cash correction cannot make a closed day negative, and replay does not apply twice',async()=>{
+ const calls=[];let replay=false;const db={async query(sql){calls.push(sql);
+  if(sql.startsWith('SELECT id,total_cents FROM rf_cash_days'))return {rows:[{id:F,total_cents:100}]};
+  if(sql.startsWith('SELECT id,day_id,delta_cents,reason'))return {rows:replay?[{id:S,day_id:F,delta_cents:-100,reason:'Counting error'}]:[]};
+  if(sql.startsWith('SELECT coalesce(sum(delta_cents)'))return {rows:[{cents:0}]};
+  return {rows:[{id:S}]};
+ }};
+ await assert.rejects(()=>correction(db,staff,{requestId:R,dayId:F,deltaCents:-101,reason:'Counting error'}),/CONFLICT/);
+ assert.equal(calls.filter(sql=>sql.startsWith('INSERT INTO rf_cash_corrections')).length,0);
+ replay=true;const result=await correction(db,staff,{requestId:R,dayId:F,deltaCents:-100,reason:'Counting error'});
+ assert.equal(result.body.replayed,true);assert.equal(calls.filter(sql=>sql.startsWith('INSERT INTO rf_cash_corrections')).length,0);
 });
