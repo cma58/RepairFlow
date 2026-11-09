@@ -96,6 +96,12 @@ De nieuwe migratie 004 is additief en fail-closed: aanvraag-, lidmaatschaps-, ei
 
 ## Prioriteiten
 
+### P0 contextstap, 2026-11-09
+
+`005-dynamic-context.sql` maakt een geverifieerde ondernemings- en vestigingskeuze mogelijk via actieve lidmaatschappen, met een afzonderlijke RLS-regel voor de eigen medewerkeridentiteit wanneer deze bij een tweede vestiging werkt. De API accepteert de contextheader uitsluitend met `REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED=true`, valideert de selectie opnieuw binnen dezelfde transactie en negeert tenant-ID's uit de body/query als autorisatie. De bestaande PHIXAR-route blijft standaard op de vaste configuratie. Er is nog geen contextkeuzescherm of persistente sessiecontext; de schakelaar blijft uit in de preview totdat alle huidige accounts gecontroleerd zijn gemigreerd.
+
+Een expliciete servermatrix bevat elf rechtgebieden en een actiegebonden controle voor dynamische contexten. Omdat de huidige GET-projectie ook financiële velden bevat, kunnen technieker en verkoper deze nog niet veilig lezen; een afgeslankte projectie is vereist. Individuele rechten, uitnodigingen, manager-MFA en sessie-intrekking zijn niet af; een actief lidmaatschap bewijst op zichzelf geen tweede factor. De bestaande legacy-winkelroute behoudt de huidige owner/manager-grens. P0-A en P0-C blijven gedeeltelijk.
+
 | Prioriteit | Uitvoering | Vrijgavebewijs |
 |---|---|---|
 | P0-A | Auth- en RLS-grens, alleen-lezen contextdiscovery, nieuwe actieve lidmaatschappen | Twee afzonderlijke sessies, meerdere tenants/vestigingen en negatieve API/RLS-tests |
