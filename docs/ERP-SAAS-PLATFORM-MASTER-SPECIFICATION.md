@@ -110,6 +110,8 @@ Een expliciete servermatrix bevat elf rechtgebieden en een actiegebonden control
 
 Als de dynamische schakelaar aan staat, moet ook de standaardcontext een actief lidmaatschap hebben. Dit sluit een omweg via de oude vaste PHIXAR-route. De schakelaar blijft uit tot alle bevoegde bestaande accounts zijn gemigreerd en onafhankelijke browser- en providersessies zijn getest. `007-member-rights.sql` voegt vestigingsgebonden allow/deny-overrides toe met FORCE RLS en uitsluitend SELECT voor de winkelruntime. Individuele uitzonderingen worden per request gelezen; schrijfbeheer en remote goedkeuring wachten op een MFA-beveiligde beheergrens. De brede GET-projectie beperkt technieker/verkoper nog steeds.
 
+Zelf afmelden loopt via de reeds gebruikte Neon Auth-provider en verwijdert de browsercookie uitsluitend na een geslaagde providerrespons. Dit is geen bewijs van beheerdersintrekking van alle sessies: die procedure vereist een afzonderlijk geautoriseerde beheeractie en provider-E2E. Uitnodigingen en MFA worden niet als actief gemarkeerd zolang de branchprovider geen geverifieerde verplichte tweede factor en veilige acceptatieflow heeft. Passkeys en apparaat-PIN krijgen geen tijdelijke wachtwoordomweg.
+
 | Prioriteit | Uitvoering | Vrijgavebewijs |
 |---|---|---|
 | P0-A | Auth- en RLS-grens, alleen-lezen contextdiscovery, nieuwe actieve lidmaatschappen | Twee afzonderlijke sessies, meerdere tenants/vestigingen en negatieve API/RLS-tests |
