@@ -60,6 +60,8 @@ DO $$ DECLARE t text; BEGIN
   EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY',t);
  END LOOP;
 END $$;
+-- Neon default privileges may grant SELECT to the login role on new tables.
+REVOKE ALL ON rf_platform_owners,rf_organization_applications,rf_organization_memberships,rf_branch_memberships,rf_platform_audit FROM rf_runtime_login,rf_runtime,PUBLIC;
 -- No grants/policies for rf_runtime or rf_runtime_login: default deny.
 -- Platform-owner activation and scoped management require a separate reviewed
 -- MFA and administrative transaction boundary; never infer rights from rf_staff.

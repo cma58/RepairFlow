@@ -108,3 +108,5 @@ De nieuwe migratie 004 is additief en fail-closed: aanvraag-, lidmaatschaps-, ei
 ## Auditnulmeting
 
 155/155 tests aan het begin. Bestaande cloudwerkruimte, kassa, voorraad en reparatieledger werken in een geïsoleerde tenant; legacy v07 blijft apart. De huidige API kiest organisatie en vestiging uitsluitend uit preview-omgevingsvariabelen. `rf_staff` heeft een unieke subjectkoppeling per onderneming en één `branch_id`; voor meerdere vestigingen zijn nieuwe lidmaatschappen nodig. `rf_staff_scope` controleert subject, actieve medewerker en vestiging maar werkt nog niet als dynamische contextdiscovery. PHIXAR-branding en URL blijven intact. 004 bevat nog geen runtimegrant en is niet op productie toegepast.
+
+Nacontrole: Neon-grants uit standaardprivileges zijn expliciet ingetrokken in 004. De winkelruntime heeft nul tabelrechten op de vijf platformtabellen; FORCE RLS blijft daarnaast actief.
