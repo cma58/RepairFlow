@@ -15,4 +15,6 @@ test('dynamic actors cannot forge permissions or access financial list with oper
  for(const role of ['technician','sales'])assert.throws(()=>requirePermission({role,dynamic:true},{method:'GET'}),{code:'ACCESS_DENIED'});
  assert.doesNotThrow(()=>requirePermission({role:'manager',dynamic:true},{method:'GET'}));
  assert.doesNotThrow(()=>requirePermission({role:'owner',dynamic:true},{method:'POST',body:{action:'correction'}}));
+ assert.throws(()=>requirePermission({role:'owner',dynamic:true,rights:{'settings.manage':'deny'}},{method:'POST',body:{action:'correction'}}),{code:'ACCESS_DENIED'});
+ assert.doesNotThrow(()=>requirePermission({role:'sales',dynamic:true,rights:{'financial.read':'allow'}},{method:'GET'}));
 });

@@ -1,0 +1,6 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const client=require('../workspace-context');
+const A='11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222',B='33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444';
+test('context selector stores per-tab choice and rejects malformed identifiers',()=>{const data=new Map(),storage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};assert.equal(client.selected(storage),null);client.choose(A,storage);assert.equal(client.selected(storage),A);client.choose(B,storage);assert.equal(client.selected(storage),B);assert.throws(()=>client.choose('wrong:context',storage));assert.equal(client.selected(storage),B);client.choose(null,storage);assert.equal(client.selected(storage),null)});
+test('client drafts remain scoped to a concrete organization, branch and staff',()=>{const storage={getItem:()=>null};const staffId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';const first=client.restore(storage,{organizationId:A.split(':')[0],branchId:A.split(':')[1],staffId,role:'manager'}),second=client.restore(storage,{organizationId:B.split(':')[0],branchId:B.split(':')[1],staffId,role:'manager'});assert.notEqual(first.keys.cart,second.keys.cart);assert.notEqual(first.keys.pending,second.keys.pending)});
