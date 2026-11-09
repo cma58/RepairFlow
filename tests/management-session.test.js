@@ -6,7 +6,7 @@ const session='33333333-3333-4333-8333-333333333333',staffId='44444444-4444-4444
 const env={REPAIRFLOW_APP_ORIGIN:'https://preview.example.org',REPAIRFLOW_RUNTIME_ROLE:'rf_runtime_login',REPAIRFLOW_RUNTIME_DATABASE_URL:'test',REPAIRFLOW_ORGANIZATION_ID:org,REPAIRFLOW_BRANCH_ID:branch};
 const identity={subject:'subject-a',sessionId:session,createdAt:new Date().toISOString()};
 function res(){return {code:0,setHeader(){},status(c){this.code=c;return this},json(b){this.body=b;return this}}}
-const base={method:'POST',headers:{origin:env.REPAIRFLOW_APP_ORIGIN,'content-type':'application/json',cookie:'better-auth.session_token=abc'},body:{targetStaffId:staffId,sessionId:null,reason:'Lost company device'}};
+const base={method:'POST',headers:{origin:env.REPAIRFLOW_APP_ORIGIN,'content-type':'application/json',cookie:'better-auth.session_token=abc'},body:{action:'revokeSession',targetStaffId:staffId,sessionId:null,reason:'Lost company device'}};
 test('direct administrative API call cannot revoke without independent step-up',async()=>{
  const calls=[];const db={async query(sql,p){calls.push(sql);if(sql.startsWith('SELECT current_user'))return {rows:[{name:'rf_runtime_login',bypass:false}]};
  if(sql.includes('FROM rf_staff s'))return {rows:[{id:staffId,organization_id:org,branch_id:branch,role:'owner'}]};

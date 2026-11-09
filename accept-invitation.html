@@ -7,7 +7,7 @@ const status=document.getElementById('status'),button=document.getElementById('a
 if(!sessionStorage.getItem(key))status.textContent='Geen geldige uitnodigingscode gevonden. Open de oorspronkelijke uitnodigingslink.';
 button.onclick=async()=>{const token=sessionStorage.getItem(key);if(!token){status.textContent='Uitnodigingscode ontbreekt.';return}
  button.disabled=true;status.textContent='Identiteit en uitnodiging verifiëren…';
- try{const r=await fetch('/api/security/invitations',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'accept',token})});
+ try{const r=await fetch('/api/security',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'accept',token})});
   if(!r.ok)throw Error('Uitnodiging geweigerd of verlopen ('+r.status+'). Controleer je aanmelding en de uitnodigingslink.');
   sessionStorage.removeItem(key);status.textContent='Uitnodiging geaccepteerd. Je rechten worden bij iedere aanvraag opnieuw gecontroleerd.';
  }catch(e){status.textContent=e.message}finally{button.disabled=false}

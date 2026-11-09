@@ -9,11 +9,11 @@
 async function ceremony(type){
  const buttons=[document.getElementById('register'),document.getElementById('verify')];buttons.forEach(b=>b.disabled=true);status.textContent='Beveiligde controle starten…';
  try{
-  const optionsResponse=await fetch('/api/security/webauthn',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type+'Options'})});
+  const optionsResponse=await fetch('/api/security',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type+'Options'})});
   if(!optionsResponse.ok)throw Error('Sessie, bevoegdheid of registratie niet beschikbaar ('+optionsResponse.status+').');
   const {challengeId,options}=await optionsResponse.json();
   const response=type==='registration'?await SimpleWebAuthnBrowser.startRegistration({optionsJSON:options}):await SimpleWebAuthnBrowser.startAuthentication({optionsJSON:options});
-  const verification=await fetch('/api/security/webauthn',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type+'Verify',challengeId,response})});
+  const verification=await fetch('/api/security',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type+'Verify',challengeId,response})});
   if(!verification.ok)throw Error('De controle is geweigerd of verlopen ('+verification.status+').');
   const result=await verification.json();if(!result.verified)throw Error('De beveiligingscontrole is niet geslaagd.');
   status.textContent=type==='registration'?'Publieke sleutel geregistreerd. Beheeracties blijven voorlopig gesloten.':'Sessie cryptografisch bevestigd. Onafhankelijke tweede factor is nog niet aangetoond; beheeracties blijven gesloten.';
