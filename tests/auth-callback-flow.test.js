@@ -9,7 +9,7 @@ test('callback binds the one-time verifier to the same branch cookie subject',as
  globalThis.fetch=async(url)=>{
   seen.push(String(url));
   if(seen.length===1)return {ok:true,json:async()=>({session:{},user:{id:'one'}}),headers:{getSetCookie:()=>['better-auth.session_token=abc; Domain=neon.tech; Secure']}};
-  return {ok:true,json:async()=>({session:{expiresAt:new Date(Date.now()+60000).toISOString()},user:{id:'other'}})};
+  return {ok:true,json:async()=>({session:{id:'11111111-1111-4111-8111-111111111111',createdAt:new Date().toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()},user:{id:'other'}})};
  };
  let redirected,headers={};
  const res={setHeader(k,v){headers[k]=v;return this},redirect(status,to){redirected={status,to};return this},status(){return this},end(){return this}};

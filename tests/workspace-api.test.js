@@ -5,6 +5,7 @@ const {customer,checkout,stock,refurb,changeRepair,approveQuote,correction,repai
 const O='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',A='44444444-4444-4444-8444-444444444442';
 const P='55555555-5555-4555-8555-555555555555',F='66666666-6666-4666-8666-666666666666',R='77777777-7777-4777-8777-777777777777',S='88888888-8888-4888-8888-888888888888';
 const staff={id:A,organizationId:O,branchId:B,role:'manager'};
+const session=subject=>({subject,sessionId:'99999999-9999-4999-8999-999999999999',createdAt:new Date().toISOString()});
 function response(){return {headers:{},statusCode:0,setHeader(k,v){this.headers[k]=v},status(code){this.statusCode=code;return this},json(body){this.body=body;return this}}}
 function boundary(role='manager'){
  const queries=[],client={release(){},async query(sql){queries.push(sql);
@@ -17,24 +18,24 @@ function boundary(role='manager'){
 }
 test('POST requires same origin, JSON and a verified cookie before a connection',async()=>{
  const b=boundary(),req={method:'POST',headers:{origin:'https://foreign.example','content-type':'application/json',cookie:'better-auth.session_token=test'},body:{action:'customer'}};
- const res=response();await withWorkspace(req,res,async()=>({body:{}}),{...b,authenticate:async()=>({subject:'user'})});
+ const res=response();await withWorkspace(req,res,async()=>({body:{}}),{...b,authenticate:async()=>session('user')});
  assert.equal(res.statusCode,403);assert.equal(b.queries.length,0);
- req.headers.origin='https://preview.example';req.headers.cookie='';const res2=response();await withWorkspace(req,res2,async()=>({body:{}}),{...b,authenticate:async()=>({subject:'user'})});
+ req.headers.origin='https://preview.example';req.headers.cookie='';const res2=response();await withWorkspace(req,res2,async()=>({body:{}}),{...b,authenticate:async()=>session('user')});
  assert.equal(res2.statusCode,401);assert.equal(b.queries.length,0);
 });
 test('owner or manager operation stays in tenant transaction, sales denied',async()=>{
  const b=boundary(),req={method:'GET',headers:{cookie:'better-auth.session_token=test'}};
- const res=response();await withWorkspace(req,res,async(_db,user)=>({body:{role:user.role}}),{...b,authenticate:async()=>({subject:'verified-user'})});
+ const res=response();await withWorkspace(req,res,async(_db,user)=>({body:{role:user.role}}),{...b,authenticate:async()=>session('verified-user')});
  assert.equal(res.statusCode,200);assert.equal(res.body.role,'manager');assert.equal(b.queries[0],'BEGIN');assert.equal(b.queries.at(-1),'COMMIT');
  assert.ok(b.queries.some(sql=>sql.includes("set_config('app.subject'")));
- const owner=boundary('owner'),ownerRes=response();await withWorkspace(req,ownerRes,async(_db,user)=>({body:{role:user.role}}),{...owner,authenticate:async()=>({subject:'verified-owner'})});
+ const owner=boundary('owner'),ownerRes=response();await withWorkspace(req,ownerRes,async(_db,user)=>({body:{role:user.role}}),{...owner,authenticate:async()=>session('verified-owner')});
  assert.equal(ownerRes.statusCode,200);assert.equal(ownerRes.body.role,'owner');
- const denied=boundary('sales'),res2=response();await withWorkspace(req,res2,async()=>{throw Error('must not run')},{...denied,authenticate:async()=>({subject:'verified-user'})});
+ const denied=boundary('sales'),res2=response();await withWorkspace(req,res2,async()=>{throw Error('must not run')},{...denied,authenticate:async()=>session('verified-user')});
  assert.equal(res2.statusCode,403);assert.equal(denied.queries.at(-1),'ROLLBACK');
 });
 test('failed operation rolls back and reveals no customer details',async()=>{
  const b=boundary(),res=response(),req={method:'GET',headers:{cookie:'better-auth.session_token=test'}};
- await withWorkspace(req,res,async()=>{throw Error('private customer record')},{...b,authenticate:async()=>({subject:'verified-user'})});
+ await withWorkspace(req,res,async()=>{throw Error('private customer record')},{...b,authenticate:async()=>session('verified-user')});
  assert.equal(res.statusCode,503);assert.deepEqual(res.body,{error:'workspace_unavailable'});assert.equal(b.queries.at(-1),'ROLLBACK');
 });
 function saleDb({previous=false,stockAmount=3,reservation=false}={}){

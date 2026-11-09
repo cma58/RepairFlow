@@ -15,11 +15,14 @@ test('only one valid session cookie is accepted and forwarded without provider d
  assert.equal(sessionCookie('better-auth.session_token=one; better-auth.session_token=two'),null);
  assert.equal(sessionCookie('better-auth.session_token=abc\r\nBad: injected'),null);
  assert.match(forwardedCookie('better-auth.session_token=abc; Domain=evil.test; SameSite=None'),/Path=\/; HttpOnly; Secure; SameSite=Lax/);
+ assert.match(forwardedCookie('better-auth.session_token=abc'),/Max-Age=43200/);
  assert.doesNotMatch(forwardedCookie('better-auth.session_token=abc; Domain=evil.test'),/evil\.test/);
 });
-test('cookie must be confirmed by branch Auth with a valid unexpired session',async()=>{
- const fetcher=async(url,opts)=>{assert.equal(url,env.REPAIRFLOW_NEON_AUTH_URL+'/get-session');assert.equal(opts.headers.Cookie,'better-auth.session_token=abc');return {ok:true,json:async()=>({user:{id:'subject-1'},session:{expiresAt:new Date(Date.now()+60000).toISOString()}})};};
- assert.deepEqual(await verifySession('better-auth.session_token=abc',{env,fetcher}),{subject:'subject-1'});
+test('cookie must be confirmed by branch Auth and a session younger than twelve hours',async()=>{
+ const session={id:'11111111-1111-4111-8111-111111111111',createdAt:new Date(Date.now()-60000).toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()};
+ const fetcher=async(url,opts)=>{assert.equal(url,env.REPAIRFLOW_NEON_AUTH_URL+'/get-session');assert.equal(opts.headers.Cookie,'better-auth.session_token=abc');return {ok:true,json:async()=>({user:{id:'subject-1'},session})};};
+ assert.deepEqual(await verifySession('better-auth.session_token=abc',{env,fetcher}),{subject:'subject-1',sessionId:session.id,createdAt:session.createdAt});
+ await assert.rejects(verifySession('better-auth.session_token=abc',{env,fetcher:async()=>({ok:true,json:async()=>({user:{id:'subject-1'},session:{...session,createdAt:new Date(Date.now()-13*60*60*1000).toISOString()}})})}),/UNAUTHORIZED/);
  for(const bad of [{user:{id:'subject-1'},session:{expiresAt:new Date(Date.now()-1000).toISOString()}},{user:{id:'subject-1'},session:{}},{user:{id:''},session:{expiresAt:new Date(Date.now()+60000).toISOString()}}]){
   await assert.rejects(verifySession('better-auth.session_token=abc',{env,fetcher:async()=>({ok:true,json:async()=>bad})}),/UNAUTHORIZED/);
  }

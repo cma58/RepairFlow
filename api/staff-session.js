@@ -16,6 +16,7 @@ async function staffSessionHandler(req,res,{env=process.env,authenticate,createP
  let identity;
  try{identity=authenticate?await authenticate(req):viaCookie?await verifySession(req.headers.cookie,{env}):await verifyStaffIdentity(req.headers?.authorization,{env});}
  catch{return res.status(401).json({error:'Aanmelden vereist'});}
+ if(env.REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED==='true'&&(!viaCookie||!identity.sessionId||!identity.createdAt))return res.status(401).json({error:'Aanmelden vereist'});
  const organizationId=env.REPAIRFLOW_ORGANIZATION_ID;
  const branchId=env.REPAIRFLOW_BRANCH_ID;
  const dbUrl=env.REPAIRFLOW_RUNTIME_DATABASE_URL;
@@ -29,6 +30,7 @@ async function staffSessionHandler(req,res,{env=process.env,authenticate,createP
   if(role.rows?.length!==1||role.rows[0].name!=='rf_runtime_login'||role.rows[0].bypass!==false)throw Error('UNSAFE_RUNTIME_ROLE');
   await client.query("SELECT set_config('app.subject',$1,true),set_config('app.organization_id',$2,true),set_config('app.branch_id',$3,true)",[identity.subject,organizationId,branchId]);
   if(env.REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED==='true'){
+   await client.query("SELECT set_config('app.session_id',$1,true),set_config('app.session_created_at',$2,true)",[identity.sessionId,identity.createdAt]);
    const contexts=await client.query('SELECT organization_id,branch_id FROM public.rf_available_contexts() LIMIT 1');
    if(contexts.rows.length!==1){const denied=Error('ACCESS_DENIED');denied.code='ACCESS_DENIED';throw denied}
    await client.query('COMMIT');
