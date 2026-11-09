@@ -112,6 +112,8 @@ Als de dynamische schakelaar aan staat, moet ook de standaardcontext een actief 
 
 Zelf afmelden loopt via de reeds gebruikte Neon Auth-provider en verwijdert de browsercookie uitsluitend na een geslaagde providerrespons. Dit is geen bewijs van beheerdersintrekking van alle sessies: die procedure vereist een afzonderlijk geautoriseerde beheeractie en provider-E2E. Uitnodigingen en MFA worden niet als actief gemarkeerd zolang de branchprovider geen geverifieerde verplichte tweede factor en veilige acceptatieflow heeft. Passkeys en apparaat-PIN krijgen geen tijdelijke wachtwoordomweg.
 
+De login-entree gebruikt bij een toekomstige geactiveerde dynamische modus de actieve contextlijst en vereist niet langer een medewerkerrecord in de vaste PHIXAR-onderneming. Zonder geverifieerd actief lidmaatschap blijft de toegang geweigerd. Deze route verleent zelf geen nieuwe rechten; elke winkel-API controleert opnieuw de concrete context en handeling.
+
 | Prioriteit | Uitvoering | Vrijgavebewijs |
 |---|---|---|
 | P0-A | Auth- en RLS-grens, alleen-lezen contextdiscovery, nieuwe actieve lidmaatschappen | Twee afzonderlijke sessies, meerdere tenants/vestigingen en negatieve API/RLS-tests |

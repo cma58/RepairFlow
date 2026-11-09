@@ -28,6 +28,12 @@ async function staffSessionHandler(req,res,{env=process.env,authenticate,createP
   const role=await client.query('SELECT current_user AS name, r.rolbypassrls AS bypass FROM pg_roles r WHERE r.rolname=current_user');
   if(role.rows?.length!==1||role.rows[0].name!=='rf_runtime_login'||role.rows[0].bypass!==false)throw Error('UNSAFE_RUNTIME_ROLE');
   await client.query("SELECT set_config('app.subject',$1,true),set_config('app.organization_id',$2,true),set_config('app.branch_id',$3,true)",[identity.subject,organizationId,branchId]);
+  if(env.REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED==='true'){
+   const contexts=await client.query('SELECT organization_id,branch_id FROM public.rf_available_contexts() LIMIT 1');
+   if(contexts.rows.length!==1){const denied=Error('ACCESS_DENIED');denied.code='ACCESS_DENIED';throw denied}
+   await client.query('COMMIT');
+   return res.status(200).json({authenticated:true,role:'lid'});
+  }
   const staff=await resolveStaff({
    verifiedSubject:identity.subject,organizationId,branchId,
    query:(sql,params)=>client.query(sql,params)
