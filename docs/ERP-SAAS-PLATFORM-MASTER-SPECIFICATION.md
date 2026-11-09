@@ -114,6 +114,12 @@ Zelf afmelden loopt via de reeds gebruikte Neon Auth-provider en verwijdert de b
 
 De login-entree gebruikt bij een toekomstige geactiveerde dynamische modus de actieve contextlijst en vereist niet langer een medewerkerrecord in de vaste PHIXAR-onderneming. Zonder geverifieerd actief lidmaatschap blijft de toegang geweigerd. Deze route verleent zelf geen nieuwe rechten; elke winkel-API controleert opnieuw de concrete context en handeling.
 
+### P0 sessie- en uitnodigingsgrens, 2026-11-09
+
+De bestaande Neon Auth-sessie is de enige aanmeldidentiteit. De API vereist nu een provider-sessie-ID, `createdAt` en `expiresAt`; sessies ouder dan twaalf uur worden geweigerd, ongeacht de langere providervervaldatum. De doorgestuurde browsercookie heeft eveneens maximaal twaalf uur. Dit beëindigt oudere previewsessies; nieuwe aanmelding is nodig. Migratie 008 bewaart vestigingsonafhankelijke maar ondernemingsgebonden intrekkingen van één sessie of alle vóór een tijdstip bestaande sessies. De winkelruntime kan uitsluitend eigen intrekkingen lezen; SQL-beheeracties blijven gescheiden. De contextlijst filtert ingetrokken ondernemingssessies en andere ondernemingen blijven toegankelijk. Dit is een app-autorisatieweigering; het verwijdert de onderliggende Neon Auth-sessie niet. Er is nog geen MFA-beveiligd beheer-API voor intrekking of apparaatbeheer.
+
+De herhaalbare legacy-migratie verifieert sinds deze stap exact het `identity_subject` tegen `neon_auth.user.id` en slaat ontbrekende of geblokkeerde providergebruikers over. Geen koppeling via e-mail, geen automatische platformrol. De providerconfig toont e-mail/wachtwoord, e-mailverificatie en magic link, maar geen aantoonbare sessieclaim die een afgeronde tweede factor bewijst. In de geïsoleerde `neon_auth`-tabellen ontbreekt een zichtbare tweede-factortabel. Daarom kunnen uitnodigingsuitgifte, beheermutaties en platformbeheer niet als MFA-afgedwongen worden vrijgegeven. Compatibele route: een door Neon ondersteunde MFA-methode die een server-verifieerbare sessieclaim of step-up-bewijs oplevert; als dat niet beschikbaar is, een gecontroleerde vervanging van de bestaande identiteitprovider door één MFA-capabele provider met ondertekende authenticatieniveauclaims. Geen parallel wachtwoordsysteem of op e-mail gebaseerde rechtenverlening.
+
 | Prioriteit | Uitvoering | Vrijgavebewijs |
 |---|---|---|
 | P0-A | Auth- en RLS-grens, alleen-lezen contextdiscovery, nieuwe actieve lidmaatschappen | Twee afzonderlijke sessies, meerdere tenants/vestigingen en negatieve API/RLS-tests |
