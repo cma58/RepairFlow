@@ -92,7 +92,7 @@ De nieuwe migratie 004 is additief en fail-closed: aanvraag-, lidmaatschaps-, ei
 - Bestaande vaste PHIXAR-tenant in Vercel is geen multi-tenant contextwissel. Het omzetten van API-routes vereist eerst serverautorisatie, nieuwe RLS-proeven en twee echte gebruikerssessies.
 - Abonnementsbedragen, platformmerk en definitieve juridische rollen zijn open; geen bedragen of merkwijziging in code.
 - Passkey, 2FA en PIN worden pas actief na gecontroleerde provider- en cryptografische integratie; geen tweede wachtwoorddatabase.
-- De bestaande login bevat nog twee hardcoded uitnodigingsadressen en een magic-linkformulier. Verwijderen vereist een werkende uitnodigingsroute en providercontrole; dit is P0 en géén schaalbare eindtoestand.
+- De bestaande magic-linklogin gebruikt voorlopig een branchgebonden serverallowlist zonder adressen in broncode. Een echte uitnodigingstabel, providercontrole en rate limiting zijn P0; de allowlist is geen schaalbare eindtoestand.
 
 ## Prioriteiten
 
