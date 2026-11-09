@@ -102,6 +102,14 @@ De nieuwe migratie 004 is additief en fail-closed: aanvraag-, lidmaatschaps-, ei
 
 Een expliciete servermatrix bevat elf rechtgebieden en een actiegebonden controle voor dynamische contexten. Omdat de huidige GET-projectie ook financiële velden bevat, kunnen technieker en verkoper deze nog niet veilig lezen; een afgeslankte projectie is vereist. Individuele rechten, uitnodigingen, manager-MFA en sessie-intrekking zijn niet af; een actief lidmaatschap bewijst op zichzelf geen tweede factor. De bestaande legacy-winkelroute behoudt de huidige owner/manager-grens. P0-A en P0-C blijven gedeeltelijk.
 
+### P0 accountmigratie en contextkeuze, 2026-11-09
+
+`legacy-membership-migration.js` heeft een dry run en een expliciete apply binnen een door een beheerder beheerde transactie. De input is één organisatie-ID. Alleen actieve `rf_staff`-records met een geldige, bestaande vestiging worden gekoppeld op exact `identity_subject` en organisatie; rol en vestiging worden overgenomen, zonder e-mailadres of platformrechten. Een bestaand afwijkend of ingetrokken lidmaatschap is een conflict, nooit een reden om opnieuw te activeren. Nieuwe koppelingen worden per medewerker geaudit met operator en reden. Er is geen automatische migratie in de deployment. Inactieve PHIXAR-accounts blijven inactief en bestaande Auth-sessies blijven bij Neon Auth.
+
+`006-context-discovery.sql` geeft uitsluitend de actieve eigen lidmaatschappen en vestigingen terug via een beperkte serverfunctie. `/api/contexts` vereist de bestaande geverifieerde cookie, leest via de beperkte runtime en is standaard uit. De contextkeuze staat in de PHIXAR-header; de gekozen IDs zijn alleen selectie-input en worden voor elke winkelrequest opnieuw geautoriseerd. Zoek- en documentverzoeken gebruiken dezelfde context. Een contextwissel blokkeert bij onzekere betalings- of dossierretry, wist de zichtbare vorige werkruimte en herlaadt; lokale concepten zijn per organisatie/vestiging/medewerker gescheiden.
+
+Als de dynamische schakelaar aan staat, moet ook de standaardcontext een actief lidmaatschap hebben. Dit sluit een omweg via de oude vaste PHIXAR-route. De schakelaar blijft uit tot alle bevoegde bestaande accounts zijn gemigreerd en onafhankelijke browser- en providersessies zijn getest. `007-member-rights.sql` voegt vestigingsgebonden allow/deny-overrides toe met FORCE RLS en uitsluitend SELECT voor de winkelruntime. Individuele uitzonderingen worden per request gelezen; schrijfbeheer en remote goedkeuring wachten op een MFA-beveiligde beheergrens. De brede GET-projectie beperkt technieker/verkoper nog steeds.
+
 | Prioriteit | Uitvoering | Vrijgavebewijs |
 |---|---|---|
 | P0-A | Auth- en RLS-grens, alleen-lezen contextdiscovery, nieuwe actieve lidmaatschappen | Twee afzonderlijke sessies, meerdere tenants/vestigingen en negatieve API/RLS-tests |
