@@ -71,3 +71,10 @@ Alle onderdelen die nodig blijken voor dagelijks winkelgebruik worden releaseblo
 ## Eerstvolgende technische werkzaamheden
 
 Implementeer P0-A/P0-B op de bestaande workspace: behoud alle form- en transactiehandlers, vervang alleen de shell en voeg geautoriseerde serverprojecties toe. Leg nieuwe hiaten expliciet vast in plaats van decoratieve functies als werkend voor te stellen.
+
+
+## Voortgang fase 2.1 — 9 november 2026
+- P0-C dossierledger geïmplementeerd en met synthetische betaalde API-/databaseproeven gecontroleerd: IMEI1/2, vrije diagnoseprijs, aanvullende offertes, expliciet akkoord, voorschotten/restsaldo, heropenhistoriek en versie-/request-ID-beveiliging. Zie PHIXAR-FASE21-REPARATIEDOSSIERS.md en ERP-STATUS.md.
+- P0 fysieke voorraad uitgebreid: daadwerkelijke installatie verbruikt reserveringen vóór annulering. Installeren/annuleren/heropenen creëert geen beschikbare voorraad; echte testbranch bevestigt één afboeking.
+- 155 tests groen. Bestaande Node opt-in E2E nog SKIP wegens geen shell-testsessie; kosteloze workflow afzonderlijk via browser/API uitgevoerd. Fysieke iPad/offline en twee geverifieerde onafhankelijke logins blijven expliciete verificatiegaten.
+- P0-D eerstvolgend: formele retour/refund met originele transactielink, verkeerd geleverd onderdeel blokkeren/uit beschikbaar halen, kasopening/telling en goedgekeurde correcties. P0-E onafhankelijke sessies en instelbare rechten; P0 herstel- en fiscale vrijgavevoorwaarden blijven onverminderd staan. Geen productie-/main-goedkeuring.

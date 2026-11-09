@@ -271,3 +271,33 @@
 - 153/153 lokale tests geslaagd (129 behouden, 24 nieuwe). Echte betaalde browser-/databaseverificatie is nog in uitvoering; geen vrijgaveclaim.
 - Tijdelijke previewcontext: uitsluitend synthetische onderneming 55555555… / vestiging 66666666… op bestaande geïsoleerde testdatabase. Geen productie/main/echte migratie.
 - Resterende grenzen: twee onafhankelijke medewerkersessies, fysieke iPad, echte netwerkonderbreking en fiscale terugbetaling na afhaling nog niet bewezen.
+
+
+## Fase 2.1 — cloudverificatie en installatie-P0 (2026-11-09)
+
+### Opgeleverd
+- GitHub `f0b48293e9e45ecea4f359217cbc26d62841afcb`: dubbele IMEI/serienummer, diagnoseprijs per dossier, aanvullende offertes met werkpauze en expliciet medewerker-geregistreerd klantbesluit, voorschotten/deelbetalingen/restsaldo, append-only correcties, heropenreden en versie-/retrybescherming. Bestaande 129 tests behouden.
+- GitHub `418e03421e29b9c19f4b86a5ccb00d101a9cb851`: eerstvolgende voorraad-P0 uitgevoerd. Installatie verbruikt werkelijk gereserveerde onderdelen vóór annulering. Verbruikt blijft verbruikt bij annuleren/heropenen; checkout/afhaling verbruikt deze reserveringen niet opnieuw. Bestaande nog niet geïnstalleerde reserveringen worden bij annulering vrijgegeven. Geen fictieve terugboeking.
+- Geen nieuwe frontendstijl. Dossierdialoog gebruikt dezelfde PHIXAR-thema’s. Desktop dark/light gecontroleerd; dashboard en dossier op 1024px iframe gecontroleerd (inhoudsbreedte 1007px, scrollbreedte 1007px; dialoog 975px, eigen scrollbreedte gelijk aan clientbreedte). Dit is geen fysieke iPad-proef.
+
+### Aantoonbare synthetische cloudproeven
+- Vaste geïsoleerde tenant 55555555…/vestiging 66666666…, run `b3fb8fd4`: alle acht scenario’s hebben opgeslagen records; de runner voert ze sequentieel met assertions uit. Na sessiehervatting zijn eindstanden onafhankelijk met SQL en de normale dossier-UI gecontroleerd. De oorspronkelijke runner-tab en zijn laatste rapport waren niet meer beschikbaar; daarom vormen SQL en heropende dossiers het blijvende bewijs, geen bewaard volledig browsertranscript.
+- Reparatie €150: losse ontvangst €50 + kassaverkoop €100, afgehaald, saldo nul. Herhalen van beide request-ID’s maakte geen tweede boeking.
+- Diagnoseprijs €25: ontvangst €25; meerwerk expliciet geaccepteerd tot €180; eindafrekening €155; afgehaald, saldo nul. Initiële diagnoseprijs blijft apart herkenbaar en wordt niet dubbel gerekend.
+- Aanvullende offerte €190 geweigerd: besluit `declined`, oorspronkelijk totaal en ontvangen afrekening €150, saldo nul. Geen automatische hervatting of extra kosten; oorspronkelijke scope wordt expliciet hervat.
+- Afgekeurd dossier: heropend met reden, nieuwe offerte €90 geaccepteerd, ontvangsten +€10/−€5/+€85. Correctie verwijst naar oorspronkelijke betaling en heeft reden. Afgehaald, netto €90, saldo nul; oude gebeurtenissen behouden.
+- Gereserveerd onderdeel: één ontvangst +1, één verbruik −1, fysieke voorraad nul, geen actieve reservering; €50+€100 betaald, afgehaald.
+- Parallelle HTTP-aanvragen met dezelfde dossier-versie: één identifierwijziging en één command opgeslagen, versie 1. Later is ditzelfde synthetische dossier via het gewone formulier voorzien van twee geldige test-IMEI’s; versie 2 en beide waarden blijven na browserherladen zichtbaar. Deze latere handmatige proef is geen tweede race.
+- Gesimuleerd responsverlies na servercommit: herhalen van exact dezelfde opgeslagen opdracht resulteert in één command, één status-event, versie 1. Echte fysieke offline-onderbreking nog niet bewezen.
+- Eerder overgeslagen kosteloze workflow is via browser/API uitgevoerd: afgehaald, vijf status-events, versie 5, saldo nul. De afzonderlijke Node-run `npm run test:e2e` blijft expliciet SKIP (0 pass, 1 skipped), omdat `PHIXAR_E2E_SESSION_COOKIE` niet in de shell staat. Geen sessiecookies uit de browser geëxtraheerd.
+- Extra browserproef run `a18e076f`: installatie → annulering → heropening GESLAAGD zichtbaar. DB: status Diagnose, versie 8, reservering consumed, fysieke voorraad 0, precies twee voorraadmutaties (+1/−1), één repair.install-audit.
+
+### Beveiliging, tests en beperkingen
+- 155/155 automatische tests groen (129 oorspronkelijke +26 nieuwe), 79 JavaScriptbestanden syntax gecontroleerd; geen mislukte lokale tests. De eerste browserstart werd terecht geweigerd door een verkeerde synthetische fixture-identiteit; fixture gekoppeld aan de bestaande geverifieerde testmanager, zonder productieaccount te activeren.
+- Echte beperkte DB-rol `rf_runtime_login`: juiste scope zag 8 dossiers/6 losse betalingen bij de controle; vreemde tenant 0/0, verkeerde vestiging 0/0. Nieuwe ledgers hebben SELECT/INSERT, geen UPDATE/DELETE. FORCE RLS en samengestelde sleutels actief.
+- Vercel `dpl_85eeWR4vA5szqa29cEU7oBr2Jc87` READY voor 418e034; Vercel commitstatus success. GitHub-tool voor workflowruns filtert alleen PR-runs en retourneerde leeg: geen nieuwe Actions-succesclaim zonder afzonderlijke verificatie.
+- Authenticated concurrency gebruikt één sessie met gelijktijdige aanvragen; unit-test gebruikt twee actor-ID’s. Twee onafhankelijke geverifieerde medewerkerslogins blijven releaseblokkerend. Sales/technician blijven bewust geweigerd tot afzonderlijke rechten correct zijn ontworpen.
+- Klantbesluit is een controleerbare medewerkerregistratie met kanaal en notitie, geen geauthenticeerde portalhandtekening. Kaartontvangsten blijven administratief geregistreerd, geen providerbevestiging.
+- Correcties van losse ontvangsten zijn begrensd en traceerbaar. Refund/creditnota na afhaling, fiscale BTW/Peppol, volledige kassadagopening/telling, fijnmazige rechten, echte offlineproef en herstelproef blijven P0. Deze fase is niet productiegereed verklaard.
+- Previewvariabelen teruggezet naar oorspronkelijke synthetische 111…/222…-context voor de volgende deployment; testrecords 555… blijven behouden. Migratie 003 uitsluitend op bestaande geïsoleerde testbranch. Main, productie, legacybestand en echte gegevens niet gewijzigd.
+- Eerstvolgende technische werkzaamheden: formele retour/refund-ledger en voorraadcontrole voor verkeerd geleverde onderdelen; twee onafhankelijke sessies en herstelproef; daarna fiscale documentketen onder actuele Belgische verificatie.
