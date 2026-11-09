@@ -25,7 +25,10 @@ async function checkSession(returning=false){
     workspaceLink.hidden=false;
     status.textContent='Sessie en medewerkersrechten bevestigd ('+staff.role+'). De geïsoleerde cloudwerkruimte is beschikbaar voor tests; bestaande browsergegevens worden niet automatisch overgezet.';
    }else if(staffResponse.status===403){
-    status.textContent='Je e-maillink is bevestigd, maar dit account heeft nog geen toegang tot deze winkel.';
+    if(sessionStorage.getItem('rf_pending_invitation')){
+     form.hidden=true;workspaceLink.hidden=false;workspaceLink.href='/accept-invitation.html';workspaceLink.textContent='Uitnodiging accepteren';
+     status.textContent='Je account is bevestigd. Accepteer nu de uitnodiging om je toegewezen rechten te activeren.';
+    }else status.textContent='Je e-maillink is bevestigd, maar dit account heeft nog geen toegang tot deze winkel.';
    }else{
     status.textContent='De medewerkersrechten kunnen tijdelijk niet worden gecontroleerd. Probeer later opnieuw.';
    }
