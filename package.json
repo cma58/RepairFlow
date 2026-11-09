@@ -5,6 +5,8 @@
   "description": "RepairFlow PHIXAR web application",
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.1.0",
     "jose": "^6.0.0"
   },
   "scripts": {
