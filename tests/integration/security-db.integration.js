@@ -21,8 +21,8 @@ async function asRuntime(ctx,fn,{commit=false}={}){
 const ctxA=(user,extra={})=>({subject:user.id,org:FIX.orgA,branch:FIX.branchA,...extra});
 const sqlstate=code=>e=>e.code===code;
 
-test('all schema/migration files apply to a clean PostgreSQL in order (3 schema + 12 migrations)',()=>{
- assert.equal(db.applied.length,15);assert.equal(db.applied.at(-1),'db/migrations/012-invitation-accept-fix.sql');
+test('all schema/migration files apply to a clean PostgreSQL in order (3 schema + 13 migrations)',()=>{
+ assert.equal(db.applied.length,16);assert.equal(db.applied.at(-1),'db/migrations/013-mfa-factor-policy.sql');
 });
 test('runtime role is the real restricted login role without BYPASSRLS',async()=>{
  const r=await asRuntime(ctxA(U.ownerA),c=>c.query('SELECT current_user AS name,r.rolbypassrls AS bypass,r.rolsuper AS su FROM pg_roles r WHERE r.rolname=current_user'));
@@ -45,17 +45,19 @@ test('WebAuthn credentials are subject-isolated: B cannot read, update or insert
  await assert.rejects(asRuntime(ctxA(U.managerA),c=>c.query(`INSERT INTO rf_webauthn_credentials(credential_id,identity_subject,public_key,device_type,backed_up) VALUES('forged-credential-0001',$1,$2,'singleDevice',false)`,[U.ownerA.id,Buffer.alloc(65)])),sqlstate('42501'));
  assert.equal((await owner("SELECT sign_count::int n FROM rf_webauthn_credentials WHERE credential_id='cred-of-owner-a-0001'"))[0].n,5);
 });
-test('the runtime can never mark a grant as an independent factor (CHECK constraint)',async()=>{
+test('the runtime has no direct write path to grants; even the owner role cannot mint an unproven independent grant',async()=>{
  const session=crypto.randomUUID();
- await assert.rejects(asRuntime(ctxA(U.ownerA,{sessionId:session}),c=>c.query(`INSERT INTO rf_webauthn_grants(identity_subject,session_id,organization_id,credential_id,independent_factor) VALUES($1,$2,$3,'cred-of-owner-a-0001',true)`,[U.ownerA.id,session,FIX.orgA])),sqlstate('23514'));
- await asRuntime(ctxA(U.ownerA,{sessionId:session}),async c=>{
-  await c.query(`INSERT INTO rf_webauthn_grants(identity_subject,session_id,organization_id,credential_id) VALUES($1,$2,$3,'cred-of-owner-a-0001')`,[U.ownerA.id,session,FIX.orgA]);
-  await assert.rejects(c.query('UPDATE rf_webauthn_grants SET independent_factor=true'),sqlstate('23514'));
- });
+ await assert.rejects(asRuntime(ctxA(U.ownerA,{sessionId:session}),c=>c.query(`INSERT INTO rf_webauthn_grants(identity_subject,session_id,organization_id,credential_id) VALUES($1,$2,$3,'cred-of-owner-a-0001')`,[U.ownerA.id,session,FIX.orgA])),sqlstate('42501'));
+ // The guard trigger runs first and refuses (approval/challenge missing); see mfa-policy for the row CHECK.
+ await assert.rejects(owner(`INSERT INTO rf_webauthn_grants(identity_subject,session_id,organization_id,credential_id,independent_factor) VALUES($1,$2,$3,'cred-of-owner-a-0001',true)`,[U.ownerA.id,session,FIX.orgA]),e=>e.code==='42501'&&/INDEPENDENT_FACTOR_UNPROVEN/.test(e.message));
+ // Guard trigger: even with every row field set, an unapproved credential is refused for the BYPASSRLS owner.
+ await assert.rejects(owner(`INSERT INTO rf_webauthn_grants(identity_subject,session_id,organization_id,credential_id,independent_factor,user_verified,purpose,backed_up,challenge_id)
+  VALUES($1,$2,$3,'cred-of-owner-a-0001',true,true,'session.revoke',false,NULL)`,[U.ownerA.id,session,FIX.orgA]),e=>e.code==='23514'||e.code==='42501');
 });
 test('grants and challenges are bound to subject+session+tenant by RLS',async()=>{
  const s1=crypto.randomUUID(),s2=crypto.randomUUID();
- await asRuntime(ctxA(U.ownerA,{sessionId:s1}),c=>c.query(`INSERT INTO rf_webauthn_grants(identity_subject,session_id,organization_id,credential_id) VALUES($1,$2,$3,'cred-of-owner-a-0001')`,[U.ownerA.id,s1,FIX.orgA]),{commit:true});
+ await owner(`INSERT INTO rf_webauthn_grants(identity_subject,session_id,organization_id,credential_id) VALUES($1,$2,$3,'cred-of-owner-a-0001')`,[U.ownerA.id,s1,FIX.orgA]);
+ const own=await asRuntime(ctxA(U.ownerA,{sessionId:s1}),c=>c.query('SELECT count(*)::int n FROM rf_webauthn_grants'));assert.equal(own.rows[0].n,1);
  const other=await asRuntime(ctxA(U.ownerA,{sessionId:s2}),c=>c.query('SELECT count(*)::int n FROM rf_webauthn_grants'));assert.equal(other.rows[0].n,0,'other session sees no grant');
  const tenantB=await asRuntime({subject:U.ownerA.id,sessionId:s1,org:FIX.orgB,branch:FIX.branchB},c=>c.query('SELECT count(*)::int n FROM rf_webauthn_grants'));assert.equal(tenantB.rows[0].n,0,'other tenant sees no grant');
  await assert.rejects(asRuntime(ctxA(U.ownerA,{sessionId:s2}),c=>c.query(`INSERT INTO rf_webauthn_challenges(identity_subject,session_id,organization_id,challenge_hash,ceremony,origin,rp_id) VALUES($1,$2,$3,$4,'authentication','https://x','x')`,[U.ownerA.id,s1,FIX.orgA,'f'.repeat(64)])),sqlstate('42501'));
