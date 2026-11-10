@@ -60,5 +60,7 @@ test('Rejects a foreign browser origin',async()=>{
 test('The public staff route cannot use the database owner connection',()=>{
  const source=fs.readFileSync(new URL('../api/auth/me.js',import.meta.url),'utf8');
  assert.doesNotMatch(source,/process\.env\.DATABASE_URL|\bneon\(process\.env\.DATABASE_URL\)/);
- assert.match(source,/staffSession\(req,res\)/);
+ // Delegation stays to the single staff boundary; deps are only forwarded when an isolated test marks them.
+ assert.match(source,/staffSession\(req,res(?:,deps)?\)/);
+ assert.match(source,/testDepsModule\.testDeps\(injected\)/);
 });

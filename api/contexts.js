@@ -1,2 +1,3 @@
 import discovery from '../lib/context-discovery.js';
-export default function handler(req,res){return discovery.contextDiscovery(req,res)}
+import testDepsModule from '../lib/test-deps.js';
+export default function handler(req,res,injected){const deps=testDepsModule.testDeps(injected);return discovery.contextDiscovery(req,res,deps)}
