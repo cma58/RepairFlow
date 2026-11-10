@@ -16,6 +16,7 @@
 const {describe,it,before,after}=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),https=require('node:https');
 const {verifySession,authUrl}=require('../../lib/neon-auth-session');
+const {assertIsolatedTarget}=require('./isolated-target');
 const E=process.env;const evidence=[];const OUT=path.resolve(__dirname,'..','..','test-results','provider-e2e');
 const REQUIRED=['PHIXAR_E2E_ENVIRONMENT','PHIXAR_E2E_NEON_AUTH_URL','PHIXAR_E2E_TRUSTED_ORIGIN','PHIXAR_E2E_USER_EMAIL','PHIXAR_E2E_USER_PASSWORD'];
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -26,6 +27,7 @@ before(()=>{
  const missing=REQUIRED.filter(k=>!E[k]);
  if(missing.length)throw Object.assign(Error('BLOCKED: real Neon Auth provider configuration missing: '+missing.join(', ')),{code:'BLOCKED'});
  if(E.PHIXAR_E2E_ENVIRONMENT!=='isolated')throw Error('BLOCKED: PHIXAR_E2E_ENVIRONMENT must be "isolated"');
+ assertIsolatedTarget(E);
  env={REPAIRFLOW_NEON_AUTH_URL:E.PHIXAR_E2E_NEON_AUTH_URL};AUTH=authUrl(env);
 });
 after(()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'evidence.json'),JSON.stringify({generatedAt:new Date().toISOString(),authHost:AUTH&&new URL(AUTH).host,checks:evidence},null,1))});
@@ -122,7 +124,7 @@ describe('Echte Neon Auth-provider (geïsoleerde branch, synthetische gebruiker)
   const app=await startAppServer({realEnv:{REPAIRFLOW_NEON_AUTH_URL:E.PHIXAR_E2E_NEON_AUTH_URL,REPAIRFLOW_RUNTIME_ROLE:'rf_runtime_login',REPAIRFLOW_RUNTIME_DATABASE_URL:E.PHIXAR_E2E_RUNTIME_DATABASE_URL,
    REPAIRFLOW_ORGANIZATION_ID:E.PHIXAR_E2E_ORGANIZATION_ID,REPAIRFLOW_BRANCH_ID:E.PHIXAR_E2E_BRANCH_ID,REPAIRFLOW_WEBAUTHN_RP_ID:'localhost'}});
   try{
-   const get=p=>new Promise((res,rej)=>{const r=https.request(new URL(p,app.origin),{rejectUnauthorized:false,headers:{cookie:S.d.cookie.cookie}},x=>{let b='';x.on('data',c=>b+=c);x.on('end',()=>res({status:x.statusCode,body:JSON.parse(b||'null')}))});r.on('error',rej);r.end()});
+   const get=p=>new Promise((res,rej)=>{const r=https.request(new URL(p,app.origin),{ca:app.cert,headers:{cookie:S.d.cookie.cookie}},x=>{let b='';x.on('data',c=>b+=c);x.on('end',()=>res({status:x.statusCode,body:JSON.parse(b||'null')}))});r.on('error',rej);r.end()});
    const me=await get('/api/auth/me');
    if(E.PHIXAR_E2E_EXPECTED_ROLE==='none')assert.equal(me.status,403);else assert.deepEqual(me.body,{authenticated:true,role:E.PHIXAR_E2E_EXPECTED_ROLE});
    const ws=await get('/api/workspace');assert.equal(ws.status,['owner','manager'].includes(E.PHIXAR_E2E_EXPECTED_ROLE)?200:403);

@@ -80,7 +80,7 @@ async function startAppServer({database,auth,organizationId,branchId,dynamicCont
  await new Promise(r=>server.listen(port,'127.0.0.1',r));
  origin='https://localhost:'+server.address().port;
  if(realEnv){const env=Object.freeze({...realEnv,REPAIRFLOW_APP_ORIGIN:origin,REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED:'false'});deps=markTestDeps({env});
-  return {origin,spki:tls.spki,env,close:()=>new Promise(r=>{server.closeAllConnections?.();server.close(()=>{tls.cleanup();r()})})}}
+  return {origin,spki:tls.spki,cert:tls.cert,env,close:()=>new Promise(r=>{server.closeAllConnections?.();server.close(()=>{tls.cleanup();r()})})}}
  const env=Object.freeze({
   REPAIRFLOW_APP_ORIGIN:origin,REPAIRFLOW_WEBAUTHN_RP_ID:'localhost',REPAIRFLOW_NEON_AUTH_URL:auth.AUTH_URL,
   REPAIRFLOW_RUNTIME_ROLE:'rf_runtime_login',REPAIRFLOW_RUNTIME_DATABASE_URL:database.runtimeUrl,

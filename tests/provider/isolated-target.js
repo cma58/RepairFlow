@@ -1,0 +1,21 @@
+'use strict';
+// These are public identifiers of the ONE reviewed, non-default Neon branch.
+// Fail closed before any sign-in, session revocation, or database write if CI
+// points at a different project/branch. Change only after a new isolation review.
+const AUTH='https://ep-broad-breeze-bajrzvnc.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth';
+const ORIGIN='https://repair-flow-git-test-p0-weba-6c78f5-aminechtaiti-3069s-projects.vercel.app';
+const DATABASE_HOSTS=new Set([
+ 'ep-broad-breeze-bajrzvnc.c-8.eu-central-1.aws.neon.tech',
+ 'ep-broad-breeze-bajrzvnc-pooler.c-8.eu-central-1.aws.neon.tech'
+]);
+function blocked(){const e=Error('BLOCKED: provider E2E target is not the reviewed isolated Neon branch');e.code='BLOCKED';throw e}
+function assertIsolatedTarget(env){
+ let auth,origin,db;
+ try{auth=new URL(env.PHIXAR_E2E_NEON_AUTH_URL);origin=new URL(env.PHIXAR_E2E_TRUSTED_ORIGIN);
+  if(env.PHIXAR_E2E_RUNTIME_DATABASE_URL)db=new URL(env.PHIXAR_E2E_RUNTIME_DATABASE_URL);
+ }catch{blocked()}
+ if(auth.href.replace(/\/$/,'')!==AUTH||origin.href.replace(/\/$/,'')!==ORIGIN)blocked();
+ if(env.PHIXAR_E2E_USER_EMAIL?.toLowerCase()!=='phixar-e2e-provider@example.com')blocked();
+ if(db&&(!['postgres:','postgresql:'].includes(db.protocol)||!DATABASE_HOSTS.has(db.hostname)||db.pathname!=='/neondb'))blocked();
+}
+module.exports={assertIsolatedTarget};

@@ -14,6 +14,7 @@ jobs:
   provider-e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    environment: neon-auth-e2e
     env:
       PHIXAR_E2E_ENVIRONMENT: ${{ secrets.PHIXAR_E2E_ENVIRONMENT }}
       PHIXAR_E2E_NEON_AUTH_URL: ${{ secrets.PHIXAR_E2E_NEON_AUTH_URL }}

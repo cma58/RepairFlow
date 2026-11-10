@@ -200,3 +200,27 @@ GitHub Actions op de definitieve commit: zie de reactie op PR #28 en `ERP-STATUS
 3. Handmatige proef met een echte passkey en een FIDO2-sleutel op die preview.
 4. Beslis over e-mailmeldingen en een tweede herstelpad (§6).
 5. Pas daarna: review van PR #28 en een apart besluit over productie (migraties 009–013 staan niet op `main`).
+
+## 12. Cloud fase 4 — onafhankelijke nacontrole (2026-11-10)
+
+Dit gedeelte actualiseert de historische toegangs- en Vercelclaims hierboven. Start-HEAD `10b6eb3696df9d57edc26fb7bf85e83339bab5df`, draft PR #28 tegen de featurebranch. De Neon-branch `br-purple-king-ban17e74` bestaat, is niet de default en heeft migratie 013 (`rf_webauthn_approvals`, bootstrapcodes en blokkeerfunctie aanwezig; de oude fail-closed CHECK afwezig). Bestaande gebruikers en klantrecords zijn niet gewijzigd in deze fase.
+
+**Vercel gevonden:** project `repair-flow` (`prj_ILFwXmbKJoh6xnGNNSHH55VtW57T`) in team `aminechtaiti-3069s-projects`. De testbranch heeft een READY-preview op de start-HEAD, maar die deployment is van vóór de nieuwe branchconfiguratie. De productiealias `repair-flow-theta.vercel.app` is geen testbewijs. Acht variabelen zijn uitsluitend voor `preview` plus Git-branch `test/p0-webauthn-browser-e2e-recovery` ingesteld: de geïsoleerde Neon Auth-URL, een beperkte `rf_runtime_login`-verbinding naar precies de testbranch, de synthetische organisatie/vestiging, de vaste preview-alias als app-origin en WebAuthn RP ID, en een branchspecifieke `DATABASE_URL` zodat `db-health` de gedeelde productie/preview-integratievariabele niet gebruikt. De nieuwe alias is alleen op de geïsoleerde Neon Auth-branch als vertrouwd domein toegevoegd. De bestaande algemene Vercel-variabelen met doel `preview,production` zijn niet gewijzigd. Een nieuwe deployment en de werkelijke resolutie van alle variabelen moeten nog worden gecontroleerd vóór muterende preview-E2E.
+
+**Provider en GitHub:** Neon Managed Better Auth op die branch heeft e-mail/wachtwoord aan, publieke registratie uit en e-mailverificatie verplicht. De eerdere synthetische account heeft een rechtstreeks geplaatste, niet door de provider gevalideerde hash; deze wordt niet als werkende provideridentiteit beschouwd en het wachtwoord is onbekend. De connector kan testgebruikers zonder wachtwoord maken maar biedt geen ondersteunde wachtwoordzetter. GitHub-connector en niet-aangemelde cloudbrowser bieden geen schrijfpunt voor Actions-secrets. De workflow is nu expliciet aan environment `neon-auth-e2e` gekoppeld, maar de benodigde environment-secrets zijn nog niet gezet. De provider-suite blijft **BLOCKED**, geen mock-PASS. Er zijn vijf basiswaarden en vier aanvullende waarden nodig voor de P7-app/databaseketen; die laatste mag niet stilzwijgend als optioneel succes worden gerapporteerd.
+
+**Beveiligingsreview en code:** de provider-suite weigert vóór enige login of mutatie een URL buiten de beoordeelde Auth-endpoint, een runtime-database buiten de testbranch, het productiealias als trusted origin en een ander account dan de synthetische testidentiteit. De lokale echte-handlerproef vertrouwt het tijdelijke testcertificaat expliciet in plaats van TLS-controle uit te schakelen. Een regressietest dekt de doelcontrole. Dit bewijst geen echte providerlogin. De sleutelblokkering blijft een herstelbare denial-of-service als een aanvaller een recent ingelogde primaire sessie bezit: de sleutel wordt geblokkeerd en alle ondernemingssessies eindigen, zonder een onafhankelijke factor. De huidige audit, recente-login-eis en operatorherstel zijn aanwezig; er is nog geen onafhankelijke bevestiging, account-/IP-limiet of meldkanaal. Een veilige aanvullende controle moet worden ontworpen en getest vóór P0-vrijgave; de noodknop is niet verzwakt om tests groen te krijgen.
+
+| Controle in deze fase | Status | Bewijs / grens |
+| --- | --- | --- |
+| `npm test` op start-HEAD | PASS | 211/211, 0 skips |
+| `npm test` na doelcontrole | PASS | 212/212, 0 skips |
+| `npm run test:security` lokaal | BLOCKED | PostgreSQL `initdb/pg_ctl` ontbreken; lokale fout is geen PASS |
+| `npm run test:provider` lokaal | BLOCKED | Vereiste credentials ontbreken; 0 pass, 10 cancelled, 0 skipped |
+| CI op start-HEAD | PASS voor unit/security; FAIL voor provider | GitHub-runs 42758120794, 42758120953, 42758116433 |
+| Migratie 013 op geïsoleerde Neon-branch | PASS (herbevestigd, catalogus) | Geen nieuwe migratie of productiehandeling |
+| Bestaande preview op start-HEAD | PASS voor READY-status; NOT RUN voor volledige keten | Branchdeployment `dpl_HSzYeH7zAuTjRG2prFNFsSt9FaX7` gebruikt nog oude configuratie |
+| Echte providerlogin, twee browserprofielen en providerintrekking | BLOCKED | Geen officiële wachtwoordregistratie en geen veilige environment-secrets |
+| Fysieke passkey | NOT RUN | Fysiek apparaat en geïsoleerde werkende preview nodig |
+
+**Volgende stap:** maak via een officieel Neon Auth-pad een nieuwe synthetische wachtwoordidentiteit of stel via de provider zelf een wachtwoord in, zet het uitsluitend in het GitHub-environment, en configureer de vier P7-testwaarden met een beperkte databaseverbinding. Controleer daarna de nieuwe previewdeployment op commit en resourcebinding voordat er browsermutaties plaatsvinden. Geen P0-vrijgave, merge of productiepublicatie.
