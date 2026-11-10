@@ -1,7 +1,12 @@
-name: RepairFlow real Neon Auth provider E2E (manual)
-# Opt-in. Runs ONLY on manual dispatch against an ISOLATED Neon branch with synthetic
-# users. Missing secrets make the run fail as BLOCKED; it is never skipped or green.
+name: RepairFlow real Neon Auth provider E2E
+# Real provider, ISOLATED Neon test branch, synthetic user only. Never mocks.
+# Runs on every push to the P0 test branch (workflow_dispatch only works once this
+# file exists on the default branch). Without the repository secrets the run FAILS
+# as BLOCKED; it is never skipped and never green without real provider proof.
 on:
+  push:
+    branches:
+      - test/p0-webauthn-browser-e2e-recovery
   workflow_dispatch:
 permissions:
   contents: read
@@ -9,7 +14,6 @@ jobs:
   provider-e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    environment: neon-auth-e2e
     env:
       PHIXAR_E2E_ENVIRONMENT: ${{ secrets.PHIXAR_E2E_ENVIRONMENT }}
       PHIXAR_E2E_NEON_AUTH_URL: ${{ secrets.PHIXAR_E2E_NEON_AUTH_URL }}

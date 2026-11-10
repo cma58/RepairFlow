@@ -69,6 +69,24 @@ describe('Echte Neon Auth-provider (geïsoleerde branch, synthetische gebruiker)
   S.b=await signIn();S.b.identity=await verifySession(S.b.cookie.cookie,{env});
   assert.notEqual(S.a.identity.sessionId,S.b.identity.sessionId);record('two sign-ins produce two provider sessions');
  });
+ it('P3b sessiegeldigheid: vervaltijd in de toekomst en begrensd; cookie heeft een vervaltermijn',T,async()=>{
+  const r=await fetch(AUTH+'/get-session',{headers:{Accept:'application/json',Cookie:S.b.cookie.cookie},signal:AbortSignal.timeout(10000)});
+  const body=await r.json();const exp=Date.parse(body?.session?.expiresAt);
+  assert.ok(Number.isFinite(exp)&&exp>Date.now(),'expiresAt in the future');assert.ok(exp-Date.now()<=31*24*3600*1000,'expiry bounded (≤31 days)');
+  assert.ok(S.b.cookie.attrs['max-age']||S.b.cookie.attrs.expires,'session cookie is not unbounded');
+  // RepairFlow additionally refuses sessions older than 12 hours (unit + browser proof).
+  record('provider session has bounded expiry',{daysUntilExpiry:Math.round((exp-Date.now())/864e5)});
+ });
+ it('P3c intrekking van één sessie via de provider: alleen die sessie ongeldig',T,async()=>{
+  const extra=await signIn();const extraId=await verifySession(extra.cookie.cookie,{env});
+  const list=await fetch(AUTH+'/list-sessions',{headers:{Accept:'application/json',Origin:E.PHIXAR_E2E_TRUSTED_ORIGIN,Cookie:S.b.cookie.cookie},signal:AbortSignal.timeout(10000)});
+  assert.equal(list.status,200,'list-sessions '+list.status);const sessions=await list.json();
+  const target=sessions.find(x=>x.id===extraId.sessionId);assert.ok(target&&target.token,'other session listed for the same user');
+  const rv=await fetch(AUTH+'/revoke-session',{method:'POST',headers:{'Content-Type':'application/json',Origin:E.PHIXAR_E2E_TRUSTED_ORIGIN,Cookie:S.b.cookie.cookie},body:JSON.stringify({token:target.token}),signal:AbortSignal.timeout(10000)});
+  assert.equal(rv.status,200,'revoke-session '+rv.status);
+  assert.equal(await valid(extra.cookie.cookie),false);assert.equal(await valid(S.b.cookie.cookie),true);assert.equal(await valid(S.a.cookie.cookie),true);
+  record('provider revoke-session invalidates exactly one session',{sessionsListed:sessions.length});
+ });
  it('P4 uitloggen in profiel A: A ongeldig, B geldig; oude cookie niet herbruikbaar',T,async()=>{
   assert.equal(await post('/sign-out',S.a.cookie.cookie),200);
   assert.equal(await valid(S.a.cookie.cookie),false);assert.equal(await valid(S.b.cookie.cookie),true);
@@ -86,6 +104,15 @@ describe('Echte Neon Auth-provider (geïsoleerde branch, synthetische gebruiker)
   assert.equal(await valid(name+'='+value.slice(0,-2)+(value.endsWith('A')?'B':'A')+value.slice(-1)),false);
   assert.equal(await valid(name+'=forged-token-value'),false);
   record('tampered and forged session tokens rejected by the provider');
+ });
+ it('P6b onbekend wachtwoord en onbekende gebruiker krijgen geen sessie',T,async()=>{
+  for(const body of [{email:E.PHIXAR_E2E_USER_EMAIL,password:'wrong-'+Date.now()},{email:'nobody-'+Date.now()+'@example.com',password:'x'.repeat(16)}]){
+   const r=await fetch(AUTH+'/sign-in/email',{method:'POST',headers:{'Content-Type':'application/json',Origin:E.PHIXAR_E2E_TRUSTED_ORIGIN},body:JSON.stringify(body),signal:AbortSignal.timeout(10000)});
+   assert.ok(r.status>=400&&r.status<500,'status '+r.status);assert.equal(parseSetCookie(r.headers.getSetCookie()),null);
+  }
+  const su=await fetch(AUTH+'/sign-up/email',{method:'POST',headers:{'Content-Type':'application/json',Origin:E.PHIXAR_E2E_TRUSTED_ORIGIN},body:JSON.stringify({email:'signup-'+Date.now()+'@example.com',password:'x'.repeat(20),name:'x'}),signal:AbortSignal.timeout(10000)});
+  assert.ok(su.status>=400,'self sign-up must stay disabled, got '+su.status);
+  record('wrong password, unknown user and self sign-up are refused');
  });
  it('P7 echte app-handlers + echte geïsoleerde database (optioneel)',T,async t=>{
   const need=['PHIXAR_E2E_RUNTIME_DATABASE_URL','PHIXAR_E2E_ORGANIZATION_ID','PHIXAR_E2E_BRANCH_ID','PHIXAR_E2E_EXPECTED_ROLE'];
