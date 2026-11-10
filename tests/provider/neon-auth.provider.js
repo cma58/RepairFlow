@@ -72,6 +72,38 @@ describe('Echte Neon Auth-provider (geïsoleerde branch, synthetische gebruiker)
   S.b=await signIn();S.b.identity=await verifySession(S.b.cookie.cookie,{env});
   assert.notEqual(S.a.identity.sessionId,S.b.identity.sessionId);record('two sign-ins produce two provider sessions');
  });
+ it('P3-browser twee onafhankelijke Chrome-profielen ontvangen gescheiden echte provider-sessies',T,async()=>{
+  const {chromium}=require('playwright-core');
+  const {chromePath}=require('../harness/browser');
+  const executablePath=chromePath();assert.ok(executablePath,'Chrome/Chromium required for real provider E2E');
+  const browser=await chromium.launch({executablePath,headless:true});
+  const contexts=[];
+  try{
+   const identities=[];
+   for(let i=0;i<2;i++){
+    const context=await browser.newContext();contexts.push(context);
+    const page=await context.newPage();
+    // The page is on the isolated Auth origin. Each BrowserContext owns its own
+    // cookies and storage; no synthetic cookie or provider response is injected.
+    await page.goto(AUTH+'/get-session',{waitUntil:'domcontentloaded'});
+    const result=await page.evaluate(async({auth,email,password})=>{
+     const signedIn=await fetch(auth+'/sign-in/email',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+     if(!signedIn.ok)return {status:signedIn.status};
+     const current=await fetch(auth+'/get-session',{credentials:'include',headers:{Accept:'application/json'}});
+     const data=await current.json().catch(()=>null);
+     return {status:current.status,sessionId:data?.session?.id,subject:data?.user?.id};
+    },{auth:AUTH,email:E.PHIXAR_E2E_USER_EMAIL,password:E.PHIXAR_E2E_USER_PASSWORD});
+    assert.equal(result.status,200,'browser provider login/session status');
+    assert.match(result.sessionId||'',UUID);assert.ok(result.subject);
+    const cookies=await context.cookies(AUTH);
+    assert.ok(cookies.some(c=>/(?:better-auth|neon-auth)\.session_token$/.test(c.name)&&c.httpOnly&&c.secure),'browser stores secure HttpOnly session cookie');
+    identities.push(result);
+   }
+   assert.equal(identities[0].subject,identities[1].subject);
+   assert.notEqual(identities[0].sessionId,identities[1].sessionId);
+   record('two independent Chrome BrowserContexts authenticate against real Neon Auth',{distinctSessionIds:true,separateCookieStores:true});
+  }finally{await Promise.allSettled(contexts.map(c=>c.close()));await browser.close()}
+ });
  it('P3b sessiegeldigheid: vervaltijd in de toekomst en begrensd; cookie heeft een vervaltermijn',T,async()=>{
   const r=await fetch(AUTH+'/get-session',{headers:{Accept:'application/json',Cookie:S.b.cookie.cookie},signal:AbortSignal.timeout(10000)});
   const body=await r.json();const exp=Date.parse(body?.session?.expiresAt);
