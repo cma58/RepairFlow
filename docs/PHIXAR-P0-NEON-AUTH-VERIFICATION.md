@@ -99,7 +99,7 @@ Achtergebleven: één ongeldig gemaakte, ongebruikte bootstrapcode-rij en de syn
 ## 5. Echte Neon Auth-provider-E2E — BLOCKED
 
 **Klaar:**
-- Synthetische gebruiker `phixar-e2e-provider@example.com` op de testbranch, geverifieerd, met wachtwoord, **zonder enige rol** in PHIXAR.
+- Synthetische gebruiker `phixar-e2e-provider@example.com` op de testbranch, geverifieerd, **zonder enige rol** in PHIXAR. Er staat een willekeurig wachtwoord op dat niemand kent; de eigenaar genereert zelf een nieuw wachtwoord, zet het als secret en laat alleen de hash op de testbranch opslaan (het wachtwoord komt nooit in chat, logs of repo).
 - Suite `tests/provider/neon-auth.provider.js` (10 controles): login, cookieattributen, acceptatie door `verifySession`, twee sessies, vervaltijd, intrekking van één sessie, uitloggen, providerbrede intrekking, nieuwe login, vervalste tokens, fout wachtwoord en gesloten registratie, en optioneel de echte handlers tegen de echte database.
 - Workflow `neon-auth-provider-e2e.yml` start nu bij elke push naar deze branch. Handmatig starten werkt pas als het bestand op de standaardbranch staat; dat was een fout in de instructies van fase 2.
 
@@ -195,7 +195,7 @@ GitHub Actions op de definitieve commit: zie de reactie op PR #28 en `ERP-STATUS
 
 ## 11. Vervolgstappen
 
-1. Zet de vijf secrets (waarden staan in de oplevering van deze fase, niet in de repo) en push of herstart de workflow. Pas daarna telt §5.
+1. Genereer lokaal een wachtwoord voor de synthetische gebruiker, zet de vijf repository-secrets, laat de hash op de testbranch opslaan en herstart de workflow (commando's in de oplevering van deze fase). Pas daarna telt §5.
 2. Geef de Vercel-koppeling toegang tot het RepairFlow-project, of deel de preview-URL van deze branch, voor de keten browser → Vercel → Neon en de headercontrole.
 3. Handmatige proef met een echte passkey en een FIDO2-sleutel op die preview.
 4. Beslis over e-mailmeldingen en een tweede herstelpad (§6).
