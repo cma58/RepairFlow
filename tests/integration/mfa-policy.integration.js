@@ -171,3 +171,20 @@ test('operator recovery for a sole admin: recovery code activates a NEW pending 
  await assertion(m0,NEW);const r=await redeem(m0,code.code);assert.equal(r.activated,true);
  assert.equal((await assertion(m0,NEW,{purpose:'credential.manage'})).independentFactor,true);
 });
+test('race: one bootstrap code redeemed concurrently from two sessions activates exactly one key',async()=>{
+ await credential(U.ownerB,'owner-b-race-key-000001');await credential(U.ownerB,'owner-b-race-key-000002');
+ const b=(n)=>ctx(U.ownerB,{org:FIX.orgB,branch:FIX.branchB,session:'race'+n});
+ const code=await issueBootstrapCode((q,p)=>owner(q,p).then(rows=>({rows})),{organizationId:FIX.orgB,subject:U.ownerB.id,operator:'E2E operator (synthetic)'});
+ await assertion(b(1),'owner-b-race-key-000001');await assertion(b(2),'owner-b-race-key-000002');
+ const results=await Promise.all([redeem(b(1),code.code),redeem(b(2),code.code)]);
+ assert.deepEqual(results.map(r=>r.activated).sort(),[false,true]);
+ assert.equal((await owner('SELECT count(*)::int n FROM rf_webauthn_approvals WHERE identity_subject=$1 AND revoked_at IS NULL',[U.ownerB.id]))[0].n,1);
+});
+test('race: one step-up used by five parallel management calls authorizes exactly one',async()=>{
+ const key=(await owner("SELECT a.credential_id FROM rf_webauthn_approvals a WHERE a.identity_subject=$1 AND a.revoked_at IS NULL",[U.ownerB.id]))[0].credential_id;
+ const b0=ctx(U.ownerB,{org:FIX.orgB,branch:FIX.branchB,session:'race-stepup'});
+ assert.equal((await assertion(b0,key,{purpose:'session.revoke'})).independentFactor,true);
+ const calls=await Promise.allSettled(Array.from({length:5},()=>asRuntime(b0,c=>c.query('SELECT public.rf_revoke_member_session($1,$2,$3)',[staffId(U.ownerB),crypto.randomUUID(),'synthetic parallel revoke']))));
+ assert.equal(calls.filter(c=>c.status==='fulfilled').length,1);
+ assert.ok(calls.filter(c=>c.status==='rejected').every(c=>c.reason.code==='42501'));
+});
