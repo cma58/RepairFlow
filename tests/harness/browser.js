@@ -20,7 +20,8 @@ async function launch(spkiList){
  const browser=await chromium.launch({executablePath,headless:true,args:['--ignore-certificate-errors-spki-list='+spkiList.join(','),'--no-proxy-server']});
  return {browser,version:browser.version(),executablePath};
 }
-async function browserSession(browser,app,auth,user,{ageSeconds=0,label}={}){
+const DEFAULT_AUTHENTICATOR=Object.freeze({protocol:'ctap2',transport:'usb',hasResidentKey:false,hasUserVerification:true,isUserVerified:true,automaticPresenceSimulation:true});
+async function browserSession(browser,app,auth,user,{ageSeconds=0,label,authenticator={}}={}){
  const ctx=await browser.newContext();
  await ctx.tracing.start({screenshots:true,snapshots:true});
  const session=await auth.createSession(user.id,{ageSeconds});
@@ -28,7 +29,7 @@ async function browserSession(browser,app,auth,user,{ageSeconds=0,label}={}){
  const page=await ctx.newPage();
  const cdp=await ctx.newCDPSession(page);
  await cdp.send('WebAuthn.enable',{enableUI:false});
- const {authenticatorId}=await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{protocol:'ctap2',transport:'usb',hasResidentKey:false,hasUserVerification:true,isUserVerified:true,automaticPresenceSimulation:true}});
+ const {authenticatorId}=await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{...DEFAULT_AUTHENTICATOR,...authenticator}});
  await page.goto(app.origin+'/security');
  const s={ctx,page,cdp,authenticatorId,session,user,app,label:label||user.email};
  // fetch() from inside the real page: same-origin, HttpOnly cookie sent by the browser.
@@ -36,19 +37,25 @@ async function browserSession(browser,app,auth,user,{ageSeconds=0,label}={}){
   const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)}:{headers});
   let json=null;try{json=await r.json()}catch{}return {status:r.status,body:json};
  },[p,body,headers]);
- s.ceremony=(type,{tamper}={})=>page.evaluate(async([type,tamper])=>{
+ s.ceremony=(type,{tamper,purpose,allow}={})=>page.evaluate(async([type,tamper,purpose,allow])=>{
   const post=b=>fetch('/api/security',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
-  const o=await post({action:type+'Options'});const ob=await o.json().catch(()=>null);
+  const o=await post({action:type+'Options',...(purpose?{purpose}:{})});const ob=await o.json().catch(()=>null);
   if(!o.ok)return {step:'options',status:o.status,body:ob};
   const {challengeId,options}=ob;
   if(tamper==='challenge')options.challenge=btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  // Client-side downgrade attempt: ask the authenticator NOT to verify the user.
+  // Force a specific credential the server did not offer (e.g. revoked/blocked key).
+  if(allow)options.allowCredentials=allow.map(id=>({id,type:'public-key'}));
+  if(tamper==='uv'){options.userVerification='discouraged';if(options.authenticatorSelection)options.authenticatorSelection.userVerification='discouraged'}
   const response=type==='registration'?await SimpleWebAuthnBrowser.startRegistration({optionsJSON:options}):await SimpleWebAuthnBrowser.startAuthentication({optionsJSON:options});
   const payload={action:type+'Verify',challengeId:tamper==='challengeId'?crypto.randomUUID():challengeId,response};
   const v=await post(payload);
   return {step:'verify',status:v.status,body:await v.json().catch(()=>null),payload};
- },[type,tamper||null]);
+ },[type,tamper||null,purpose||null,allow||null]);
+ s.stepUp=async purpose=>{const r=await s.ceremony('authentication',{purpose});if(r.status!==200||r.body?.verified!==true)throw Error('step-up failed: '+JSON.stringify(r));return r.body};
+ s.addAuthenticator=async(opts={})=>(await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{...DEFAULT_AUTHENTICATOR,...opts}})).authenticatorId;
  s.replay=payload=>page.evaluate(async payload=>{const r=await fetch('/api/security',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return {status:r.status,body:await r.json().catch(()=>null)}},payload);
- s.credentials=async()=>(await cdp.send('WebAuthn.getCredentials',{authenticatorId})).credentials;
+ s.credentials=async(id=s.authenticatorId)=>(await cdp.send('WebAuthn.getCredentials',{authenticatorId:id})).credentials;
  s.close=async(name)=>{try{await ctx.tracing.stop({path:path.join(ARTIFACTS,(name||s.label).replace(/[^a-z0-9.-]+/gi,'_')+'.trace.zip')})}catch{}await ctx.close()};
  s.screenshot=name=>page.screenshot({path:path.join(ARTIFACTS,name.replace(/[^a-z0-9.-]+/gi,'_')+'.png'),fullPage:true});
  return s;
