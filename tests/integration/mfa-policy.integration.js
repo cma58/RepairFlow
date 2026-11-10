@@ -188,3 +188,16 @@ test('race: one step-up used by five parallel management calls authorizes exactl
  assert.equal(calls.filter(c=>c.status==='fulfilled').length,1);
  assert.ok(calls.filter(c=>c.status==='rejected').every(c=>c.reason.code==='42501'));
 });
+test('a stolen fresh primary session cannot block a key when another approved key is available',async()=>{
+ const first=(await owner('SELECT credential_id FROM rf_webauthn_approvals WHERE identity_subject=$1 AND revoked_at IS NULL',[U.ownerB.id]))[0].credential_id;
+ const second=['owner-b-race-key-000001','owner-b-race-key-000002'].find(k=>k!==first);
+ const b0=ctx(U.ownerB,{org:FIX.orgB,branch:FIX.branchB,session:'two-keys'});
+ await assertion(b0,first,{purpose:'credential.manage'});
+ await asRuntime(b0,c=>c.query('SELECT public.rf_approve_own_credential_by_step_up($1)',[second]));
+ const stolen=ctx(U.ownerB,{org:FIX.orgB,branch:FIX.branchB,session:'stolen-primary'});
+ await assert.rejects(asRuntime(stolen,c=>c.query('SELECT public.rf_block_own_credential($1,$2)',[fingerprint(first),'sleutel mogelijk verloren'])),denied('42501',/STEP_UP_REQUIRED/));
+ assert.equal((await owner('SELECT blocked_at IS NULL AS usable FROM rf_webauthn_credentials WHERE credential_id=$1',[first]))[0].usable,true);
+ await assertion(b0,second,{purpose:'credential.manage'});
+ await asRuntime(b0,c=>c.query('SELECT public.rf_block_own_credential($1,$2)',[fingerprint(first),'sleutel mogelijk verloren']));
+ assert.equal((await owner('SELECT blocked_at IS NOT NULL AS blocked FROM rf_webauthn_credentials WHERE credential_id=$1',[first]))[0].blocked,true);
+});
