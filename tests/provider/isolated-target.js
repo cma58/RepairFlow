@@ -21,4 +21,4 @@ function assertIsolatedTarget(env){
   env.PHIXAR_E2E_BRANCH_ID!=='22222222-2222-4222-8222-222222222222'||
   env.PHIXAR_E2E_EXPECTED_ROLE!=='none')blocked();
 }
-module.exports={assertIsolatedTarget};
+module.exports={assertIsolatedTarget,AUTH,ORIGIN,DATABASE_HOSTS};

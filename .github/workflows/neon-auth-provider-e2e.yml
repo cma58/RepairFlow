@@ -11,6 +11,27 @@ on:
 permissions:
   contents: read
 jobs:
+  provider-public:
+    # No secrets: unauthenticated, non-mutating checks against the pinned isolated
+    # Neon Auth endpoint and the pinned test preview. Separate result from the
+    # authenticated job below so neither can hide the other.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Real provider + preview, unauthenticated
+        run: npm run test:provider:public
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-auth-provider-public-evidence
+          path: test-results/provider-public
+          retention-days: 14
   provider-e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
