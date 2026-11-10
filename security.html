@@ -10,7 +10,9 @@ async function ceremony(type){
  const buttons=[document.getElementById('register'),document.getElementById('verify')];buttons.forEach(b=>b.disabled=true);status.textContent='Beveiligde controle starten…';
  try{
   const optionsResponse=await fetch('/api/security',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type+'Options'})});
-  if(!optionsResponse.ok)throw Error('Sessie, bevoegdheid of registratie niet beschikbaar ('+optionsResponse.status+').');
+  if(!optionsResponse.ok){const problem=await optionsResponse.json().catch(()=>({}));
+   if(problem.error==='step_up_required')throw Error('Er is al een sleutel geregistreerd. Bevestig eerst deze sessie met je bestaande sleutel en registreer daarna de nieuwe sleutel.');
+   throw Error('Sessie, bevoegdheid of registratie niet beschikbaar ('+optionsResponse.status+').');}
   const {challengeId,options}=await optionsResponse.json();
   const response=type==='registration'?await SimpleWebAuthnBrowser.startRegistration({optionsJSON:options}):await SimpleWebAuthnBrowser.startAuthentication({optionsJSON:options});
   const verification=await fetch('/api/security',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type+'Verify',challengeId,response})});
