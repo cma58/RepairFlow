@@ -17,6 +17,9 @@ jobs:
     # authenticated job below so neither can hide the other.
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    env:
+      # Optional repository secret: Vercel "Protection Bypass for Automation" for previews.
+      PHIXAR_E2E_VERCEL_BYPASS: ${{ secrets.PHIXAR_E2E_VERCEL_BYPASS }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,6 +28,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Real provider + preview, unauthenticated
         run: npm run test:provider:public
+      - name: Print evidence (status codes only, no secrets)
+        if: always()
+        run: cat test-results/provider-public/evidence.json || true
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4

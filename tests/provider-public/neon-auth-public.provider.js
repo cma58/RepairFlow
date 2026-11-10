@@ -26,6 +26,8 @@ async function call(base,p,{method='GET',body,cookie,origin=ORIGIN}={}){
  if(body!==undefined)headers['Content-Type']='application/json';
  if(origin)headers.Origin=origin;
  if(cookie)headers.Cookie=cookie;
+ // Vercel's official "Protection Bypass for Automation" (preview only; value is a secret, never logged).
+ if(base===ORIGIN&&process.env.PHIXAR_E2E_VERCEL_BYPASS)headers['x-vercel-protection-bypass']=process.env.PHIXAR_E2E_VERCEL_BYPASS;
  const r=await fetch(base+p,{method,headers,body:body===undefined?undefined:JSON.stringify(body),redirect:'manual',signal:AbortSignal.timeout(15000)});
  const text=await r.text();let json=null;try{json=JSON.parse(text)}catch{}
  return {status:r.status,json,text,headers:r.headers,setCookie:r.headers.getSetCookie()};
@@ -83,12 +85,12 @@ describe('Echte Vercel-preview van de testbranch — zonder credentials',()=>{
  it('V1 preview bereikbaar zonder data te tonen',T,async()=>{
   const r=await call(ORIGIN,'/api/auth/status',{origin:null});
   if(r.status===401||r.status===403){protectedPreview=true;
-   throw Object.assign(Error('BLOCKED: preview is behind Vercel deployment protection ('+r.status+'); anonymous chain checks impossible'),{code:'BLOCKED'})}
+   throw Object.assign(Error('BLOCKED: preview is behind Vercel deployment protection ('+r.status+'); set PHIXAR_E2E_VERCEL_BYPASS (Protection Bypass for Automation) to run the preview checks'+(process.env.PHIXAR_E2E_VERCEL_BYPASS?' — the configured bypass value was rejected':'')),{code:'BLOCKED'})}
   assert.equal(r.status,200);assert.equal(r.json?.canAccessCustomerData,false);
   record('preview reachable; status endpoint exposes no customer data',{status:r.status,loginEnabled:r.json?.authentication?.loginEnabled});
  });
  it('V2 anoniem en met vervalste cookie geen staff-toegang of werkruimte',T,async()=>{
-  assert.equal(protectedPreview,false,'BLOCKED by V1');
+  if(protectedPreview)throw Object.assign(Error('BLOCKED: preview protected (see V1)'),{code:'BLOCKED'});
   const out={};
   for(const [p,cookie] of [['/api/auth/me'],['/api/auth/me',COOKIE_NAME+'='+forgedToken()],['/api/workspace'],['/api/workspace',COOKIE_NAME+'='+forgedToken()],['/api/contexts',COOKIE_NAME+'='+forgedToken()]]){
    const r=await call(ORIGIN,p,{origin:null,cookie});out[p+(cookie?' forged':' anon')]=r.status;
@@ -101,7 +103,7 @@ describe('Echte Vercel-preview van de testbranch — zonder credentials',()=>{
   record('anonymous and forged-cookie requests refused on the live preview',out);
  });
  it('V3 anti-framing- en sniffingheaders live op de preview',T,async()=>{
-  assert.equal(protectedPreview,false,'BLOCKED by V1');
+  if(protectedPreview)throw Object.assign(Error('BLOCKED: preview protected (see V1)'),{code:'BLOCKED'});
   const r=await call(ORIGIN,'/security',{origin:null});assert.equal(r.status,200);
   assert.equal(r.headers.get('x-frame-options'),'SAMEORIGIN');
   assert.match(r.headers.get('content-security-policy')||'',/frame-ancestors 'self'/);
