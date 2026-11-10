@@ -191,3 +191,14 @@ Bewezen met twee volledig gescheiden synthetische tenants en vier rollen: lezen/
 6. Dynamische context pas inschakelen na stap 4 met echte lidmaatschappen.
 
 Geen merge, deployment of productiewijziging uitgevoerd.
+
+## 19. Onafhankelijke overdrachtscontrole door ChatGPT Work (2026-11-10)
+
+Dit is een aanvulling op het oorspronkelijke rapport; de historische opmerkingen hierboven over ontbrekende GitHub-schrijftoegang, niet uitgevoerde CI en niet toegepaste migratie 012 beschrijven de situatie **vóór** deze overdracht.
+
+- De incrementele bundle is lokaal met `git bundle verify` gecontroleerd en de zeven commits zijn geanalyseerd. Een afzonderlijke `git am`-replay van de mbox gaf dezelfde eindboom `bf7fdb146c621cc3293ce5ca0b38433581eef31a`; `git diff --check` was schoon.
+- De shell kon niet met GitHub authenticeren voor een integrale Git-push. De zeven logische commits zijn daarom via de GitHub-koppeling opnieuw aangemaakt op uitsluitend `test/p0-webauthn-browser-e2e-recovery`. De oorspronkelijke commit-SHA's en auteursmetadata zijn **niet** behouden; de gepubliceerde boom na de zevende commit `c866fdd9310bc31ea7092a7a55c5ea827ddc8cc1` is byte-identiek met de bundle-eindboom. De featurebranch bleef op `d8cf2e53c98be2b171dc4c79448dbdeb77ea6b17`.
+- Lokaal: `npm ci` en `npm test` geslaagd (197/197, nul skips); syntax en diffcontrole geslaagd. `npm run test:security` kon lokaal niet slagen omdat PostgreSQL-binaries ontbreken (0 pass, 12 fail, 37 cancelled). Dit is geen geslaagde lokale securityrun.
+- GitHub Actions-run [42750745270](https://github.com/cma58/RepairFlow/actions/runs/42750745270) op de gepubliceerde boom: 197/197 unit en 49/49 security-, PostgreSQL- en browsercontroles geslaagd, nul failures en nul skips. Het [artifact](https://github.com/cma58/RepairFlow/actions/runs/42750745270/artifacts/13732843564) bevat 33 bestanden, waaronder traces, schermafbeeldingen en `evidence.json` (19 strict, 13 policy-simulated browsercontroles).
+- Migratie 012 is uitsluitend op geïsoleerde Neon-branch `br-purple-king-ban17e74` toegepast. De positieve acceptatietest liep in GitHub Actions tegen tijdelijke PostgreSQL; de echte Neon Auth-providerketen blijft onbewezen.
+- [Draft PR #28](https://github.com/cma58/RepairFlow/pull/28) richt zich op de bestaande featurebranch. Geen merge, productie-deploy of echte accountmigratie uitgevoerd. De P0-blokkades in §15 blijven gelden, behalve de inmiddels uitgevoerde GitHub-publicatie en testbranchmigratie.
