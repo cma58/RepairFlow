@@ -366,3 +366,10 @@
 - Eerste sleutel blijft *pending*; activatie via eenmalige operatorcode (`scripts/mfa-bootstrap-code.js`, owner-rol, 15 min) + bezit van de sleutel, goedkeuring door andere eigenaar met vingerafdruk, of step-up met goedgekeurde sleutel. Blokkeren bij verlies (verse login, alle sessies beëindigd) en herstel via nieuwe goedkeuring/herstelcode. Beheerscherm `security.html`.
 - Tests: `npm test` 209/209; `npm run test:security` 65/65 (24 DB-bewijzen, 36 strikte browserscenario's, 5 ERP-regressie), 0 skip, lokaal en in GitHub Actions. Geen POLICY-SIMULATED tests meer.
 - BLOCKED: echte Neon Auth-provider-E2E (suite + handmatige workflow klaar, secrets ontbreken) en toepassing van 013 op de geïsoleerde Neon-branch (geen Neon-toegang in de sessie). Bestaande Neon-sleutels blijven daar fail-closed *pending* tot bootstrap.
+
+## P0 fase 3 — migratie 013 op Neon en voorbereide provider-E2E (2026-11-10)
+- Rapport: `docs/PHIXAR-P0-NEON-AUTH-VERIFICATION.md`. Zelfde branch en draft PR #28; geen merge/deploy; `main` op Neon niet gewijzigd.
+- Migratie 013 toegepast op uitsluitend de geïsoleerde Neon-branch `br-purple-king-ban17e74` (project `shy-block-99675829`, PostgreSQL 18): 76/76 statements in één transactie; vingerafdruk (`db/verify/013-fingerprint.sql`) gelijk aan de repo. Als `rf_runtime_login` op Neon: 20/20 ongeautoriseerde handelingen geweigerd, positieve keten (bootstrap → step-up → intrekken → eenmalig → blokkeren) geslaagd en teruggedraaid. Rollbackscript `db/rollback/013-mfa-factor-policy.rollback.sql` lokaal bewezen.
+- Reviewbevinding F5 hersteld: `vercel.json` zet nu framing- en sniffing-headers (clickjacking). Twee race-tests toegevoegd.
+- Tests: `npm test` 211/211; `npm run test:security` 67/67, 0 skip.
+- BLOCKED: echte Neon Auth-provider-E2E (synthetische gebruiker en workflow klaar; vijf repository-secrets ontbreken, niet te zetten vanuit de sessie). NOT RUN: Vercel-preview, WebAuthn-keten tegen Neon, echte passkeys. **P0 blijft open.**

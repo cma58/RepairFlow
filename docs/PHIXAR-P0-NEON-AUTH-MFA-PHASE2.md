@@ -4,6 +4,11 @@ Datum: 2026-11-10. Branch `test/p0-webauthn-browser-e2e-recovery`, draft PR #28 
 
 **Kernuitkomst.** Het eigenaarsbesluit *optie A* is geïmplementeerd als een door de **database** afgedwongen factorbeleid. Beheeracties werken nu **strikt** (zonder gesimuleerd beleid) en uitsluitend na een onafhankelijke, doelgebonden en eenmalige step-up. De eerste sleutel kan niet via een verse primaire login alleen actief worden. Sleutelbeheer, blokkeren bij verlies en herstel zijn gebouwd. Lokaal en in GitHub Actions: **209/209 unit** en **65/65 security/DB/browser**, 0 overgeslagen. **Nog niet bewezen:** de echte Neon Auth-provider (suite klaar, BLOCKED zonder secrets) en migratie 013 op de geïsoleerde Neon-branch (geen Neon-toegang in deze sessie).
 
+> **Bijgewerkt in fase 3 (2026-11-10)** — zie `docs/PHIXAR-P0-NEON-AUTH-VERIFICATION.md`.
+> - Migratie 013 is inmiddels toegepast en geverifieerd op de geïsoleerde Neon-testbranch (was hier BLOCKED).
+> - De provider-workflow start nu bij een push naar deze branch en gebruikt repository-secrets. De hieronder in §16 stap 3 beschreven `gh workflow run` en de environment `neon-auth-e2e` werken **niet** zolang het workflowbestand niet op de standaardbranch staat.
+> - De echte provider-E2E en echte passkeys zijn nog steeds niet uitgevoerd.
+
 ---
 
 ## 1. Uitgangssituatie en actuele commit
