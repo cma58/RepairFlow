@@ -1,25 +1,88 @@
 <!doctype html><html lang="nl" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PHIXAR · Accountbeveiliging</title><link rel="stylesheet" href="/phixar-dashboard.css"><link rel="stylesheet" href="/workspace-shell.css">
-<style>main{max-width:880px;margin:auto;padding:24px}section{padding:22px;margin:18px 0;border:1px solid #71809d;border-radius:16px}button{min-height:44px;margin:6px}#status{min-height:2em}a{display:inline-block;margin:10px 0}p{line-height:1.55}</style></head>
-<body><main><nav aria-label="Navigatie"><a href="/workspace">← Werkruimte</a></nav><h1>Accountbeveiliging</h1><p>Registreer een beveiligingssleutel en bevestig je huidige sessie. Beheeracties zijn nog niet beschikbaar zolang een onafhankelijke tweede factor niet is aangetoond.</p>
-<section><h2>Beveiligingssleutel registreren</h2><p>Meld je kort voor registratie opnieuw aan. Je browser vraagt om een geschikte sleutel; de server bewaart uitsluitend de publieke sleutel.</p><button id="register">Sleutel registreren</button></section>
-<section><h2>Sessie bevestigen</h2><p>Een succesvolle bevestiging geldt alleen voor deze sessie en onderneming. Ze geeft op dit moment geen beheerrechten.</p><button id="verify">Bevestigen</button></section>
-<p id="status" role="status" aria-live="polite"></p></main><script src="/vendor/simplewebauthn-browser-14.0.0.min.js"></script><script>
-'use strict';const status=document.getElementById('status');
-async function ceremony(type){
- const buttons=[document.getElementById('register'),document.getElementById('verify')];buttons.forEach(b=>b.disabled=true);status.textContent='Beveiligde controle starten…';
- try{
-  const optionsResponse=await fetch('/api/security',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type+'Options'})});
-  if(!optionsResponse.ok){const problem=await optionsResponse.json().catch(()=>({}));
-   if(problem.error==='step_up_required')throw Error('Er is al een sleutel geregistreerd. Bevestig eerst deze sessie met je bestaande sleutel en registreer daarna de nieuwe sleutel.');
-   throw Error('Sessie, bevoegdheid of registratie niet beschikbaar ('+optionsResponse.status+').');}
-  const {challengeId,options}=await optionsResponse.json();
-  const response=type==='registration'?await SimpleWebAuthnBrowser.startRegistration({optionsJSON:options}):await SimpleWebAuthnBrowser.startAuthentication({optionsJSON:options});
-  const verification=await fetch('/api/security',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:type+'Verify',challengeId,response})});
-  if(!verification.ok)throw Error('De controle is geweigerd of verlopen ('+verification.status+').');
-  const result=await verification.json();if(!result.verified)throw Error('De beveiligingscontrole is niet geslaagd.');
-  status.textContent=type==='registration'?'Publieke sleutel geregistreerd. Beheeracties blijven voorlopig gesloten.':'Sessie cryptografisch bevestigd. Onafhankelijke tweede factor is nog niet aangetoond; beheeracties blijven gesloten.';
- }catch(error){status.textContent=error.message||'Beveiligingscontrole mislukt.'}finally{buttons.forEach(b=>b.disabled=false)}
+<style>main{max-width:920px;margin:auto;padding:24px}section{padding:22px;margin:18px 0;border:1px solid #71809d;border-radius:16px}button{min-height:44px;margin:6px}
+#status{min-height:2em;font-weight:600}a{display:inline-block;margin:10px 0}p{line-height:1.55}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid #71809d55;vertical-align:top;white-space:pre-line}
+input,select{min-height:40px;margin:6px 6px 6px 0;padding:0 10px}code{font-size:1.05em;letter-spacing:.05em}.warn{color:#f2c46d}[hidden]{display:none!important}label{display:block;margin-top:8px}</style></head>
+<body><main><nav aria-label="Navigatie"><a href="/workspace">← Werkruimte</a></nav><h1>Accountbeveiliging</h1>
+<p id="status" role="status" aria-live="polite"></p>
+
+<section aria-labelledby="h-state"><h2 id="h-state">Beveiligingsstatus</h2>
+<p id="summary">Status laden…</p><p id="policy-text"></p>
+<table><thead><tr><th>Vingerafdruk</th><th>Soort</th><th>Status</th><th>Laatst gebruikt</th></tr></thead><tbody id="credentials"></tbody></table></section>
+
+<section aria-labelledby="h-register"><h2 id="h-register">Sleutel of passkey registreren</h2>
+<p>Meld je kort voor registratie opnieuw aan. Passkeys (Touch ID, Face ID, Windows Hello, Android) en FIDO2-beveiligingssleutels worden ondersteund; ontgrendelen met pincode of biometrie is verplicht. De server bewaart uitsluitend de publieke sleutel.</p>
+<p>Een <strong>eerste</strong> sleutel blijft <em>in afwachting</em> tot ze is geactiveerd met een eenmalige code van de beheerder of goedgekeurd door een andere eigenaar. Een extra sleutel registreer je na bevestiging met een actieve sleutel; die wordt meteen actief.</p>
+<button id="register">Sleutel registreren</button></section>
+
+<section aria-labelledby="h-activate"><h2 id="h-activate">Eerste sleutel activeren of herstellen</h2>
+<p>Voer de eenmalige code in die je <strong>persoonlijk of telefonisch</strong> van de beheerder kreeg. Je bevestigt eerst met de nieuwe sleutel; de code geldt maximaal 15 minuten en één keer.</p>
+<label for="bootstrap-code">Eenmalige code</label><input id="bootstrap-code" autocomplete="one-time-code" spellcheck="false" maxlength="40" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX-X">
+<button id="redeem">Bevestigen en activeren</button></section>
+
+<section aria-labelledby="h-verify"><h2 id="h-verify">Sessie bevestigen voor een beheeractie</h2>
+<p>Een bevestiging geldt alleen voor deze sessie, deze onderneming en één gekozen handeling, gedurende maximaal 5 minuten.</p>
+<label for="purpose">Handeling</label><select id="purpose"><option value="credential.manage">Sleutels beheren</option><option value="session.revoke">Sessies intrekken</option>
+<option value="invitation.manage">Uitnodigingen beheren</option><option value="credential.approve">Sleutel van een medewerker goedkeuren of intrekken</option><option value="policy.manage">Beveiligingsbeleid wijzigen</option></select>
+<button id="verify">Bevestigen</button></section>
+
+<section aria-labelledby="h-manage"><h2 id="h-manage">Eigen sleutel intrekken of blokkeren</h2>
+<label for="own-fingerprint">Vingerafdruk</label><input id="own-fingerprint" maxlength="9" placeholder="ABCD-1234">
+<label for="own-reason">Reden</label><input id="own-reason" maxlength="500" placeholder="bijv. vervangen door nieuwe sleutel / toestel verloren">
+<p><button id="revoke-key">Intrekken (bevestiging met actieve sleutel)</button> <button id="block-key">Verloren of gestolen — blokkeren</button></p>
+<p class="warn">Blokkeren kan zonder sleutel maar vereist een aanmelding van maximaal 10 minuten geleden. Alle sessies in deze onderneming worden beëindigd. Daarna heb je een nieuwe goedkeuring nodig.</p></section>
+
+<section id="admin" aria-labelledby="h-admin" hidden><h2 id="h-admin">Beheer (eigenaar)</h2>
+<p>Keur een sleutel van een medewerker pas goed nadat je de vingerafdruk <strong>persoonlijk</strong> met het scherm van die medewerker hebt vergeleken.</p>
+<table><thead><tr><th>Medewerker</th><th>Rol</th><th>Sleutels</th></tr></thead><tbody id="members"></tbody></table>
+<label for="member">Medewerker</label><select id="member"></select>
+<label for="member-fingerprint">Vingerafdruk</label><input id="member-fingerprint" maxlength="9" placeholder="ABCD-1234">
+<label for="member-reason">Reden (bij intrekken)</label><input id="member-reason" maxlength="500">
+<p><button id="approve-key">Goedkeuren</button> <button id="revoke-member-key">Goedkeuring intrekken</button></p>
+<h3>Beleid</h3><label><input type="checkbox" id="allow-synced"> Gesynchroniseerde passkeys toestaan (iCloud-sleutelhanger, Google Wachtwoordmanager)</label><button id="save-policy">Beleid opslaan</button></section>
+</main><script src="/vendor/simplewebauthn-browser-14.0.0.min.js"></script><script>
+'use strict';
+const $=id=>document.getElementById(id),status=$('status');
+const MESSAGES={step_up_required:'Bevestig eerst met een goedgekeurde sleutel voor deze handeling.',recent_login_required:'Meld je opnieuw aan en probeer het binnen enkele minuten opnieuw.',
+ bootstrap_rejected:'Code ongeldig, verlopen of al gebruikt.',too_many_pending_credentials:'Er staan al te veel sleutels in afwachting. Laat ze eerst goedkeuren of blokkeren.',
+ access_denied:'Deze handeling is niet toegestaan.',invalid_input:'Controleer de ingevoerde gegevens.',rate_limited:'Te veel pogingen. Wacht een kwartier.',no_credential:'Er is nog geen bruikbare sleutel geregistreerd.'};
+const STATE={active:'Actief',pending:'In afwachting van goedkeuring',blocked:'Geblokkeerd',revoked:'Ingetrokken'};
+async function api(body){const r=await fetch('/api/security',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ const data=await r.json().catch(()=>({}));if(!r.ok){const e=Error(MESSAGES[data.error]||('Geweigerd ('+r.status+').'));e.code=data.error;e.status=r.status;throw e}return data}
+async function stepUp(purpose){
+ const {challengeId,options}=await api({action:'authenticationOptions',purpose});
+ const response=await SimpleWebAuthnBrowser.startAuthentication({optionsJSON:options});
+ const result=await api({action:'authenticationVerify',challengeId,response});
+ if(!result.verified)throw Error('De beveiligingscontrole is niet geslaagd.');return result}
+async function run(work){const buttons=[...document.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);status.textContent='Bezig…';
+ try{status.textContent=await work()}catch(e){status.textContent=e.message||'Beveiligingscontrole mislukt.'}finally{buttons.forEach(b=>b.disabled=false);refresh().catch(()=>{})}}
+function cell(text){const td=document.createElement('td');td.textContent=text;return td}
+function when(v){return v?new Date(v).toLocaleString('nl-BE'):'—'}
+async function refresh(){
+ let s;try{s=await api({action:'securityStatus'})}catch(e){$('summary').textContent=e.status===401?'Niet aangemeld.':e.message;return}
+ $('summary').textContent=s.mfaReady?'Tweede factor actief voor deze onderneming.':'Nog geen actieve tweede factor: beheeracties blijven gesloten.';
+ $('policy-text').textContent=s.allowSyncedPasskeys?'Beleid: passkeys en beveiligingssleutels toegestaan, ook gesynchroniseerde passkeys.':'Beleid: alleen apparaatgebonden sleutels gelden als tweede factor.';
+ $('credentials').replaceChildren(...s.credentials.map(c=>{const tr=document.createElement('tr');
+  tr.append(cell(c.fingerprint),cell(c.synced?'Gesynchroniseerde passkey':'Apparaatgebonden sleutel'),cell(STATE[c.state]+(c.approvalMethod?' ('+c.approvalMethod+')':'')),cell(when(c.lastUsedAt)));return tr}));
+ $('admin').hidden=!s.members;
+ if(s.members){$('allow-synced').checked=s.allowSyncedPasskeys;
+  $('members').replaceChildren(...s.members.map(m=>{const tr=document.createElement('tr');tr.append(cell(m.name),cell(m.role),cell(m.credentials.map(c=>c.fingerprint+' · '+STATE[c.state]).join('\n')||'geen'));return tr}));
+  const keep=$('member').value;$('member').replaceChildren(...s.members.map(m=>{const o=document.createElement('option');o.value=m.staffId;o.textContent=m.name+' ('+m.role+')';return o}));if(keep)$('member').value=keep}
 }
-document.getElementById('register').onclick=()=>ceremony('registration');document.getElementById('verify').onclick=()=>ceremony('authentication');
+$('register').onclick=()=>run(async()=>{
+ let opts;try{opts=await api({action:'registrationOptions'})}catch(e){if(e.code==='step_up_required')throw Error('Er is al een actieve sleutel. Bevestig eerst deze sessie met je bestaande sleutel (handeling: Sleutels beheren) en registreer daarna de nieuwe sleutel.');throw e}
+ const response=await SimpleWebAuthnBrowser.startRegistration({optionsJSON:opts.options});
+ const r=await api({action:'registrationVerify',challengeId:opts.challengeId,response});if(!r.verified)throw Error('Registratie geweigerd.');
+ return r.state==='active'?'Extra sleutel geregistreerd en actief (vingerafdruk '+r.fingerprint+').':
+  'Sleutel geregistreerd, vingerafdruk '+r.fingerprint+'. Nog niet actief: activeer met een eenmalige code of laat een andere eigenaar deze vingerafdruk vergelijken en goedkeuren.'});
+$('redeem').onclick=()=>run(async()=>{const code=$('bootstrap-code').value;await stepUp('credential.activate');const r=await api({action:'redeemBootstrap',code});$('bootstrap-code').value='';
+ return 'Sleutel '+r.fingerprint+' geactiveerd voor deze onderneming.'});
+$('verify').onclick=()=>run(async()=>{const r=await stepUp($('purpose').value);
+ return r.independentFactor?'Sessie bevestigd met een goedgekeurde sleutel (eenmalig, 5 minuten).':'Sleutel cryptografisch bevestigd, maar ze is nog niet goedgekeurd voor deze onderneming; beheeracties blijven gesloten.'});
+$('revoke-key').onclick=()=>run(async()=>{await stepUp('credential.manage');await api({action:'revokeCredential',fingerprint:$('own-fingerprint').value.trim(),reason:$('own-reason').value});return 'Sleutel ingetrokken.'});
+$('block-key').onclick=()=>run(async()=>{await api({action:'blockCredential',fingerprint:$('own-fingerprint').value.trim(),reason:$('own-reason').value});return 'Sleutel geblokkeerd. Alle sessies zijn beëindigd; meld je opnieuw aan.'});
+$('approve-key').onclick=()=>run(async()=>{await stepUp('credential.approve');await api({action:'approveCredential',targetStaffId:$('member').value,fingerprint:$('member-fingerprint').value.trim()});return 'Sleutel goedgekeurd.'});
+$('revoke-member-key').onclick=()=>run(async()=>{await stepUp('credential.approve');await api({action:'revokeMemberCredential',targetStaffId:$('member').value,fingerprint:$('member-fingerprint').value.trim(),reason:$('member-reason').value});return 'Goedkeuring ingetrokken.'});
+$('save-policy').onclick=()=>run(async()=>{await stepUp('policy.manage');const r=await api({action:'setSecurityPolicy',allowSyncedPasskeys:$('allow-synced').checked});return r.allowSyncedPasskeys?'Gesynchroniseerde passkeys toegestaan.':'Alleen apparaatgebonden sleutels toegestaan.'});
+refresh();
 </script></body></html>
