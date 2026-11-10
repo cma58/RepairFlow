@@ -2,6 +2,7 @@
 const {verifyStaffIdentity,getConfig}=require('../lib/neon-auth-identity');
 const {verifySession,sessionCookie,authUrl}=require('../lib/neon-auth-session');
 const {resolveStaff}=require('../lib/staff-access');
+const {requireCurrentSession}=require('../lib/session-guard');
 const {Pool}=require('@neondatabase/serverless');
 // No customer or POS data returned. Database RLS stays default-deny.
 async function staffSessionHandler(req,res,{env=process.env,authenticate,createPool}={}){
@@ -36,6 +37,9 @@ async function staffSessionHandler(req,res,{env=process.env,authenticate,createP
    await client.query('COMMIT');
    return res.status(200).json({authenticated:true,role:'lid'});
   }
+  // A cookie session revoked by the app (rf_session_denials) must not be reported
+  // as an authenticated staff member, consistent with /api/workspace.
+  if(viaCookie)await requireCurrentSession(client,identity,organizationId);
   const staff=await resolveStaff({
    verifiedSubject:identity.subject,organizationId,branchId,
    query:(sql,params)=>client.query(sql,params)
