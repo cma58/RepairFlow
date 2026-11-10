@@ -12,7 +12,8 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "test:e2e": "node --test tests/e2e/*.e2e.js",
-    "test:security": "node --no-warnings --test --test-concurrency=1 tests/integration/*.integration.js tests/e2e/*.browser.js"
+    "test:security": "node --no-warnings --test --test-concurrency=1 tests/integration/*.integration.js tests/e2e/*.browser.js",
+    "test:provider": "node --no-warnings --test --test-concurrency=1 tests/provider/*.provider.js"
   },
   "devDependencies": {
     "pg": "8.23.1",

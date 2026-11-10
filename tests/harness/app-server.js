@@ -56,11 +56,14 @@ function staticFile(res,pathname){
  fs.createReadStream(file).pipe(res);return true;
 }
 
-async function startAppServer({database,auth,organizationId,branchId,dynamicContext=false,port=0}){
+// realEnv: run the REAL dependency path (verifySession → real Neon Auth over the
+// network, @neondatabase/serverless Pool → real isolated Neon branch). Only env is
+// supplied; nothing is substituted. Used by tests/provider (opt-in, needs secrets).
+async function startAppServer({database,auth,organizationId,branchId,dynamicContext=false,port=0,realEnv}){
  const tls=selfSignedCertificate();
  const handlers={};
  for(const [route,file] of Object.entries(ROUTES))handlers[route]=(await import(path.join(ROOT,file))).default;
- let origin;
+ let origin,deps;
  const server=https.createServer({key:tls.key,cert:tls.cert},async(req,res)=>{
   const url=new URL(req.url,origin);
   try{
@@ -76,13 +79,15 @@ async function startAppServer({database,auth,organizationId,branchId,dynamicCont
  });
  await new Promise(r=>server.listen(port,'127.0.0.1',r));
  origin='https://localhost:'+server.address().port;
+ if(realEnv){const env=Object.freeze({...realEnv,REPAIRFLOW_APP_ORIGIN:origin,REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED:'false'});deps=markTestDeps({env});
+  return {origin,spki:tls.spki,env,close:()=>new Promise(r=>{server.closeAllConnections?.();server.close(()=>{tls.cleanup();r()})})}}
  const env=Object.freeze({
   REPAIRFLOW_APP_ORIGIN:origin,REPAIRFLOW_WEBAUTHN_RP_ID:'localhost',REPAIRFLOW_NEON_AUTH_URL:auth.AUTH_URL,
   REPAIRFLOW_RUNTIME_ROLE:'rf_runtime_login',REPAIRFLOW_RUNTIME_DATABASE_URL:database.runtimeUrl,
   REPAIRFLOW_ORGANIZATION_ID:organizationId,REPAIRFLOW_BRANCH_ID:branchId,
   REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED:dynamicContext?'true':'false'
  });
- const deps=markTestDeps({env,createPool:database.createPool,fetcher:auth.fetcher,
+ deps=markTestDeps({env,createPool:database.createPool,fetcher:auth.fetcher,
   // api/staff-session.js calls authenticate(req); other handlers call authenticate(cookie,{env}).
   authenticate:(arg,opts={})=>verifySession(typeof arg==='object'&&arg?.headers?arg.headers.cookie:arg,{env:opts.env||env,fetcher:auth.fetcher})});
  return {origin,spki:tls.spki,env,close:()=>new Promise(r=>{server.closeAllConnections?.();server.close(()=>{tls.cleanup();r()})})};
