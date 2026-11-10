@@ -9,7 +9,7 @@
 //   PHIXAR_E2E_NEON_AUTH_URL               https://<ep>.neonauth.<region>.neon.tech/<db>/auth
 //   PHIXAR_E2E_TRUSTED_ORIGIN              an origin trusted by that Neon Auth branch
 //   PHIXAR_E2E_USER_EMAIL / PHIXAR_E2E_USER_PASSWORD   synthetic test account
-// Optional (real app handlers + real isolated database):
+// Required (real app handlers + real isolated database):
 //   PHIXAR_E2E_RUNTIME_DATABASE_URL, PHIXAR_E2E_ORGANIZATION_ID, PHIXAR_E2E_BRANCH_ID,
 //   PHIXAR_E2E_EXPECTED_ROLE (owner|manager|technician|sales|none)
 // Tokens and cookies are never printed; evidence.json contains only shapes/flags.
@@ -18,7 +18,8 @@ const fs=require('node:fs'),path=require('node:path'),https=require('node:https'
 const {verifySession,authUrl}=require('../../lib/neon-auth-session');
 const {assertIsolatedTarget}=require('./isolated-target');
 const E=process.env;const evidence=[];const OUT=path.resolve(__dirname,'..','..','test-results','provider-e2e');
-const REQUIRED=['PHIXAR_E2E_ENVIRONMENT','PHIXAR_E2E_NEON_AUTH_URL','PHIXAR_E2E_TRUSTED_ORIGIN','PHIXAR_E2E_USER_EMAIL','PHIXAR_E2E_USER_PASSWORD'];
+const REQUIRED=['PHIXAR_E2E_ENVIRONMENT','PHIXAR_E2E_NEON_AUTH_URL','PHIXAR_E2E_TRUSTED_ORIGIN','PHIXAR_E2E_USER_EMAIL','PHIXAR_E2E_USER_PASSWORD',
+ 'PHIXAR_E2E_RUNTIME_DATABASE_URL','PHIXAR_E2E_ORGANIZATION_ID','PHIXAR_E2E_BRANCH_ID','PHIXAR_E2E_EXPECTED_ROLE'];
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const T={timeout:60000};let AUTH,env;
 function record(check,detail={}){evidence.push({check,mode:'real-provider',result:'PASS',detail})}
@@ -116,10 +117,7 @@ describe('Echte Neon Auth-provider (geïsoleerde branch, synthetische gebruiker)
   assert.ok(su.status>=400,'self sign-up must stay disabled, got '+su.status);
   record('wrong password, unknown user and self sign-up are refused');
  });
- it('P7 echte app-handlers + echte geïsoleerde database (optioneel)',T,async t=>{
-  const need=['PHIXAR_E2E_RUNTIME_DATABASE_URL','PHIXAR_E2E_ORGANIZATION_ID','PHIXAR_E2E_BRANCH_ID','PHIXAR_E2E_EXPECTED_ROLE'];
-  const missing=need.filter(k=>!E[k]);
-  if(missing.length)throw Object.assign(Error('BLOCKED: optional real-database checks not configured: '+missing.join(', ')),{code:'BLOCKED'});
+ it('P7 echte app-handlers + echte geïsoleerde database',T,async()=>{
   const {startAppServer}=require('../harness/app-server');
   const app=await startAppServer({realEnv:{REPAIRFLOW_NEON_AUTH_URL:E.PHIXAR_E2E_NEON_AUTH_URL,REPAIRFLOW_RUNTIME_ROLE:'rf_runtime_login',REPAIRFLOW_RUNTIME_DATABASE_URL:E.PHIXAR_E2E_RUNTIME_DATABASE_URL,
    REPAIRFLOW_ORGANIZATION_ID:E.PHIXAR_E2E_ORGANIZATION_ID,REPAIRFLOW_BRANCH_ID:E.PHIXAR_E2E_BRANCH_ID,REPAIRFLOW_WEBAUTHN_RP_ID:'localhost'}});

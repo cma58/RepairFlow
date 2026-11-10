@@ -16,6 +16,9 @@ function assertIsolatedTarget(env){
  }catch{blocked()}
  if(auth.href.replace(/\/$/,'')!==AUTH||origin.href.replace(/\/$/,'')!==ORIGIN)blocked();
  if(env.PHIXAR_E2E_USER_EMAIL?.toLowerCase()!=='phixar-e2e-provider@example.com')blocked();
- if(db&&(!['postgres:','postgresql:'].includes(db.protocol)||!DATABASE_HOSTS.has(db.hostname)||db.pathname!=='/neondb'))blocked();
+ if(!db||!['postgres:','postgresql:'].includes(db.protocol)||!DATABASE_HOSTS.has(db.hostname)||db.pathname!=='/neondb')blocked();
+ if(env.PHIXAR_E2E_ORGANIZATION_ID!=='11111111-1111-4111-8111-111111111111'||
+  env.PHIXAR_E2E_BRANCH_ID!=='22222222-2222-4222-8222-222222222222'||
+  env.PHIXAR_E2E_EXPECTED_ROLE!=='none')blocked();
 }
 module.exports={assertIsolatedTarget};
