@@ -1,0 +1,70 @@
+name: RepairFlow real Neon Auth provider E2E
+# Real provider, ISOLATED Neon test branch, synthetic user only. Never mocks.
+# Runs on every push to the P0 test branch (workflow_dispatch only works once this
+# file exists on the default branch). Without the repository secrets the run FAILS
+# as BLOCKED; it is never skipped and never green without real provider proof.
+on:
+  push:
+    branches:
+      - test/p0-webauthn-browser-e2e-recovery
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  provider-public:
+    # No secrets: unauthenticated, non-mutating checks against the pinned isolated
+    # Neon Auth endpoint and the pinned test preview. Separate result from the
+    # authenticated job below so neither can hide the other.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      # Optional repository secret: Vercel "Protection Bypass for Automation" for previews.
+      PHIXAR_E2E_VERCEL_BYPASS: ${{ secrets.PHIXAR_E2E_VERCEL_BYPASS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Real provider + preview, unauthenticated
+        run: npm run test:provider:public
+      - name: Print evidence (status codes only, no secrets)
+        if: always()
+        run: cat test-results/provider-public/evidence.json || true
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-auth-provider-public-evidence
+          path: test-results/provider-public
+          retention-days: 14
+  provider-e2e:
+    # Target, tenant and role are pinned in lib/isolated-test-target.js. Only the
+    # owner's two personal values are secrets (environment neon-auth-e2e), plus the
+    # optional Vercel automation bypass (repository secret) for the live preview chain.
+    # P5 revokes ALL Neon Auth sessions of the test account, also on the owner's phone.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: neon-auth-e2e
+    env:
+      PHIXAR_E2E_USER_EMAIL: ${{ secrets.PHIXAR_E2E_USER_EMAIL }}
+      PHIXAR_E2E_USER_PASSWORD: ${{ secrets.PHIXAR_E2E_USER_PASSWORD }}
+      PHIXAR_E2E_VERCEL_BYPASS: ${{ secrets.PHIXAR_E2E_VERCEL_BYPASS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Real provider E2E (fails as BLOCKED without secrets)
+        run: npm run test:provider
+      - name: Print evidence (status codes and flags only, no secrets)
+        if: always()
+        run: cat test-results/provider-e2e/evidence.json || true
+      - name: Upload redacted evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-auth-provider-evidence
+          path: test-results/provider-e2e
+          retention-days: 14

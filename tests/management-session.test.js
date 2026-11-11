@@ -12,7 +12,8 @@ test('direct administrative API call cannot revoke without independent step-up',
  if(sql.includes('FROM rf_staff s'))return {rows:[{id:staffId,organization_id:org,branch_id:branch,role:'owner'}]};
  return {rows:[]}},release(){}};
  const r=res();await revokeMemberSession(base,r,{env,authenticate:async()=>identity,createPool:()=>({connect:async()=>db,end:async()=>{}})});
- assert.equal(r.code,403);assert.equal(r.body.error,'access_denied');assert.equal(calls.some(q=>q.includes('rf_revoke_member_session')),false);
+ assert.equal(r.code,403);assert.equal(r.body.error,'step_up_required');assert.equal(calls.some(q=>q.includes('rf_revoke_member_session')),false);
+ assert.ok(calls.some(q=>q.includes("g.purpose=$4")),'precheck is bound to the session.revoke purpose');
  assert.ok(calls.some(q=>q.includes('rf_webauthn_grants')));
 });
 test('forged origin and malformed session ID never reach the database',async()=>{
