@@ -65,14 +65,32 @@ test('every isolation check fails closed on the test preview and names only the 
   [{REPAIRFLOW_RUNTIME_DATABASE_URL:'postgresql://rf_runtime_login:pw@'+prod+'/neondb'},'runtime_database'],
   [{REPAIRFLOW_RUNTIME_DATABASE_URL:'postgresql://rf_runtime_login:pw@'+TARGET.DATABASE_HOSTS[0]+'/other'},'runtime_database'],
   [{REPAIRFLOW_RUNTIME_DATABASE_URL:'not a url'},'runtime_database'],
-  [{DATABASE_URL:'postgresql://neondb_owner:pw@'+prod+'/neondb'},'database_url']
+  [{REPAIRFLOW_RUNTIME_DATABASE_URL:undefined},'runtime_database']
  ];
  for(const [over,check] of cases){
   const {r,p}=await call({action:'status'},{},{env:{...ENV,...over}});
   assert.equal(r.statusCode,503,check);assert.deepEqual(r.body,{enabled:false,failedCheck:check});assert.equal(p.calls.length,0);
   assert.doesNotMatch(JSON.stringify(r.body),/pw@|postgres/);
  }
- assert.equal(gate(ENV,TARGET).ok,true);assert.equal(gate({...ENV,DATABASE_URL:undefined},TARGET).ok,true);
+ assert.equal(gate(ENV,TARGET).ok,true);assert.equal(gate({...ENV,DATABASE_URL:undefined},TARGET).integrationDatabaseUrl,'absent');
+ assert.equal(gate(ENV,TARGET).integrationDatabaseUrl,'isolated');
+});
+
+test('a foreign DATABASE_URL from the Neon–Vercel integration is reported, and no code path opens it',async()=>{
+ const foreign={...ENV,DATABASE_URL:'postgresql://neondb_owner:pw@ep-sparkling-rain-integration.c-8.eu-central-1.aws.neon.tech/neondb'};
+ const g=gate(foreign,TARGET);assert.equal(g.ok,true);assert.equal(g.integrationDatabaseUrl,'foreign_unused');
+ const {r}=await call({action:'status'},{},{env:foreign});
+ assert.equal(r.body.environment.integrationDatabaseUrl,'foreign_unused');assert.doesNotMatch(JSON.stringify(r.body),/sparkling|neondb_owner|pw@/);
+ const {healthDatabaseUrl}=require('../lib/health-database');
+ assert.equal(healthDatabaseUrl(foreign),foreign.REPAIRFLOW_RUNTIME_DATABASE_URL,'db-health uses the restricted isolated runtime connection');
+ assert.equal(healthDatabaseUrl({DATABASE_URL:'postgresql://x@h/db'}),'postgresql://x@h/db','unchanged where no runtime URL exists');
+ // Static guarantee behind the gate: DATABASE_URL is read nowhere else in deployed code.
+ const fs=require('node:fs'),path=require('node:path');
+ const files=[];(function walk(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory())walk(f);else if(/\.(c|m)?js$/.test(e.name))files.push(f)}})(path.join(__dirname,'..','api'));
+ for(const f of fs.readdirSync(path.join(__dirname,'..','lib')))if(/\.js$/.test(f))files.push(path.join(__dirname,'..','lib',f));
+ const readers=files.filter(f=>/(?<![A-Z_])DATABASE_URL\b/.test(fs.readFileSync(f,'utf8').replace(/REPAIRFLOW_(RUNTIME|OWNER)_DATABASE_URL/g,''))).map(f=>path.relative(path.join(__dirname,'..'),f)).sort();
+ assert.deepEqual(readers,['lib/health-database.js','lib/test-account-login.js']);
+ assert.match(fs.readFileSync(path.join(__dirname,'..','api','db-health.js'),'utf8'),/neon\(url\)/);
 });
 
 test('request hygiene: same origin, JSON only, bounded body, known actions, no-store',async()=>{
@@ -90,7 +108,7 @@ test('status shows the isolated environment and no credentials',async()=>{
  const {r,p}=await call({action:'status'});
  assert.equal(r.statusCode,200);assert.equal(p.calls.length,0);
  assert.deepEqual(r.body.environment,{vercelEnv:'preview',gitBranch:TARGET.GIT_BRANCH,commit:'0123456789ab',authHost:new URL(TARGET.AUTH).host,databaseHost:TARGET.DATABASE_HOSTS[1],
-  runtimeRole:'rf_runtime_login',organizationId:TARGET.ORGANIZATION_ID,organizationName:TARGET.ORGANIZATION_NAME,branchId:TARGET.BRANCH_ID,singleTenantContext:true,passkeyRelyingParty:true});
+  runtimeRole:'rf_runtime_login',organizationId:TARGET.ORGANIZATION_ID,organizationName:TARGET.ORGANIZATION_NAME,branchId:TARGET.BRANCH_ID,singleTenantContext:true,integrationDatabaseUrl:'isolated',passkeyRelyingParty:true});
  assert.equal(r.body.signedIn,false);assert.doesNotMatch(JSON.stringify(r.body),/pw|@/);
  const signed=await call({action:'status'},{cookie:COOKIE+'=tok-a'});assert.equal(signed.r.body.signedIn,true);
  const other=await call({action:'status'},{cookie:COOKIE+'=tok-x'});assert.equal(other.r.body.signedIn,false,'another user is never reported as the test account');

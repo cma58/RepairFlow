@@ -117,7 +117,7 @@ describe('Echte Vercel-preview van de testbranch — zonder credentials',()=>{
   const foreign=await call(ORIGIN,'/api/auth/session',{method:'POST',body:{action:'status'},origin:'https://evil.example'});assert.equal(foreign.status,403);
   const other=await call(ORIGIN,'/api/auth/session',{method:'POST',body:{action:'sendResetCode',email:'not-the-test-account-'+Date.now()+'@example.com'}});
   assert.equal(other.status,403);assert.equal(other.json?.error,'account_not_allowed');
-  record('live preview test-account gate open only for the pinned isolated target',{commit:e.commit,databaseHost:e.databaseHost,passkeyRelyingParty:e.passkeyRelyingParty,foreignOrigin:foreign.status,otherAccount:other.status});
+  record('live preview test-account gate open only for the pinned isolated target',{commit:e.commit,databaseHost:e.databaseHost,integrationDatabaseUrl:e.integrationDatabaseUrl,passkeyRelyingParty:e.passkeyRelyingParty,foreignOrigin:foreign.status,otherAccount:other.status});
  });
  it('V3 anti-framing- en sniffingheaders live op de preview',T,async()=>{
   if(protectedPreview)throw Object.assign(Error('BLOCKED: preview protected (see V1)'),{code:'BLOCKED'});

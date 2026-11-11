@@ -91,7 +91,9 @@ async function api(body){
  return {ok:r.ok,status:r.status,data,json:!!data};
 }
 function email(){return $('email').value.trim()}
-function row(label,value,good){const tr=document.createElement('tr');const a=document.createElement('th');a.textContent=label;const b=document.createElement('td');b.textContent=(good===false?'✗ ':'✓ ')+value;b.className=good===false?'bad':'ok';tr.append(a,b);return tr}
+function row(label,value,good){const tr=document.createElement('tr');const a=document.createElement('th');a.textContent=label;const b=document.createElement('td');
+ const mark=good===false?'✗ ':good==='warn'?'⚠ ':'✓ ';b.textContent=mark+value;b.className=good===false?'bad':good==='warn'?'warn':'ok';tr.append(a,b);return tr}
+const INTEGRATION_DB={absent:['niet aanwezig',true],isolated:['geïsoleerde branch',true],foreign_unused:['andere Neon-branch (automatisch door de Neon–Vercel-integratie); door geen enkele code op deze preview geopend','warn']};
 
 async function loadStatus(){
  const r=await api({action:'status'});const env=$('env');
@@ -104,7 +106,8 @@ async function loadStatus(){
  const e=r.data.environment;
  env.replaceChildren(row('Vercel-omgeving',e.vercelEnv),row('Git-branch',e.gitBranch),row('Commit',e.commit||'onbekend',!!e.commit),row('Neon Auth',e.authHost),
   row('Database',e.databaseHost),row('Databaserol',e.runtimeRole+' (zonder RLS-bypass)'),row('Organisatie',e.organizationName+' · '+e.organizationId),
-  row('Vestiging',e.branchId),row('Eén vaste testorganisatie',e.singleTenantContext?'ja':'nee',e.singleTenantContext),row('Passkey-domein',e.passkeyRelyingParty?'klopt met deze link':'wijkt af',e.passkeyRelyingParty));
+  row('Vestiging',e.branchId),row('Eén vaste testorganisatie',e.singleTenantContext?'ja':'nee',e.singleTenantContext),
+  row('DATABASE_URL (integratie)',...(INTEGRATION_DB[e.integrationDatabaseUrl]||['onbekend',false])),row('Passkey-domein',e.passkeyRelyingParty?'klopt met deze link':'wijkt af',e.passkeyRelyingParty));
  $('flows').hidden=false;
  say(r.data.signedIn?'Aangemeld.':'Klaar om aan te melden.','ok');
  if(r.data.signedIn)await showSignedIn();else{$('signed-in').hidden=true;$('whoami').textContent='Niet aangemeld.'}
