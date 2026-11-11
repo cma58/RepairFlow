@@ -272,3 +272,46 @@ Hiermee zijn de endpointnamen die de geauthenticeerde suite gebruikt tegen de ec
 | Browser → Vercel → Neon-keten | BLOCKED — Vercel-bescherming en geen Vercel-toegang in deze sessie |
 | Echte passkeys | NOT RUN |
 | **P0 volledig geverifieerd** | **Nee** |
+
+## 15. Fase 6 — mobiele testprocedure zonder computer (2026-11-11)
+
+Zelfde branch en draft PR #28, HEAD `5b17d2e`. Geen nieuwe branch of PR, geen merge, geen productiewijziging, geen beveiliging uitgeschakeld.
+
+**Wat er is gebouwd**
+- `/test-account` (mobiele pagina) met `POST /api/auth/session` (zelfde Vercel-functie, dus nog steeds 12 functies). De poort opent alleen op de Vercel-preview van deze branch (`VERCEL_ENV=preview` + Git-branch) en alleen als Neon Auth-URL, app-origin, synthetische organisatie/vestiging, vaste enkele tenant (`REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED` niet `true`), runtimerol `rf_runtime_login` en de databasehost van de geïsoleerde branch overeenkomen. Faalt één controle, dan antwoordt de preview `503 {failedCheck}` met alleen de naam van de controle. Op elke andere deployment blijft `POST` exact `405` zoals voorheen.
+- Uitsluitend officiële Neon Auth-flows: wachtwoord instellen/herstellen met e-mailcode (`/forget-password/email-otp` → `/email-otp/reset-password`), e-mailverificatie met code, e-mail/wachtwoord-login, sessielijst en `revoke-other-sessions`; afmelden via de bestaande `/api/auth/logout`.
+- Wachtwoord en codes gaan alleen in een JSON-body browser → Vercel-functie → Neon Auth (HTTPS). Ze worden niet gelogd, opgeslagen, teruggegeven of in een URL gezet. Providertokens en IP-adressen bereiken de browser niet; de browser krijgt alleen een host-only cookie `HttpOnly; Secure; SameSite=Lax; Max-Age=43200`. Formulieren posten bij uitgevallen JavaScript naar de API (415), nooit via GET.
+- Testidentiteit: het door de eigenaar bevestigde account, vastgepind op Neon Auth-gebruikers-ID `f91abfab-…` en de SHA-256 van het genormaliseerde adres. De repository is openbaar; het adres staat daarom niet leesbaar in nieuwe code. Andere adressen worden geweigerd vóór enig providerverzoek; een login die naar een andere identiteit leidt, wordt bij de provider weer afgemeld.
+- Rechten: de identiteit heeft alleen nog een actieve rol `manager` in "PHIXAR isolation test" (`1111…`), met `exports.read` geweigerd. Zijn manager-lidmaatschappen in de synthetische organisaties `3333…` en `5555…` zijn op de geïsoleerde branch op `active=false` gezet (omkeerbaar, geen verwijdering). De rij `owner` in de branchkopie van de productieorganisatie stond al inactief. Geen eigenaarsrechten.
+- CI vraagt nu alleen `PHIXAR_E2E_USER_EMAIL` en `PHIXAR_E2E_USER_PASSWORD` (environment `neon-auth-e2e`) plus optioneel `PHIXAR_E2E_VERCEL_BYPASS`; doel, tenant en rol zijn vastgepind. Geen database-URL meer nodig. P7 test nu de echte previewketen (login via de preview, `/api/auth/me`, `/api/workspace`, sessies, afmelden); P8 stuurt `/test-account` op de live preview aan in Chromium met Galaxy S24-emulatie. Het computerscript `scripts/provider-e2e-setup.js` is verwijderd.
+
+**Resultaten**
+
+| Controle | Resultaat |
+| --- | --- |
+| Unit (`npm test`), lokaal en CI op `5b17d2e` | PASS 227/227 (14 nieuwe tests voor poort, isolatie, foutafhandeling, cookie en logging) |
+| Security/browser (`npm run test:security`), lokaal en CI | PASS 77/77, 0 skip (9 nieuwe M-scenario's) |
+| M1–M9 mobiele pagina in Chromium met **Galaxy S24-emulatie** en **synthetische** provider | PASS — omgevingscontrole, wachtwoord via e-mailcode, foute code, HttpOnly-cookie, rol manager, werkruimte, twee onafhankelijke sessies, afmelden en "andere sessies afmelden", reset beëindigt sessies, onbevestigd adres, geen geheimen in URL's. Geen echt toestel, geen echte provider |
+| U1–U6 echte Neon Auth zonder credentials (CI) | PASS 6/6 |
+| V1–V4 live preview (incl. nieuwe poortcontrole V4) | **BLOCKED** — Vercel Deployment Protection (401); geen bypass-secret |
+| P1–P8 echte login, sessies, previewketen, browser op preview | **BLOCKED** — `PHIXAR_E2E_USER_EMAIL`/`PASSWORD` ontbreken (0 pass, 12 cancelled); P7/P8 vragen ook de bypass |
+| Previewdeployment `5b17d2e` | PASS voor buildstatus (Vercel → GitHub: success). Inhoud en poort niet zelf opvraagbaar: Vercel-koppeling ziet het project niet, runner krijgt 401 |
+| Mobiele login op echte Samsung | **NOT RUN** — vereist de eigenaar op zijn telefoon |
+| Passkey met gebruikersverificatie op echte Samsung | **NOT RUN** — vereist de eigenaar |
+
+**Eenmalige handelingen van de eigenaar (telefoon)**
+1. Open `https://repair-flow-git-test-p0-weba-6c78f5-aminechtaiti-3069s-projects.vercel.app/test-account` en meld je aan bij Vercel als daarom gevraagd wordt (Deployment Protection blijft aan). Alle regels in stap 1 moeten ✓ tonen.
+2. Stap 3 op de pagina: code per e-mail, zelf een wachtwoord van minstens 12 tekens kiezen. Daarna stap 2: aanmelden. Verwacht: rol `manager`.
+3. Voor CI: GitHub → repository → Settings → Environments → `neon-auth-e2e` → twee environment-secrets `PHIXAR_E2E_USER_EMAIL` en `PHIXAR_E2E_USER_PASSWORD`; daarna de laatste run van "RepairFlow real Neon Auth provider E2E" opnieuw starten. Let op: P5 meldt alle sessies van het testaccount af, ook op de telefoon.
+4. Optioneel, voor P7/P8 en V1–V4: Vercel → repair-flow → Settings → Deployment Protection → Protection Bypass for Automation, en de waarde als repository-secret `PHIXAR_E2E_VERCEL_BYPASS`. Dit is een projectbrede sleutel: wis het klembord na het plakken.
+
+**Passkeytest (los van de e-mailcode):** op `/security` een sleutel registreren met vingerafdruk of pincode. Een eerste sleutel blijft *in afwachting*; activering vergt een eenmalige operatorcode buiten het e-mailkanaal (`scripts/mfa-bootstrap-code.js`, owner-rol, 15 minuten). Server-side kan daarna zonder geheimen worden gecontroleerd: `user_verified`, `device_type`, `backed_up`, AAGUID en de beveiligingsgebeurtenissen.
+
+| Criterium | Status |
+| --- | --- |
+| Mobiele, veilige setupprocedure zonder computer | PASS (code, tests, deployment gebouwd) |
+| Isolatiecontroles behouden en uitgebreid | PASS (unit + browser) |
+| Mobiele login werkt op de echte preview | **Niet bewezen** — wacht op de eigenaar |
+| Echte provider-E2E en browser → Vercel → Neon | BLOCKED |
+| Echte passkey op Samsung | NOT RUN |
+| **P0 volledig geverifieerd** | **Nee** |

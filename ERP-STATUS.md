@@ -390,3 +390,10 @@
 - Zelfde branch en draft PR #28. Oud testaccount met rechtstreeks geplaatste hash verwijderd; nieuw synthetisch account `amine.chtaiti+phixar-e2e@gmail.com` via de Neon-API op uitsluitend de geïsoleerde branch (geen rol, geen wachtwoord).
 - Nieuwe CI-job `provider-public`: 6/6 PASS tegen de echte gehoste Neon Auth (geen sessie zonder/met vervalste cookie, onbekende gebruiker en registratie geweigerd, sessiebeheer- en OTP-resetendpoints bestaan). Preview-controles BLOCKED door Vercel Deployment Protection (401).
 - `scripts/provider-e2e-setup.js`: eenmalige officiële activatie (reset-OTP) en veilige plaatsing van de secrets door de eigenaar. Tot dan blijft de geauthenticeerde provider-E2E BLOCKED. Lokaal 214/214 unit en 68/68 security. **P0 blijft open.**
+
+## P0 fase 6 — mobiele testprocedure zonder computer (2026-11-11)
+- Zelfde branch en draft PR #28, HEAD `5b17d2e`. Rapport: `docs/PHIXAR-P0-NEON-AUTH-VERIFICATION.md` §15.
+- `/test-account` + `POST /api/auth/session`: preview-only testlogin met officiële Neon Auth-e-mailcode voor wachtwoord en verificatie, sessielijst en sessie-intrekking. Opent alleen als alle isolatiecontroles slagen; elders blijft POST 405. Nog steeds 12 Vercel-functies.
+- Testidentiteit = door de eigenaar bevestigd account (gebruikers-ID + SHA-256, adres niet leesbaar in de openbare repo); alleen rol manager in de synthetische testorganisatie; extra synthetische lidmaatschappen gedeactiveerd.
+- CI-secrets teruggebracht tot e-mail + wachtwoord (+ optionele Vercel-bypass); P7/P8 testen de echte previewketen. Computerscript verwijderd.
+- Tests: unit 227/227, security/browser 77/77 (lokaal en CI, 0 skip); echte provider zonder credentials 6/6. BLOCKED: live preview (Vercel-bescherming) en geauthenticeerde provider-E2E (secrets). NOT RUN: login en passkey op een echte Samsung. P0 niet volledig geverifieerd.
