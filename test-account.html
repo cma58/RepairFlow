@@ -144,17 +144,20 @@ $('verify-form').addEventListener('submit',ev=>{ev.preventDefault();const btn=ev
  const r=await api({action:'verifyEmail',email:email(),otp:$('verify-code').value.trim()});$('verify-code').value='';
  if(r.ok){say('E-mailadres bevestigd. Meld je nu aan.','ok');$('verify-section').hidden=true}else say(errorText(r.data,r.status),'bad');
 })});
-$('list').addEventListener('click',ev=>guarded(ev.currentTarget,async()=>{
+async function refreshSessions(quiet){
  const r=await api({action:'sessions'});const body=$('sessions');
- if(!r.ok){say(errorText(r.data,r.status),'bad');if(r.status===401)await loadStatus();return}
+ if(!r.ok){say(errorText(r.data,r.status),'bad');if(r.status===401)await loadStatus();return false}
  body.replaceChildren(...r.data.sessions.map((s,i)=>{const tr=document.createElement('tr');
   const cells=[s.current?'Deze (huidige)':'Sessie '+(i+1),s.device,s.createdAt?new Date(s.createdAt).toLocaleString('nl-BE'):'?',s.usableInApp?'ja':'nee (ouder dan 12 uur of verlopen)'];
   for(const c of cells){const td=document.createElement('td');td.textContent=c;tr.append(td)}return tr}));
- say(r.data.sessions.length+' sessie(s) bij Neon Auth voor dit account.','ok');
-}));
+ if(!quiet)say(r.data.sessions.length+' sessie(s) bij Neon Auth voor dit account.','ok');
+ return true;
+}
+$('list').addEventListener('click',ev=>guarded(ev.currentTarget,()=>refreshSessions(false)));
 $('revoke-others').addEventListener('click',ev=>guarded(ev.currentTarget,async()=>{
- const r=await api({action:'revokeOtherSessions'});say(r.ok?'Alle andere sessies zijn afgemeld. Deze sessie blijft actief.':errorText(r.data,r.status),r.ok?'ok':'bad');
- if(r.ok)$('list').click();
+ const r=await api({action:'revokeOtherSessions'});
+ if(!r.ok){say(errorText(r.data,r.status),'bad');return}
+ await refreshSessions(true);say('Alle andere sessies zijn afgemeld. Deze sessie blijft actief.','ok');
 }));
 $('logout').addEventListener('click',ev=>guarded(ev.currentTarget,async()=>{
  let r;try{r=await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:'{}'})}catch{r=null}
