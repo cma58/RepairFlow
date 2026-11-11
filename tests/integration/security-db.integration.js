@@ -21,8 +21,8 @@ async function asRuntime(ctx,fn,{commit=false}={}){
 const ctxA=(user,extra={})=>({subject:user.id,org:FIX.orgA,branch:FIX.branchA,...extra});
 const sqlstate=code=>e=>e.code===code;
 
-test('all schema/migration files apply to a clean PostgreSQL in order (3 schema + 14 migrations)',()=>{
- assert.equal(db.applied.length,17);assert.equal(db.applied.at(-1),'db/migrations/014-lost-key-multiple-factor-guard.sql');
+test('all schema/migration files apply to a clean PostgreSQL in order (3 schema + 15 migrations)',()=>{
+ assert.equal(db.applied.length,18);assert.equal(db.applied.at(-1),'db/migrations/015-operator-console-bootstrap.sql');
 });
 test('runtime role is the real restricted login role without BYPASSRLS',async()=>{
  const r=await asRuntime(ctxA(U.ownerA),c=>c.query('SELECT current_user AS name,r.rolbypassrls AS bypass,r.rolsuper AS su FROM pg_roles r WHERE r.rolname=current_user'));
