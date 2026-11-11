@@ -235,3 +235,40 @@ Dit gedeelte actualiseert de historische toegangs- en Vercelclaims hierboven. St
 - `npm test`: **PASS** 212/212, geen skips. GitHub Actions op commit `54e6f5b`: **PASS** 212/212 unit en 68/68 security/database/browser, nul skips. Lokaal `npm run test:security`: **BLOCKED** wegens ontbrekende PostgreSQL-binaries. De echte provider, fysieke passkey en de volledige browser → Vercel → Neon-keten zijn **BLOCKED/NOT RUN**; P0 is niet productiegereed.
 
 De opt-in providersuite bevat nu ook `P3-browser`: twee echte, afzonderlijke Chrome BrowserContexts melden dezelfde synthetische gebruiker rechtstreeks op het geïsoleerde Neon Auth-endpoint aan en moeten verschillende provider-sessie-ID's plus afzonderlijke veilige HttpOnly-cookieopslag bewijzen. Deze proef gebruikt geen synthetische providerrespons. Hij is **BLOCKED**, samen met de overige providertests, tot een officieel ingestelde testidentiteit en environment-secrets beschikbaar zijn. Het bewijst na uitvoering nog niet de Vercel-keten; die vergt een aparte previewproef.
+
+## 14. Fase 5 — officiële testaccountactivatie en credential-loze providerproef (2026-11-11)
+
+Start-HEAD `0c62a79` (8 commits van fase 4 opgehaald, niets herschreven). Geen merge, deploy of productiewijziging.
+
+**Toegang in deze sessie:** GitHub push, PR-commentaar, workflow-reruns en joblogs werken; Actions-secrets, environments en artefacten zijn via de sessieproxy **geweigerd** (HTTP 403). Neon-koppeling werkt (project `shy-block-99675829`). De Vercel-koppeling van deze sessie ziet het project `repair-flow` niet (403/404). Claude in Chrome was niet verbonden. De shell bereikt Neon Auth en Vercel niet; GitHub Actions-runners wel.
+
+**Testaccount (officieel):**
+- Het oude account `phixar-e2e-provider@example.com` (rechtstreeks geplaatste hash, 0 sessies, geen rol) is met toestemming van de eigenaar via de Neon-API verwijderd.
+- Nieuw synthetisch account `amine.chtaiti+phixar-e2e@gmail.com` via de Neon-API aangemaakt op uitsluitend `br-purple-king-ban17e74`: geen wachtwoord, nog niet geverifieerd, geen staff-rij of lidmaatschap. De doelcontrole (`tests/provider/isolated-target.js`) pint nu dit adres.
+- Het wachtwoord kan officieel alleen via e-mail worden gezet (Neon: reset-link of Email OTP). `scripts/provider-e2e-setup.js` doet dat op de computer van de eigenaar: OTP aanvragen, zelf gegenereerd wachtwoord via `/email-otp/reset-password`, eventueel e-mailverificatie-OTP, echte login + afmelden, en daarna de negen secrets via `gh` (stdin, nooit als argument of in beeld) in environment `neon-auth-e2e`. Het script weigert elk ander Auth-, preview- of databasedoel en de owner-rol (unit-test).
+
+**Echte provider zonder credentials (nieuwe job `provider-public`, GitHub Actions):**
+
+| Controle | Resultaat tegen de gehoste Neon Auth |
+| --- | --- |
+| U1 endpoint bereikbaar | PASS — `/ok` 200 |
+| U2 geen sessie zonder of met vervalste cookie | PASS — `/get-session` 200 `null`; `verifySession` weigert |
+| U3 onbekende gebruiker | PASS — 401 `INVALID_EMAIL_OR_PASSWORD`, geen cookie |
+| U4 publieke registratie | PASS — 400 `EMAIL_PASSWORD_SIGN_UP_DISABLED` |
+| U5 sessiebeheer bestaat en vereist sessie | PASS — `/list-sessions`, `/revoke-session`, `/revoke-sessions`, `/revoke-other-sessions` 401; `/sign-out` 200 zonder cookie |
+| U6 officiële reset-endpoints bestaan | PASS — Email-OTP-endpoints 400 bij lege invoer (geen e-mail verstuurd); `/request-password-reset` 400; `/forget-password` 404; `/reference` 200 |
+| V1–V3 live preview anoniem | **BLOCKED** — Vercel Deployment Protection antwoordt 401 aan de runner. Optioneel repository-secret `PHIXAR_E2E_VERCEL_BYPASS` (Vercel *Protection Bypass for Automation*) wordt ondersteund |
+
+Hiermee zijn de endpointnamen die de geauthenticeerde suite gebruikt tegen de echte gehoste versie bevestigd. Een geslaagde login, echte sessie-intrekking, twee profielen met echte sessies en P7 blijven **BLOCKED** tot de eigenaar het setupscript heeft gedraaid.
+
+**Overige controles:** lokaal `npm test` 214/214 en `npm run test:security` 68/68 (PostgreSQL 16, Chrome 153), 0 skips. Migratie 014 op Neon is identiek aan de repo (hash `0bf8916c8c` voor `rf_block_own_credential`); de 013-vingerafdruk is ongewijzigd.
+
+| Criterium | Status |
+| --- | --- |
+| Testaccount officieel aangemaakt (zonder rol) | PASS |
+| Wachtwoord via officieel resetproces | BLOCKED — vereist het setupscript bij de eigenaar (mailbox + GitHub-secrets) |
+| Echte provider: weigeringen, registratie dicht, endpoints | PASS (CI) |
+| Echte login, twee profielen, uitloggen, intrekking één/alle sessies, nieuwe login, P7 | BLOCKED |
+| Browser → Vercel → Neon-keten | BLOCKED — Vercel-bescherming en geen Vercel-toegang in deze sessie |
+| Echte passkeys | NOT RUN |
+| **P0 volledig geverifieerd** | **Nee** |
