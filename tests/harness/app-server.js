@@ -59,7 +59,9 @@ function staticFile(res,pathname){
 // realEnv: run the REAL dependency path (verifySession → real Neon Auth over the
 // network, @neondatabase/serverless Pool → real isolated Neon branch). Only env is
 // supplied; nothing is substituted. Used by tests/provider (opt-in, needs secrets).
-async function startAppServer({database,auth,organizationId,branchId,dynamicContext=false,port=0,realEnv}){
+// testAccount: {emailSha256,userId} enables the preview-only test login exactly as on
+// the pinned Vercel preview (VERCEL_ENV=preview + P0 branch), pinned to THIS harness.
+async function startAppServer({database,auth,organizationId,branchId,dynamicContext=false,port=0,realEnv,testAccount}){
  const tls=selfSignedCertificate();
  const handlers={};
  for(const [route,file] of Object.entries(ROUTES))handlers[route]=(await import(path.join(ROOT,file))).default;
@@ -85,9 +87,14 @@ async function startAppServer({database,auth,organizationId,branchId,dynamicCont
   REPAIRFLOW_APP_ORIGIN:origin,REPAIRFLOW_WEBAUTHN_RP_ID:'localhost',REPAIRFLOW_NEON_AUTH_URL:auth.AUTH_URL,
   REPAIRFLOW_RUNTIME_ROLE:'rf_runtime_login',REPAIRFLOW_RUNTIME_DATABASE_URL:database.runtimeUrl,
   REPAIRFLOW_ORGANIZATION_ID:organizationId,REPAIRFLOW_BRANCH_ID:branchId,
-  REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED:dynamicContext?'true':'false'
+  REPAIRFLOW_DYNAMIC_CONTEXT_ENABLED:dynamicContext?'true':'false',
+  ...(testAccount?{VERCEL_ENV:'preview',VERCEL_GIT_COMMIT_REF:require('../../lib/isolated-test-target').GIT_BRANCH,VERCEL_GIT_COMMIT_SHA:'local-harness'}:{})
  });
- deps=markTestDeps({env,createPool:database.createPool,fetcher:auth.fetcher,
+ let testAccountTarget;
+ if(testAccount){const db=new URL(database.runtimeUrl);
+  testAccountTarget=Object.freeze({...require('../../lib/isolated-test-target'),AUTH:auth.AUTH_URL,ORIGIN:origin,ORGANIZATION_ID:organizationId,ORGANIZATION_NAME:'E2E Tenant A',BRANCH_ID:branchId,
+   DATABASE_HOSTS:[db.hostname],DATABASE_NAME:db.pathname.slice(1),EMAIL_SHA256:testAccount.emailSha256,USER_ID:testAccount.userId})}
+ deps=markTestDeps({env,createPool:database.createPool,fetcher:auth.fetcher,testAccountTarget,
   // api/staff-session.js calls authenticate(req); other handlers call authenticate(cookie,{env}).
   authenticate:(arg,opts={})=>verifySession(typeof arg==='object'&&arg?.headers?arg.headers.cookie:arg,{env:opts.env||env,fetcher:auth.fetcher})});
  return {origin,spki:tls.spki,env,close:()=>new Promise(r=>{server.closeAllConnections?.();server.close(()=>{tls.cleanup();r()})})};
