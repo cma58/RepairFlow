@@ -1,0 +1,170 @@
+<!doctype html><html lang="nl" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<title>PHIXAR · Testaccount (geïsoleerde testomgeving)</title><link rel="stylesheet" href="/phixar-dashboard.css"><link rel="stylesheet" href="/workspace-shell.css">
+<style>main{max-width:760px;margin:auto;padding:16px}section{padding:18px;margin:16px 0;border:1px solid #71809d;border-radius:16px}
+button{min-height:48px;margin:6px 6px 6px 0;padding:0 16px;font-size:1rem}input{width:100%;box-sizing:border-box;min-height:48px;margin:4px 0 10px;padding:0 12px;font-size:1rem}
+label{display:block;margin-top:6px;font-weight:600}p,li{line-height:1.55}#status{min-height:1.6em;font-weight:600}.ok{color:#7fd69a}.bad{color:#ff8f8f}.warn{color:#f2c46d}
+table{width:100%;border-collapse:collapse;font-size:.95rem}th,td{text-align:left;padding:6px 4px;border-bottom:1px solid #71809d55;vertical-align:top;word-break:break-word}
+.banner{border-color:#f2c46d;background:#f2c46d14}.inline{display:flex;align-items:center;gap:8px;font-weight:400}.inline input{width:auto;min-height:auto;margin:0}[hidden]{display:none!important}
+ol.checks li{margin:10px 0}ol.checks label{display:block;font-weight:400;margin:0}ol.checks input{width:auto;min-height:auto;margin-right:8px}a.button{display:inline-block;min-height:48px;line-height:48px;padding:0 16px;margin:6px 6px 6px 0;border:1px solid #71809d;border-radius:10px;text-decoration:none}</style></head>
+<body><main>
+<h1>Testaccount · geïsoleerde testomgeving</h1>
+<section class="banner" aria-labelledby="h-warn"><h2 id="h-warn">Alleen testomgeving</h2>
+<p>Deze pagina werkt uitsluitend op de Vercel-preview van de P0-testbranch, met de <strong>geïsoleerde</strong> Neon-testbranch en de synthetische organisatie "PHIXAR isolation test". Geen productiegegevens, geen eigenaarsrechten. Wachtwoord en codes typ je alleen hier; ze worden niet opgeslagen, gelogd of in de adresbalk gezet.</p></section>
+<p id="status" role="status" aria-live="polite">Omgeving controleren…</p>
+
+<section aria-labelledby="h-env"><h2 id="h-env">1. Omgevingscontrole</h2>
+<table><tbody id="env"><tr><td>Bezig…</td></tr></tbody></table></section>
+
+<div id="flows" hidden>
+<section aria-labelledby="h-signin"><h2 id="h-signin">2. Aanmelden</h2>
+<form id="signin-form" method="post" action="/api/auth/session" novalidate>
+<label for="email">E-mailadres van het testaccount</label>
+<input id="email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required>
+<label for="password">Wachtwoord</label>
+<input id="password" name="password" type="password" autocomplete="current-password" maxlength="128" required>
+<label class="inline"><input type="checkbox" data-toggle="password"> Wachtwoord tonen</label>
+<button id="signin" type="submit">Aanmelden</button></form>
+<p>Nog geen wachtwoord, of vergeten? Gebruik stap 3.</p></section>
+
+<section aria-labelledby="h-reset"><h2 id="h-reset">3. Wachtwoord instellen of herstellen (officiële Neon Auth e-mailcode)</h2>
+<p>Je krijgt van Neon Auth een code per e-mail. Typ die code en kies zelf een nieuw wachtwoord van minstens 12 tekens. Na het instellen worden bestaande sessies van dit account beëindigd.</p>
+<button id="send-reset" type="button">Code naar mijn e-mail sturen</button>
+<form id="reset-form" method="post" action="/api/auth/session" novalidate>
+<input type="email" autocomplete="username" id="reset-username" tabindex="-1" aria-hidden="true" hidden readonly>
+<label for="reset-code">Code uit de e-mail</label>
+<input id="reset-code" type="text" inputmode="numeric" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" maxlength="12" required>
+<label for="new-password">Nieuw wachtwoord (minstens 12 tekens)</label>
+<input id="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+<label for="new-password-2">Herhaal nieuw wachtwoord</label>
+<input id="new-password-2" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+<label class="inline"><input type="checkbox" data-toggle="new-password,new-password-2"> Wachtwoord tonen</label>
+<button type="submit">Wachtwoord instellen</button></form></section>
+
+<section id="verify-section" aria-labelledby="h-verify" hidden><h2 id="h-verify">E-mailadres bevestigen</h2>
+<p>Neon Auth meldt dat dit adres nog niet bevestigd is. Vraag een bevestigingscode aan en typ die hier.</p>
+<button id="send-verify" type="button">Bevestigingscode sturen</button>
+<form id="verify-form" method="post" action="/api/auth/session" novalidate>
+<label for="verify-code">Bevestigingscode</label>
+<input id="verify-code" type="text" inputmode="numeric" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" maxlength="12" required>
+<button type="submit">E-mailadres bevestigen</button></form></section>
+
+<section aria-labelledby="h-session"><h2 id="h-session">4. Sessie</h2>
+<p id="whoami">Niet aangemeld.</p>
+<div id="signed-in" hidden>
+<p><a class="button" href="/workspace">Werkruimte openen</a> <a class="button" href="/security">Passkey-test (Accountbeveiliging)</a></p>
+<button id="list" type="button">Sessies tonen</button> <button id="revoke-others" type="button">Andere sessies afmelden</button> <button id="logout" type="button">Afmelden</button>
+<table><thead><tr><th>Sessie</th><th>Toestel</th><th>Gestart</th><th>In app bruikbaar</th></tr></thead><tbody id="sessions"></tbody></table>
+<p class="warn">De app accepteert een sessie maximaal 12 uur na aanmelden; oudere sessies blijven zichtbaar maar geven geen toegang.</p></div></section>
+</div>
+
+<section aria-labelledby="h-checks"><h2 id="h-checks">5. Handmatige tests op je Samsung</h2>
+<p>Vink af wat werkte. Dit blijft alleen in deze browser bewaard en wordt nergens heen gestuurd.</p>
+<ol class="checks" id="checks">
+<li><label><input type="checkbox" data-check="t1"> Code per e-mail ontvangen en eigen wachtwoord ingesteld (stap 3)</label></li>
+<li><label><input type="checkbox" data-check="t2"> Aangemeld; stap 4 toont rol <strong>manager</strong> in "PHIXAR isolation test"</label></li>
+<li><label><input type="checkbox" data-check="t3"> Werkruimte: dashboard, klanten, reparaties, voorraad en kassa openen</label></li>
+<li><label><input type="checkbox" data-check="t4"> Tweede, onafhankelijke sessie: deze link in een andere browser (Chrome ↔ Samsung Internet) of een incognitotabblad openen en aanmelden; "Sessies tonen" laat beide zien, elk met een eigen "huidige"</label></li>
+<li><label><input type="checkbox" data-check="t5"> Afmelden in browser B: B is afgemeld, A blijft aangemeld (A herladen)</label></li>
+<li><label><input type="checkbox" data-check="t6"> Opnieuw in B aanmelden, dan in A "Andere sessies afmelden": B moet opnieuw aanmelden</label></li>
+<li><label><input type="checkbox" data-check="t7"> Wachtwoord vergeten-flow (stap 3) opnieuw: daarna is een oude sessie ongeldig en werkt het nieuwe wachtwoord</label></li>
+<li><label><input type="checkbox" data-check="t8"> Apart: passkey op <a href="/security">Accountbeveiliging</a> registreren met vingerafdruk/pincode. Dit is een tweede factor en staat los van de e-mailcode; een eerste sleutel blijft "in afwachting" tot activering met een eenmalige beheerderscode.</label></li>
+</ol></section>
+</main>
+<script>
+'use strict';
+const PREVIEW='https://repair-flow-git-test-p0-weba-6c78f5-aminechtaiti-3069s-projects.vercel.app';
+const $=id=>document.getElementById(id),statusEl=$('status');
+const MESSAGES={invalid_email_or_password:'E-mailadres of wachtwoord onjuist.',email_not_verified:'Dit e-mailadres is nog niet bevestigd. Gebruik het bevestigingsblok hieronder.',
+ account_not_allowed:'Dit is niet het vastgelegde testaccount.',invalid_email:'Vul een geldig e-mailadres in.',invalid_code:'Vul de code uit de e-mail in.',invalid_otp:'Code onjuist.',
+ otp_expired:'Code verlopen; vraag een nieuwe aan.',too_many_attempts:'Te veel pogingen; vraag een nieuwe code aan.',too_many_requests:'Te veel verzoeken; wacht een minuut en probeer opnieuw.',
+ password_too_short:'Het wachtwoord moet minstens 12 tekens hebben.',invalid_password:'Ongeldig wachtwoord (maximaal 128 tekens).',auth_unavailable:'Neon Auth is tijdelijk niet bereikbaar.',
+ authentication_required:'Niet (meer) aangemeld.',origin_denied:'Open de pagina via de vaste preview-link.',cookie_unavailable:'Neon Auth gaf geen bruikbare sessie terug.',
+ session_unverified:'De nieuwe sessie kon niet worden gecontroleerd.',provider_rejected:'Neon Auth weigerde het verzoek.'};
+function say(text,kind){statusEl.textContent=text;statusEl.className=kind||''}
+function errorText(data,status){return MESSAGES[data?.error]||('Mislukt ('+(data?.error||('HTTP '+status))+').')}
+async function api(body){
+ let r;try{r=await fetch('/api/auth/session',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
+ catch{return {ok:false,status:0,data:{error:'network'}}}
+ const type=r.headers.get('content-type')||'';let data=null;
+ if(type.includes('application/json'))data=await r.json().catch(()=>null);
+ return {ok:r.ok,status:r.status,data,json:!!data};
+}
+function email(){return $('email').value.trim()}
+function row(label,value,good){const tr=document.createElement('tr');const a=document.createElement('th');a.textContent=label;const b=document.createElement('td');b.textContent=(good===false?'✗ ':'✓ ')+value;b.className=good===false?'bad':'ok';tr.append(a,b);return tr}
+
+async function loadStatus(){
+ const r=await api({action:'status'});const env=$('env');
+ if(r.status===403&&r.data?.error==='origin_denied'){say('Open deze pagina via de vaste preview-link: '+PREVIEW+'/test-account','bad');env.replaceChildren(row('Adres',location.origin,false));return}
+ if(r.status===0){say('Geen verbinding.','bad');env.replaceChildren(row('Verbinding','niet bereikbaar',false));return}
+ if(!r.json){say('Vercel vraagt eerst aanmelding: herlaad deze link en meld je aan bij Vercel.','bad');env.replaceChildren(row('Vercel-toegang','aanmelden bij Vercel nodig (HTTP '+r.status+')',false));return}
+ if(r.status===405){say('Testlogin is niet actief op deze deployment.','bad');env.replaceChildren(row('Deployment','geen preview van de P0-testbranch',false));return}
+ if(r.status===503&&r.data?.enabled===false){say('Testlogin geblokkeerd door een isolatiecontrole: '+r.data.failedCheck,'bad');env.replaceChildren(row('Isolatiecontrole',r.data.failedCheck,false));return}
+ if(!r.ok){say(errorText(r.data,r.status),'bad');return}
+ const e=r.data.environment;
+ env.replaceChildren(row('Vercel-omgeving',e.vercelEnv),row('Git-branch',e.gitBranch),row('Commit',e.commit||'onbekend',!!e.commit),row('Neon Auth',e.authHost),
+  row('Database',e.databaseHost),row('Databaserol',e.runtimeRole+' (zonder RLS-bypass)'),row('Organisatie',e.organizationName+' · '+e.organizationId),
+  row('Vestiging',e.branchId),row('Eén vaste testorganisatie',e.singleTenantContext?'ja':'nee',e.singleTenantContext),row('Passkey-domein',e.passkeyRelyingParty?'klopt met deze link':'wijkt af',e.passkeyRelyingParty));
+ $('flows').hidden=false;
+ say(r.data.signedIn?'Aangemeld.':'Klaar om aan te melden.','ok');
+ if(r.data.signedIn)await showSignedIn();else{$('signed-in').hidden=true;$('whoami').textContent='Niet aangemeld.'}
+}
+async function showSignedIn(){
+ let me={};try{const r=await fetch('/api/auth/me',{credentials:'same-origin',cache:'no-store'});me={status:r.status,data:await r.json().catch(()=>null)}}catch{me={status:0}}
+ $('signed-in').hidden=false;
+ if(me.status===200&&me.data?.authenticated)$('whoami').textContent='Aangemeld als testaccount. Rol in de testorganisatie: '+me.data.role+'.';
+ else $('whoami').textContent='Aangemeld bij Neon Auth, maar de app geeft geen toegang (HTTP '+me.status+(me.data?.error?': '+me.data.error:'')+').';
+}
+async function guarded(button,work){button.disabled=true;try{await work()}finally{button.disabled=false}}
+
+$('signin-form').addEventListener('submit',ev=>{ev.preventDefault();const btn=$('signin');guarded(btn,async()=>{
+ say('Aanmelden…');const r=await api({action:'signIn',email:email(),password:$('password').value});$('password').value='';
+ if(r.ok){say('Aangemeld.','ok');await showSignedIn();return}
+ if(r.data?.error==='email_not_verified')$('verify-section').hidden=false;
+ say(errorText(r.data,r.status),'bad');
+})});
+$('send-reset').addEventListener('click',ev=>guarded(ev.currentTarget,async()=>{
+ say('Code aanvragen…');const r=await api({action:'sendResetCode',email:email()});
+ say(r.ok?'Als dit het testaccount is, stuurt Neon Auth nu een code. Kijk ook in de map Spam.':errorText(r.data,r.status),r.ok?'ok':'bad');
+}));
+$('reset-form').addEventListener('submit',ev=>{ev.preventDefault();const btn=ev.submitter||ev.currentTarget.querySelector('button');guarded(btn,async()=>{
+ const p1=$('new-password'),p2=$('new-password-2');
+ if(p1.value!==p2.value){say('De twee wachtwoorden verschillen.','bad');return}
+ if(p1.value.length<12){say(MESSAGES.password_too_short,'bad');return}
+ $('reset-username').value=email();
+ say('Wachtwoord instellen…');const r=await api({action:'resetPassword',email:email(),otp:$('reset-code').value.trim(),password:p1.value});
+ p1.value='';p2.value='';$('reset-code').value='';
+ if(r.ok){say('Wachtwoord ingesteld. Meld je nu aan in stap 2.','ok');$('signed-in').hidden=true;$('whoami').textContent='Niet aangemeld.';$('password').focus()}
+ else say(errorText(r.data,r.status),'bad');
+})});
+$('send-verify').addEventListener('click',ev=>guarded(ev.currentTarget,async()=>{
+ const r=await api({action:'sendVerificationCode',email:email()});say(r.ok?'Bevestigingscode verstuurd.':errorText(r.data,r.status),r.ok?'ok':'bad');
+}));
+$('verify-form').addEventListener('submit',ev=>{ev.preventDefault();const btn=ev.currentTarget.querySelector('button');guarded(btn,async()=>{
+ const r=await api({action:'verifyEmail',email:email(),otp:$('verify-code').value.trim()});$('verify-code').value='';
+ if(r.ok){say('E-mailadres bevestigd. Meld je nu aan.','ok');$('verify-section').hidden=true}else say(errorText(r.data,r.status),'bad');
+})});
+$('list').addEventListener('click',ev=>guarded(ev.currentTarget,async()=>{
+ const r=await api({action:'sessions'});const body=$('sessions');
+ if(!r.ok){say(errorText(r.data,r.status),'bad');if(r.status===401)await loadStatus();return}
+ body.replaceChildren(...r.data.sessions.map((s,i)=>{const tr=document.createElement('tr');
+  const cells=[s.current?'Deze (huidige)':'Sessie '+(i+1),s.device,s.createdAt?new Date(s.createdAt).toLocaleString('nl-BE'):'?',s.usableInApp?'ja':'nee (ouder dan 12 uur of verlopen)'];
+  for(const c of cells){const td=document.createElement('td');td.textContent=c;tr.append(td)}return tr}));
+ say(r.data.sessions.length+' sessie(s) bij Neon Auth voor dit account.','ok');
+}));
+$('revoke-others').addEventListener('click',ev=>guarded(ev.currentTarget,async()=>{
+ const r=await api({action:'revokeOtherSessions'});say(r.ok?'Alle andere sessies zijn afgemeld. Deze sessie blijft actief.':errorText(r.data,r.status),r.ok?'ok':'bad');
+ if(r.ok)$('list').click();
+}));
+$('logout').addEventListener('click',ev=>guarded(ev.currentTarget,async()=>{
+ let r;try{r=await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:'{}'})}catch{r=null}
+ $('sessions').replaceChildren();
+ if(r?.ok){say('Afgemeld.','ok');$('signed-in').hidden=true;$('whoami').textContent='Niet aangemeld.'}else say('Afmelden mislukt'+(r?' (HTTP '+r.status+')':'')+'.','bad');
+}));
+for(const box of document.querySelectorAll('[data-toggle]'))box.addEventListener('change',()=>{for(const id of box.dataset.toggle.split(','))$(id).type=box.checked?'text':'password'});
+for(const box of document.querySelectorAll('[data-check]')){
+ try{box.checked=localStorage.getItem('phixar-test-'+box.dataset.check)==='1'}catch{}
+ box.addEventListener('change',()=>{try{localStorage.setItem('phixar-test-'+box.dataset.check,box.checked?'1':'0')}catch{}});
+}
+loadStatus();
+</script></body></html>
