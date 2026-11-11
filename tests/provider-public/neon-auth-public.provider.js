@@ -15,6 +15,7 @@ const {describe,it,after}=require('node:test');const assert=require('node:assert
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {verifySession}=require('../../lib/neon-auth-session');
 const {AUTH,ORIGIN}=require('../provider/isolated-target');
+const PINNED=require('../../lib/isolated-test-target');
 const OUT=path.resolve(__dirname,'..','..','test-results','provider-public');
 const T={timeout:30000};const evidence=[];
 function record(check,detail={}){evidence.push({check,mode:'real-provider-unauthenticated',result:'PASS',detail})}
@@ -101,6 +102,22 @@ describe('Echte Vercel-preview van de testbranch — zonder credentials',()=>{
   const foreign=await call(ORIGIN,'/api/security',{method:'POST',body:{action:'securityStatus'},origin:'https://evil.example'});
   out['/api/security foreign-origin']=foreign.status;assert.ok([401,403,503].includes(foreign.status),'foreign origin '+foreign.status);
   record('anonymous and forged-cookie requests refused on the live preview',out);
+ });
+ it('V4 testaccountpagina live: poort open uitsluitend voor het geïsoleerde doel, zonder geheimen',T,async()=>{
+  if(protectedPreview)throw Object.assign(Error('BLOCKED: preview protected (see V1)'),{code:'BLOCKED'});
+  const page=await call(ORIGIN,'/test-account',{origin:null});assert.equal(page.status,200);assert.match(page.text,/Testaccount/);
+  const r=await call(ORIGIN,'/api/auth/session',{method:'POST',body:{action:'status'}});
+  if(r.status===503&&r.json?.enabled===false)assert.fail('test login gate closed on the preview: failed isolation check '+r.json.failedCheck);
+  assert.equal(r.status,200,'status '+r.status);assert.equal(r.json?.enabled,true);
+  const e=r.json.environment;
+  assert.equal(e.vercelEnv,'preview');assert.equal(e.gitBranch,PINNED.GIT_BRANCH);assert.equal(e.authHost,new URL(AUTH).host);
+  assert.ok(PINNED.DATABASE_HOSTS.includes(e.databaseHost),'isolated database host');assert.equal(e.runtimeRole,'rf_runtime_login');
+  assert.equal(e.organizationId,PINNED.ORGANIZATION_ID);assert.equal(e.branchId,PINNED.BRANCH_ID);assert.equal(e.singleTenantContext,true);
+  assert.equal(r.json.signedIn,false);noSessionCookie(r);assert.doesNotMatch(r.text,/postgres|@|password|token/i);
+  const foreign=await call(ORIGIN,'/api/auth/session',{method:'POST',body:{action:'status'},origin:'https://evil.example'});assert.equal(foreign.status,403);
+  const other=await call(ORIGIN,'/api/auth/session',{method:'POST',body:{action:'sendResetCode',email:'not-the-test-account-'+Date.now()+'@example.com'}});
+  assert.equal(other.status,403);assert.equal(other.json?.error,'account_not_allowed');
+  record('live preview test-account gate open only for the pinned isolated target',{commit:e.commit,databaseHost:e.databaseHost,passkeyRelyingParty:e.passkeyRelyingParty,foreignOrigin:foreign.status,otherAccount:other.status});
  });
  it('V3 anti-framing- en sniffingheaders live op de preview',T,async()=>{
   if(protectedPreview)throw Object.assign(Error('BLOCKED: preview protected (see V1)'),{code:'BLOCKED'});

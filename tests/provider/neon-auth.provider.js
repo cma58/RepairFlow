@@ -2,24 +2,25 @@
 // REAL Neon Auth provider E2E (opt-in). Never runs against mocks; without the
 // required configuration the run FAILS as BLOCKED (it is never skipped or green).
 //
-// Run only against an ISOLATED Neon branch with SYNTHETIC users (sign-up disabled,
-// accounts created by the owner with email+password). Never production credentials.
-// Required environment (GitHub Actions secrets, workflow neon-auth-provider-e2e.yml):
-//   PHIXAR_E2E_ENVIRONMENT=isolated        explicit acknowledgement
-//   PHIXAR_E2E_NEON_AUTH_URL               https://<ep>.neonauth.<region>.neon.tech/<db>/auth
-//   PHIXAR_E2E_TRUSTED_ORIGIN              an origin trusted by that Neon Auth branch
-//   PHIXAR_E2E_USER_EMAIL / PHIXAR_E2E_USER_PASSWORD   synthetic test account
-// Required (real app handlers + real isolated database):
-//   PHIXAR_E2E_RUNTIME_DATABASE_URL, PHIXAR_E2E_ORGANIZATION_ID, PHIXAR_E2E_BRANCH_ID,
-//   PHIXAR_E2E_EXPECTED_ROLE (owner|manager|technician|sales|none)
-// Tokens and cookies are never printed; evidence.json contains only shapes/flags.
+// Target: the reviewed ISOLATED Neon branch, its Neon Auth instance and the pinned
+// Vercel preview (lib/isolated-test-target.js). Identity: the owner-confirmed test
+// account, pinned by Neon Auth user ID and e-mail SHA-256; role manager in the
+// synthetic organisation only. Never production.
+// Required secrets (GitHub environment neon-auth-e2e, settable from a phone browser):
+//   PHIXAR_E2E_USER_EMAIL     the owner's test-account address (checked against the pin)
+//   PHIXAR_E2E_USER_PASSWORD  the password the owner set himself via the e-mail code
+// Required for P7/P8 (live preview chain), repository secret:
+//   PHIXAR_E2E_VERCEL_BYPASS  Vercel "Protection Bypass for Automation" of this project
+// NOTE: P5 revokes ALL provider sessions of the test account (also on the phone).
+// Tokens, cookies, passwords and the address are never printed; evidence.json holds
+// only shapes, flags and status codes.
 const {describe,it,before,after}=require('node:test');const assert=require('node:assert/strict');
-const fs=require('node:fs'),path=require('node:path'),https=require('node:https');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {verifySession,authUrl}=require('../../lib/neon-auth-session');
-const {assertIsolatedTarget}=require('./isolated-target');
-const E=process.env;const evidence=[];const OUT=path.resolve(__dirname,'..','..','test-results','provider-e2e');
-const REQUIRED=['PHIXAR_E2E_ENVIRONMENT','PHIXAR_E2E_NEON_AUTH_URL','PHIXAR_E2E_TRUSTED_ORIGIN','PHIXAR_E2E_USER_EMAIL','PHIXAR_E2E_USER_PASSWORD',
- 'PHIXAR_E2E_RUNTIME_DATABASE_URL','PHIXAR_E2E_ORGANIZATION_ID','PHIXAR_E2E_BRANCH_ID','PHIXAR_E2E_EXPECTED_ROLE'];
+const {assertIsolatedTarget,pinnedProviderEnv,USER_ID,ORIGIN}=require('./isolated-target');
+const E=pinnedProviderEnv(process.env);const evidence=[];const OUT=path.resolve(__dirname,'..','..','test-results','provider-e2e');
+const REQUIRED=['PHIXAR_E2E_USER_EMAIL','PHIXAR_E2E_USER_PASSWORD'];
+const BYPASS=process.env.PHIXAR_E2E_VERCEL_BYPASS;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const T={timeout:60000};let AUTH,env;
 function record(check,detail={}){evidence.push({check,mode:'real-provider',result:'PASS',detail})}
@@ -64,7 +65,7 @@ describe('Echte Neon Auth-provider (geïsoleerde branch, synthetische gebruiker)
  });
  it('P2 RepairFlow verifySession accepteert de echte sessie (ID, subject, tijden)',T,async()=>{
   const id=await verifySession(S.a.cookie.cookie,{env});
-  assert.match(id.sessionId,UUID);assert.ok(id.subject);if(S.a.userId)assert.equal(id.subject,S.a.userId);
+  assert.match(id.sessionId,UUID);assert.equal(id.subject,USER_ID,'pinned Neon Auth user');assert.equal(S.a.userId,USER_ID);
   assert.ok(Math.abs(Date.now()-Date.parse(id.createdAt))<120000,'fresh createdAt');
   S.a.identity=id;record('real /get-session accepted by verifySession',{sessionIdIsUuid:true,createdAtFresh:true});
  });
@@ -149,16 +150,60 @@ describe('Echte Neon Auth-provider (geïsoleerde branch, synthetische gebruiker)
   assert.ok(su.status>=400,'self sign-up must stay disabled, got '+su.status);
   record('wrong password, unknown user and self sign-up are refused');
  });
- it('P7 echte app-handlers + echte geïsoleerde database',T,async()=>{
-  const {startAppServer}=require('../harness/app-server');
-  const app=await startAppServer({realEnv:{REPAIRFLOW_NEON_AUTH_URL:E.PHIXAR_E2E_NEON_AUTH_URL,REPAIRFLOW_RUNTIME_ROLE:'rf_runtime_login',REPAIRFLOW_RUNTIME_DATABASE_URL:E.PHIXAR_E2E_RUNTIME_DATABASE_URL,
-   REPAIRFLOW_ORGANIZATION_ID:E.PHIXAR_E2E_ORGANIZATION_ID,REPAIRFLOW_BRANCH_ID:E.PHIXAR_E2E_BRANCH_ID,REPAIRFLOW_WEBAUTHN_RP_ID:'localhost'}});
+ // P7/P8: the exact chain the phone uses: browser → Vercel preview (real api/ functions,
+ // real env) → Neon Auth + isolated Neon database. Requires the Vercel automation bypass.
+ const previewBlocked=()=>{if(!BYPASS)throw Object.assign(Error('BLOCKED: PHIXAR_E2E_VERCEL_BYPASS not set; the preview is behind Vercel Deployment Protection'),{code:'BLOCKED'})};
+ async function preview(p,{method='GET',body,cookie,origin}={}){
+  const headers={Accept:'application/json','x-vercel-protection-bypass':BYPASS,'User-Agent':'PHIXAR-provider-e2e (GitHub Actions)'};
+  if(body!==undefined)headers['Content-Type']='application/json';if(origin)headers.Origin=origin;if(cookie)headers.Cookie=cookie;
+  const r=await fetch(ORIGIN+p,{method,headers,body:body===undefined?undefined:JSON.stringify(body),redirect:'manual',signal:AbortSignal.timeout(15000)});
+  let json=null;try{json=await r.json()}catch{}
+  if(r.status===401&&!json)throw Object.assign(Error('BLOCKED: Vercel rejected the configured bypass value'),{code:'BLOCKED'});
+  return {status:r.status,json,setCookie:r.headers.getSetCookie()};
+ }
+ it('P7 live preview: aanmelden via /api/auth/session, rol manager, werkruimte, afmelden',T,async()=>{
+  previewBlocked();
+  const st=await preview('/api/auth/session',{method:'POST',origin:ORIGIN,body:{action:'status'}});
+  assert.equal(st.status,200,'gate '+st.status+' '+JSON.stringify(st.json));assert.equal(st.json.enabled,true);
+  const si=await preview('/api/auth/session',{method:'POST',origin:ORIGIN,body:{action:'signIn',email:E.PHIXAR_E2E_USER_EMAIL,password:E.PHIXAR_E2E_USER_PASSWORD}});
+  assert.equal(si.status,200,'sign-in '+si.status+' '+(si.json?.error||''));assert.equal(si.json.signedIn,true);assert.doesNotMatch(JSON.stringify(si.json),/token|password/i);
+  assert.equal(si.setCookie.length,1);const c=parseSetCookie(si.setCookie);
+  assert.equal(c.attrs.httponly,true);assert.equal(c.attrs.secure,true);assert.equal(String(c.attrs.samesite).toLowerCase(),'lax');assert.equal(c.attrs.path,'/');assert.equal(c.attrs['max-age'],'43200');assert.equal(c.attrs.domain,undefined,'host-only cookie');
+  const me=await preview('/api/auth/me',{cookie:c.cookie});assert.deepEqual(me.json,{authenticated:true,role:E.PHIXAR_E2E_EXPECTED_ROLE});
+  const ws=await preview('/api/workspace',{cookie:c.cookie});assert.equal(ws.status,200,'workspace '+ws.status);
+  const list=await preview('/api/auth/session',{method:'POST',origin:ORIGIN,cookie:c.cookie,body:{action:'sessions'}});
+  assert.equal(list.status,200);assert.ok(list.json.sessions.some(x=>x.current));assert.doesNotMatch(JSON.stringify(list.json),/token|ipAddress/);
+  const forged=await preview('/api/auth/me',{cookie:c.name+'=forged-'+crypto.randomBytes(24).toString('base64url')});assert.ok([401,403].includes(forged.status),'forged '+forged.status);
+  const out=await preview('/api/auth/logout',{method:'POST',origin:ORIGIN,cookie:c.cookie,body:{}});assert.equal(out.status,200);
+  assert.ok([401,403].includes((await preview('/api/auth/me',{cookie:c.cookie})).status),'old cookie refused after logout');
+  record('live preview chain: sign-in → first-party cookie → /api/auth/me manager → /api/workspace 200 → logout',{commit:st.json.environment.commit,me:me.status,workspace:ws.status,sessionsListed:list.json.sessions.length});
+ });
+ it('P8 echte Chromium (Galaxy S24-emulatie) op /test-account van de live preview: twee onafhankelijke sessies',T,async()=>{
+  previewBlocked();
+  const {chromium,devices}=require('playwright-core');const {chromePath}=require('../harness/browser');
+  const executablePath=chromePath();assert.ok(executablePath,'Chrome/Chromium required');
+  const browser=await chromium.launch({executablePath,headless:true});const contexts=[];
   try{
-   const get=p=>new Promise((res,rej)=>{const r=https.request(new URL(p,app.origin),{ca:app.cert,headers:{cookie:S.d.cookie.cookie}},x=>{let b='';x.on('data',c=>b+=c);x.on('end',()=>res({status:x.statusCode,body:JSON.parse(b||'null')}))});r.on('error',rej);r.end()});
-   const me=await get('/api/auth/me');
-   if(E.PHIXAR_E2E_EXPECTED_ROLE==='none')assert.equal(me.status,403);else assert.deepEqual(me.body,{authenticated:true,role:E.PHIXAR_E2E_EXPECTED_ROLE});
-   const ws=await get('/api/workspace');assert.equal(ws.status,['owner','manager'].includes(E.PHIXAR_E2E_EXPECTED_ROLE)?200:403);
-   record('real handlers with real provider session and real isolated database',{role:E.PHIXAR_E2E_EXPECTED_ROLE,me:me.status,workspace:ws.status});
-  }finally{await app.close()}
+   const phones=[];
+   for(const label of ['A','B']){
+    const ctx=await browser.newContext({...devices['Galaxy S24']});contexts.push(ctx);
+    // The bypass header goes ONLY to the pinned preview origin, never to third parties.
+    await ctx.route('**/*',route=>{const u=new URL(route.request().url());return u.origin===ORIGIN?route.continue({headers:{...route.request().headers(),'x-vercel-protection-bypass':BYPASS}}):route.continue()});
+    const page=await ctx.newPage();await page.goto(ORIGIN+'/test-account');
+    await page.waitForFunction(()=>!/controleren/.test(document.getElementById('status').textContent),null,{timeout:20000});
+    assert.match(await page.textContent('#status'),/Klaar om aan te melden|Aangemeld/,label+' status');
+    await page.fill('#email',E.PHIXAR_E2E_USER_EMAIL);await page.fill('#password',E.PHIXAR_E2E_USER_PASSWORD);await page.click('#signin');
+    await page.waitForFunction(()=>/manager|geen toegang|onjuist|Mislukt/.test(document.getElementById('whoami').textContent+document.getElementById('status').textContent),null,{timeout:20000});
+    assert.match(await page.textContent('#whoami'),/Rol in de testorganisatie: manager/,label+' role');
+    const cookies=(await ctx.cookies(ORIGIN)).filter(x=>/session_token$/.test(x.name));assert.equal(cookies.length,1);assert.equal(cookies[0].httpOnly,true);
+    phones.push({ctx,page,cookie:cookies[0].value});
+   }
+   assert.notEqual(phones[0].cookie,phones[1].cookie,'independent sessions');
+   const status=p=>p.page.evaluate(async()=>(await fetch('/api/auth/me',{cache:'no-store'})).status);
+   await phones[1].page.click('#logout');await phones[1].page.waitForFunction(()=>/Afgemeld/.test(document.getElementById('status').textContent));
+   assert.notEqual(await status(phones[1]),200);assert.equal(await status(phones[0]),200);
+   await phones[0].page.click('#logout');await phones[0].page.waitForFunction(()=>/Afgemeld/.test(document.getElementById('status').textContent));
+   record('real Chromium with Galaxy S24 emulation on the live preview page: two independent sessions, sign-out isolates them',{device:'emulated, not a physical Samsung'});
+  }finally{await Promise.allSettled(contexts.map(c=>c.close()));await browser.close()}
  });
 });
