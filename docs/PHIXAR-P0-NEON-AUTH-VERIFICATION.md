@@ -319,3 +319,43 @@ Zelfde branch en draft PR #28, HEAD `5b17d2e`. Geen nieuwe branch of PR, geen me
 **Bevinding van de eigenaar op de telefoon (2026-11-11, 09:36):** de pagina was bereikbaar (Vercel-aanmelding gelukt) en alle isolatiecontroles slaagden behalve `database_url`. Oorzaak: de Neon–Vercel-integratie maakt per preview een eigen Neon-branch `preview/test/p0-webauthn-browser-e2e-recovery` (`br-sparkling-rain-ba3624ey`, gekopieerd van `main` op 2026-11-08) en injecteert die als `DATABASE_URL`. Die waarde overschrijft de branchspecifieke variabele. Alleen het anonieme `/api/db-health` las die variabele. De poort blokkeerde dus terecht.
 
 **Herstel (commit `7a8826a`):** `/api/db-health` gebruikt nu bij voorkeur de beperkte, geïsoleerde runtimeverbinding (`rf_runtime_login`). De poortcontrole kijkt naar de database die elk codepad werkelijk opent (`health_database`). Een vreemde `DATABASE_URL` van de integratie blijft zichtbaar als waarschuwing "door geen enkele code geopend", zonder waarde. Een brontest legt vast dat geen andere code in `api/` of `lib/` `DATABASE_URL` leest. De integratievariabele bestaat nog in de functieomgeving; uitzetten van automatische previewbranches in de Neon–Vercel-integratie is een optionele opschoning voor de eigenaar. CI op `7a8826a`: unit 228/228, security/browser 77/77, provider-public 6 PASS en 4 BLOCKED, provider-e2e BLOCKED. Een nieuwe proef op de telefoon is nodig; mobiele login is nog niet bewezen.
+
+## 16. Fase 7 — echte Android-passkey en activatie zonder computer (2026-11-11)
+
+**Server-side vastgesteld op de geïsoleerde branch (alleen-lezen, zonder geheimen):**
+
+| Controle | Waarde |
+| --- | --- |
+| Identiteit | Neon Auth-gebruiker `f91abfab-…`, e-mail geverifieerd, wachtwoord via de officiële e-mailcode-flow gezet om 08:56 UTC; eerdere sessies daardoor beëindigd |
+| Sessie | 1 sessie, aangemaakt 09:14 UTC, Samsung Internet 30 op Android |
+| Rol | alleen `manager` in "PHIXAR isolation test" (`1111…`); geen andere actieve lidmaatschappen, geen eigenaarsrechten |
+| Passkey | vingerafdruk `E737-B28D`, geregistreerd 09:10:58 UTC, `user_verified=true`, `multiDevice`, `backed_up=true`, AAGUID `ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4` (Google Password Manager), attestatie `none`, transports `hybrid, internal`; niet ingetrokken of geblokkeerd |
+| Echte WebAuthn-bevestigingen met UV | 4× `webauthn.verified` (`credential.activate` 2×, `credential.manage`, `credential.approve`), alle `independentFactor=false` — een niet-goedgekeurde sleutel opent dus geen beheeractie (fail-closed bewezen met een echt toestel) |
+| Goedkeuringen / codes | 0 / 0 |
+| Beleid | standaard: gesynchroniseerde passkeys toegestaan |
+
+**Kan een bevoegde beheerder de code persoonlijk of telefonisch doorgeven?** Nee. `scripts/mfa-bootstrap-code.js` vraagt Node.js en de owner-databaseverbinding op een computer. De enige houders van de owner-rol zijn de eigenaar zelf (Neon-console) en deze cloudsessie. Een code die de cloudsessie aanmaakt, belandt in tooluitvoer en chatgeschiedenis, en dat is verboden. Er is geen tweede persoon met beheerrechten.
+
+**Ontwerp: activatie door de eigenaar als operator in de Neon-console (migratie 015).**
+- `rf_operator_issue_bootstrap_code` voert exact de controles van het script uit: actieve owner/manager in de tenant, geverifieerde en niet-geblokkeerde Neon Auth-gebruiker, geen goedgekeurde sleutel bij `bootstrap`, oudere ongebruikte codes ongeldig, 1–30 minuten, verplichte operatorvermelding.
+- De code (130 bit, alfabet van de app) wordt in de database gemaakt en één keer in het consoleresultaat getoond. Alleen de SHA-256 wordt opgeslagen. `SECURITY INVOKER`, geen grants: `rf_runtime_login` krijgt op Neon aantoonbaar `42501`.
+- Onafhankelijke identiteitscontrole: aanmelding bij Neon/Vercel (los van de PHIXAR-sessie en het PHIXAR-wachtwoord) plus, ongewijzigd bij inwisselen, een verse UV-bevestiging met precies de nieuwe sleutel in dezelfde PHIXAR-sessie. Enkelvoudig gebruik, 15 minuten, 5 fouten maken de code ongeldig. De onafhankelijkheid is alleen sterk als het Neon/Vercel-account een eigen tweede factor heeft (TOTP of passkey) en niet enkel via e-mail opent. In een organisatie met meerdere eigenaren blijft goedkeuring door een andere eigenaar de voorkeur.
+- Op Neon toegepast op uitsluitend `br-purple-king-ban17e74`. Functiebron identiek aan de repo (md5 `f555102a…`), uitvoerrecht alleen voor de owner-rol. Op `main` en de automatische previewbranch bestaat de functie niet; een verkeerde branch faalt dus veilig. Rollback: `db/rollback/015-operator-console-bootstrap.rollback.sql`.
+- Tests: 6 nieuwe PostgreSQL-integratieproeven (formaat/hash, onvoorspelbaarheid, weigeringen, runtime geweigerd, end-to-end activatie van precies de nieuwe sleutel, rollback). `npm run test:security` 82/82, `npm test` 228/228.
+
+**Procedure op de telefoon (eigenaar):** eerst PHIXAR `/security` openen (aangemeld). Dan in een tweede tabblad console.neon.tech → project `repairflow-db` → branch `test/phixar-auth-rls-20261108` → SQL Editor, database `neondb`, en één statement uitvoeren:
+
+```sql
+SELECT * FROM rf_operator_issue_bootstrap_code('11111111-1111-4111-8111-111111111111','f91abfab-2bdb-4e7b-ac67-cca276b472b6','Amine, eigenaar, Neon-console');
+```
+
+Binnen 15 minuten op `/security` → "Eerste sleutel activeren" de code typen → "Bevestigen en activeren" → vingerafdruk. Daarna "Sessie bevestigen" (Sleutels beheren) en als beveiligde beheeractie voor een manager: een tweede passkey toevoegen (bijv. Samsung Pass), binnen 5 minuten na een nieuwe aanmelding, goedgekeurd door step-up met de eerste sleutel.
+
+| Criterium | Status |
+| --- | --- |
+| Passkey echt geregistreerd met UV, identiteit en rol | PASS (server-side) |
+| Niet-goedgekeurde sleutel geeft geen beheertoegang | PASS (echt toestel) |
+| Veilige mobiele activatieprocedure zonder code in chat of logs | PASS (gebouwd, getest, op de testbranch toegepast) |
+| Activatie van `E737-B28D` | **NOT RUN** — wacht op de eigenaar |
+| Step-up met goedgekeurde sleutel en beveiligde beheeractie | **NOT RUN** — na activatie |
+| **P0 volledig geverifieerd** | **Nee** |

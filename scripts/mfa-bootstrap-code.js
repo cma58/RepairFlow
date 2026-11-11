@@ -10,6 +10,10 @@
 // never by e-mail. The person then, on /security, registers a key (state: pending),
 // confirms with that key and enters the code: the key becomes active.
 //
+// Operator without a computer: the same checks and storage are available to the owner
+// role as SQL (migration 015, rf_operator_issue_bootstrap_code); see
+// docs/PHIXAR-P0-NEON-AUTH-VERIFICATION.md §16 for the phone procedure.
+//
 // Usage:
 //   REPAIRFLOW_OWNER_DATABASE_URL=postgres://... node scripts/mfa-bootstrap-code.js \
 //     --organization <uuid> --subject <neon-auth-user-uuid> --operator "Naam, in persoon" \
